@@ -1,0 +1,28 @@
+steps:
+# ==============================================================================
+# BUILD CUSTOM COMPONENT IMAGES
+# ==============================================================================
+  # build the deploy_model component image
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/deploy_model:latest", "." ]
+    dir: "OneClickMLOps/components/deploy_model"
+    id: "Build component: deploy_model"
+
+  # build the train_model component image
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/train_model:latest", "." ]
+    dir: "OneClickMLOps/components/train_model"
+    id: "Build component: train_model"
+
+  # build the create_dataset component image
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/create_dataset:latest", "." ]
+    dir: "OneClickMLOps/components/create_dataset"
+    id: "Build component: create_dataset"
+
+
+images:
+  # custom component images
+  - "us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/deploy_model:latest"
+  - "us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/train_model:latest"
+  - "us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/create_dataset:latest"

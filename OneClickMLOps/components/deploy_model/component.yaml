@@ -1,0 +1,26 @@
+name: Deploy model
+inputs:
+- name: model
+  type: Model
+- name: project
+  type: String
+- name: region
+  type: String
+outputs:
+- name: vertex_endpoint
+  type: Artifact
+- name: vertex_model
+  type: Model
+implementation:
+  container:
+    image: us-central1-docker.pkg.dev/sandbox-srastatter/mlops-boxer-test/components/deploy_model:latest
+    command:
+    - python3
+    - -u
+    - -m
+    - trainer.task
+    args:
+    - --executor_input
+    - executorInput: null
+    - --function_to_execute
+    - deploy_model
