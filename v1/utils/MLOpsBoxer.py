@@ -6,7 +6,7 @@ import yaml
 from . import ComponentBuilder
 from . import PipelineBuilder
 
-TOP_LVL_NAME = 'OneClickMLOps/'
+TOP_LVL_NAME = 'MLOpsBox/'
 DEFAULTS_FILE = TOP_LVL_NAME + 'configs/defaults.yaml'
 PIPELINE_SPEC_SH_FILE = TOP_LVL_NAME + 'scripts/build_pipeline_spec.sh'
 BUILD_COMPONENTS_SH_FILE = TOP_LVL_NAME + 'scripts/build_components.sh'
@@ -122,7 +122,7 @@ def write_with_privs(filename: str, text: str):
 
 def handle_scripts():
     build_pipeline_spec = """#! /bin/bash
-# Builds the pipeline specs
+# Build the training pipeline specs
 # This script should run from the main directory
 # Change directory in case this isn't the script root.
 
@@ -138,7 +138,7 @@ python3 -m pipelines.pipeline --config $CONFIG_FILE
 gcloud builds submit .. --config cloudbuild.yaml --timeout=3600
 """
     run_pipeline = """#! /bin/bash
-# Submits the PipelineJob to Vertex AI
+# Submit the PipelineJob to Vertex AI
 # This script should run from the main directory
 # Change directory in case this isn't the script root.
 
@@ -147,7 +147,7 @@ CONFIG_FILE=configs/defaults.yaml
 python3 -m pipelines.pipeline_runner --config $CONFIG_FILE
 """
     run_all= """#! /bin/bash
-# Builds components, pipeline specs, and submits the PipelineJob.
+# Build the training pipeline specs
 # This script should run from the main directory
 # Change directory in case this isn't the script root.
 

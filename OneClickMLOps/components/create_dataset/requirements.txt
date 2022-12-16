@@ -1,5 +1,0 @@
-google-cloud-bigquery
-pandas
-pyarrow
-db_dtypes
-kfp==1.8.14

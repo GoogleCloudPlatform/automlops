@@ -1,14 +1,19 @@
-# 1-Click MLOps
+# OneClick MLOps
 
-1-Click MLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks.
+OneClick MLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks.
 
 The tool currently operates as a local package import, with the end goal of becoming a Jupyter plugin to Vertex Workbench managed notebooks. The tool will generate yaml-component definitions, complete with Dockerfiles and requirements.txts for all Kubeflow components defined in a notebook. It will also generate a series of directories to support the creation of Vertex Pipelines.
 
-Included in the repository is an [example notebook](./coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `OneClickMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Note that there are currently 2 versions of this tool:
+1. v1 - this version operates off of Kubeflow objects and syntax, and will generate all the necessary files in the backend to compile and run the pipeline.
+2. v2 - this version uses a custom defined syntax (through a series of python dictionaries and lists) that effectively removes the need to know Kubeflow syntax to compile and run the pipeline. 
+
+Included in the repository is an [example notebook](./v2/coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `OneClickMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .
 ├── components                                     : Custom vertex pipeline components.
+    ├──component_base                              : Contains all the python files, Dockerfile and requirements.txt
     ├──create_dataset                              : Pull data from a BQ table and writes it as a csv to GS.
     ├──train_model                                 : Trains a basic decision tree classifier.
     ├──deploy_model                                : Deploys model to endpoint.
@@ -38,7 +43,6 @@ This tool makes use of the following products by default:
 - Add docstrings, refactor and component code
 - Add unit tests to code
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of GS buckets, Artifact registries, assignment of IAM privileges, and creation of service accounts for running the pipeline.
-- LONG-TERM: Remove the need to know/use Kubeflow all together (i.e. import kfp need not be necessary)
 
 # Contributors:
 
