@@ -5,8 +5,9 @@ import yaml
 # need to update this sys pathing
 from . import ComponentBuilder
 from . import PipelineBuilder
+from . import JupyterUtilsMagic
 
-TOP_LVL_NAME = 'OneClickMLOps/'
+TOP_LVL_NAME = 'AutoMLOps/'
 DEFAULTS_FILE = TOP_LVL_NAME + 'configs/defaults.yaml'
 PIPELINE_SPEC_SH_FILE = TOP_LVL_NAME + 'scripts/build_pipeline_spec.sh'
 BUILD_COMPONENTS_SH_FILE = TOP_LVL_NAME + 'scripts/build_components.sh'
@@ -427,7 +428,7 @@ def {name}(
 
 def filter_and_format_cell(code: str):
     """Remove unwanted parts; indent"""
-    code = code.replace(code[code.find("OneClickMLOps.makeComponent("):code.find(")")+1], "")
+    code = code.replace(code[code.find("AutoMLOps.makeComponent("):code.find(")")+1], "")
     indented_code = ""
     for line in code.splitlines():
         indented_code += '    ' + line + '\n'

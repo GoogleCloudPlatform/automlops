@@ -1,6 +1,6 @@
-# OneClick MLOps
+# AutoMLOps
 
-OneClick MLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks.
+AutoMLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks.
 
 The tool currently operates as a local package import, with the end goal of becoming a Jupyter plugin to Vertex Workbench managed notebooks. The tool will generate yaml-component definitions, complete with Dockerfiles and requirements.txts for all Kubeflow components defined in a notebook. It will also generate a series of directories to support the creation of Vertex Pipelines.
 
@@ -8,7 +8,7 @@ Note that there are currently 2 versions of this tool:
 1. v1 - this version operates off of Kubeflow objects and syntax, and will generate all the necessary files in the backend to compile and run the pipeline.
 2. v2 - this version uses a custom defined syntax (through a series of python dictionaries and lists) that effectively removes the need to know Kubeflow syntax to compile and run the pipeline. 
 
-Included in the repository is an [example notebook](./v2/coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `OneClickMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Included in the repository is an [example notebook](./v2/coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `AutoMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .
@@ -48,4 +48,4 @@ This tool makes use of the following products by default:
 
 [srastatter@](https://moma.corp.google.com/person/srastatter@google.com): Technical Lead
 
-[tonydiloreto@](https://moma.corp.google.com/person/tonydiloreto@google.com): Project Lead
+[tonydiloreto@](https://moma.corp.google.com/person/tonydiloreto@google.com): Project Manager
