@@ -1,0 +1,24 @@
+name: deploy_model
+inputs:
+- name: model
+  type: Model
+- name: project
+  type: String
+- name: region
+  type: String
+outputs:
+- name: vertex_endpoint
+  type: Artifact
+- name: vertex_model
+  type: Model
+implementation:
+  container:
+    image: us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest
+    command:
+    - python3
+    - /pipelines/component/src/deploy_model.py
+    args:
+    - --executor_input
+    - executorInput: null
+    - --function_to_execute
+    - deploy_model

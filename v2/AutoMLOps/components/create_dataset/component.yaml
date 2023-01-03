@@ -1,0 +1,20 @@
+name: create_dataset
+inputs:
+- name: bq_table
+  type: String
+- name: project
+  type: String
+outputs:
+- name: output_data_path
+  type: Dataset
+implementation:
+  container:
+    image: us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest
+    command:
+    - python3
+    - /pipelines/component/src/create_dataset.py
+    args:
+    - --executor_input
+    - executorInput: null
+    - --function_to_execute
+    - create_dataset

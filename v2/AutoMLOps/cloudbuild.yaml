@@ -1,0 +1,57 @@
+steps:
+# ==============================================================================
+# BUILD & PUSH CUSTOM COMPONENT IMAGES
+# ==============================================================================
+
+  # build the ccomponent_base image
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest", "." ]
+    dir: "AutoMLOps/components/component_base"
+    id: "build_component_base"
+    waitFor: ["-"]
+
+  # push the component_base image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest"]
+    dir: "AutoMLOps/components/component_base"
+    id: "push_component_base"
+    waitFor: ["build_component_base"]
+
+# ==============================================================================
+# BUILD & PUSH CLOUD RUN IMAGES
+# ==============================================================================
+
+  # build the run_pipeline image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]
+    dir: "AutoMLOps/"
+    id: "build_run_pipeline"
+    waitFor: ['push_component_base']
+
+  # push the run_pipeline image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/run_pipeline:latest"]
+    dir: "AutoMLOps/"
+    id: "push_run_pipeline"
+    waitFor: ["build_run_pipeline"]
+
+  # deploy the cloud run service
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args: ["run",
+           "deploy",
+           "run-pipeline",
+           "--image",
+           "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/run_pipeline:latest",
+           "--region",
+           "us-central1",
+           "--service-account",
+           "vertex-pipelines@sandbox-srastatter.iam.gserviceaccount.com"]
+    id: "deploy_run_pipeline"
+    waitFor: ["push_run_pipeline"]
+
+images:
+  # custom component images
+  - "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest"
+  # Cloud Run image
+  - "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/run_pipeline:latest"

@@ -1,0 +1,16 @@
+gcp:
+  project_id: sandbox-srastatter
+  af_registry_location: us-central1
+  af_registry_name: vertex-mlops-af
+  gs_bucket_name: sandbox-srastatter-bucket
+  pipeline_runner_service_account: vertex-pipelines@sandbox-srastatter.iam.gserviceaccount.com
+  cloud_source_repository: AutoMLOps-repo
+  cloud_schedule: 0 */3 * * *
+  cloud_schedule_location: us-central1
+
+pipelines:
+  pipeline_region: us-central1
+  parameter_values_path: pipelines/runtime_parameters/pipeline_parameter_values.json
+  pipeline_storage_path: gs://sandbox-srastatter-bucket/pipeline_root
+  pipeline_component_directory: components
+  pipeline_job_spec_path: scripts/pipeline_spec/pipeline_job.json

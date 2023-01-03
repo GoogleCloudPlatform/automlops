@@ -1,0 +1,20 @@
+FROM python:3.9
+
+# Allow statements and log messages to immediately appear in the Knative logs
+ENV PYTHONUNBUFFERED True
+
+# Copy local code to the container image.
+ENV APP_HOME /app
+WORKDIR $APP_HOME
+COPY ./ ./
+
+# Upgrade pip
+RUN python -m pip install --upgrade pip
+# Install requirements
+RUN pip install --no-cache-dir -r /app/cloud_run/run_pipeline/requirements.txt
+# Compile pipeline spec
+RUN ./scripts/build_pipeline_spec.sh
+# Change Directories
+WORKDIR "/app/cloud_run/run_pipeline"
+# Run flask api server
+CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app
