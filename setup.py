@@ -12,7 +12,7 @@ setup(
     packages=['AutoMLOps'],
     install_requires=['autoflake==2.0.0',
                       'pipreqs==0.4.11',
-                      'ipython==8.5.0',
+                      'ipython==7.34.0',
                       'PyYAML==5.4.1'],
     classifiers=[
         'Development Status :: Draft',
