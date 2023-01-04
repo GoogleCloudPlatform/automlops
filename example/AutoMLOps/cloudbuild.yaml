@@ -1,0 +1,22 @@
+steps:
+# ==============================================================================
+# BUILD & PUSH CUSTOM COMPONENT IMAGES
+# ==============================================================================
+
+  # build the ccomponent_base image
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest", "." ]
+    dir: "AutoMLOps/components/component_base"
+    id: "build_component_base"
+    waitFor: ["-"]
+
+  # push the component_base image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest"]
+    dir: "AutoMLOps/components/component_base"
+    id: "push_component_base"
+    waitFor: ["build_component_base"]
+
+images:
+  # custom component images
+  - "us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest"

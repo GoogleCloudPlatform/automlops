@@ -39,7 +39,7 @@ The tool will generate the resources specified by these parameters (e.g. Artifac
 
 # Layout
 
-Included in the repository is an [example notebook](./v2/coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `AutoMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Included in the repository is an [example notebook](./example/coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `AutoMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .

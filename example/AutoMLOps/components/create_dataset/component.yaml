@@ -1,0 +1,23 @@
+name: create_dataset
+description: Loads data from BQ and writes a dataframe as a csv to GCS.
+inputs:
+- name: bq_table
+  type: String
+  description: No description provided.
+- name: data_path
+  type: String
+  description: GS location where the training data is written.
+- name: project_id
+  type: String
+  description: Project_id.
+implementation:
+  container:
+    image: us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest
+    command:
+    - python3
+    - /pipelines/component/src/create_dataset.py
+    args:
+    - --executor_input
+    - executorInput: null
+    - --function_to_execute
+    - create_dataset

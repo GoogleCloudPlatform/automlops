@@ -1,0 +1,20 @@
+name: train_model
+description: Trains a decision tree on the training data.
+inputs:
+- name: model_directory
+  type: String
+  description: GS location of saved model.
+- name: data_path
+  type: String
+  description: GS location where the training data.
+implementation:
+  container:
+    image: us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest
+    command:
+    - python3
+    - /pipelines/component/src/train_model.py
+    args:
+    - --executor_input
+    - executorInput: null
+    - --function_to_execute
+    - train_model
