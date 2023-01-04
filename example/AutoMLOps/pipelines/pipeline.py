@@ -17,42 +17,25 @@ def create_training_pipeline(pipeline_job_spec_path: str):
     train_model = load_custom_component(component_name='train_model')
     create_dataset = load_custom_component(component_name='create_dataset')
     
-    @dsl.pipeline(
-        name='training-pipeline',
-        description='description')
-    def pipeline(
-        bq_table: str,
-        model_directory: str,
-        data_path: str,
-        project_id: str,
-        region: str,
-    ):
-        """description
+    @dsl.pipeline(name='training-pipeline')
+    def pipeline(bq_table: str,
+                 output_model_directory: str,
+                 project: str,
+                 region: str,
+                ):
     
-        Args:
-            bq_table: No description provided.,
-            model_directory: Description.,
-            data_path: Description.,
-            project_id: Description.,
-            region: Description.,
-        """
-        create_dataset_task = create_dataset(
-           bq_table=bq_table,
-           data_path=data_path,
-           project_id=project_id,
-        )
+        dataset_task = create_dataset(
+            bq_table=bq_table, 
+            project=project)
     
-        train_model_task = train_model(
-           model_directory=model_directory,
-           data_path=data_path,
-        ).after(create_dataset_task)
+        model_task = train_model(
+            output_model_directory=output_model_directory,
+            dataset=dataset_task.output)
     
-        deploy_model_task = deploy_model(
-           model_directory=model_directory,
-           project_id=project_id,
-           region=region,
-        ).after(train_model_task)
-    
+        deploy_task = deploy_model(
+            model=model_task.outputs["model"],
+            project=project,
+            region=region)
     compiler.Compiler().compile(
         pipeline_func=pipeline,
         package_path=pipeline_job_spec_path)

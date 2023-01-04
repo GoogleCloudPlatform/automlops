@@ -3,6 +3,12 @@
 AutoMLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks.
 The tool currently operates as a local package import, with the end goal of becoming a Jupyter plugin to Vertex Workbench managed notebooks. The tool will generate yaml-component definitions, complete with Dockerfiles and requirements.txts for all Kubeflow components defined in a notebook. It will also generate a series of directories to support the creation of Vertex Pipelines.
 
+# Install
+
+Clone the repo and install either via setup.py or wheel (wheel requires less processing):
+- setup.py: `pip install .`
+- wheel: `pip install dist/AutoMLOps-1.0.0-py2.py3-none-any.whl`
+
 # User Guide
 
 For a user-guide, please view these [slides](https://docs.google.com/presentation/d/1suAfces32N098MOzme4LA084P3vA3iJ6hMmQfn1-7Wo/edit?usp=sharing).
@@ -83,11 +89,16 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
     <img src="./CICD.png" alt="CICD" width="800"/>
 </p>
 
-# Next Steps
-- Package code for delivery (use setup.py?)
+# Next Steps / Backlog
+- Verify delivery mechanism (setup.py with wheel)
 - Improve this documentation
 - Add unit tests to code
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of GS buckets, Artifact registries, assignment of IAM privileges, creation of service accounts, etc. for running the pipeline.
+- Allow multiple AutoMLOps pipelines within the same directory
+- Pub/Sub topic for cloud runner service?
+- Forwarding errors from subprocess.run()
+- Adding in model monitoring parts...?
+- Provide resource links (e.g. pipelineJobs, cloud scheduler jobs, etc) as outputs in the Jupyter Notebook
 
 # Contributors
 

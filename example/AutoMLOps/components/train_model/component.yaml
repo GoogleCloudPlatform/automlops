@@ -1,12 +1,14 @@
 name: train_model
-description: Trains a decision tree on the training data.
 inputs:
-- name: model_directory
+- name: output_model_directory
   type: String
-  description: GS location of saved model.
-- name: data_path
-  type: String
-  description: GS location where the training data.
+- name: dataset
+  type: Dataset
+outputs:
+- name: metrics
+  type: Metrics
+- name: model
+  type: Model
 implementation:
   container:
     image: us-central1-docker.pkg.dev/sandbox-srastatter/vertex-mlops-af/components/component_base:latest

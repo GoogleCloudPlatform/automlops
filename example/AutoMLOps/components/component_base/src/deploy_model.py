@@ -1,29 +1,30 @@
 import argparse
 import json
 from kfp.v2.components import executor
-import json
-from google.cloud import aiplatform
+
+import kfp
+from kfp.v2 import dsl
+from kfp.v2.dsl import *
+from typing import *
 
 def deploy_model(
-    model_directory: str,
-    project_id: str,
+    model: Input[Model],
+    project: str,
     region: str,
+    vertex_endpoint: Output[Artifact],
+    vertex_model: Output[Model]
 ):
-    """Trains a decision tree on the training data.
-
-    Args:
-        model_directory: GS location of saved model.,
-        project_id: Project_id.,
-        region: Region.,
-    """    
-    
-    aiplatform.init(project=project_id, location=region)
+    from google.cloud import aiplatform
+    aiplatform.init(project=project, location=region)
     deployed_model = aiplatform.Model.upload(
         display_name="beans-model-pipeline",
-        artifact_uri = model_directory,
+        artifact_uri = model.uri,
         serving_container_image_uri="us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.0-24:latest"
     )
     endpoint = deployed_model.deploy(machine_type="n1-standard-4")
+    vertex_endpoint.uri = endpoint.resource_name
+    vertex_model.uri = deployed_model.resource_name
+
 
 def main():
     """Main executor."""

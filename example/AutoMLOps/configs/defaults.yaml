@@ -5,7 +5,7 @@ gcp:
   gs_bucket_name: sandbox-srastatter-bucket
   pipeline_runner_service_account: vertex-pipelines@sandbox-srastatter.iam.gserviceaccount.com
   cloud_source_repository: AutoMLOps-repo
-  cloud_schedule: No Schedule Specified
+  cloud_schedule: 0 */12 * * *
   cloud_schedule_location: us-central1
 
 pipelines:

@@ -6,13 +6,9 @@ AF_REGISTRY_LOCATION=us-central1
 PROJECT_ID=sandbox-srastatter
 BUCKET_NAME=sandbox-srastatter-bucket
 BUCKET_LOCATION=us-central1
-PARAMS_PATH=pipelines/runtime_parameters/pipeline_parameter_values.json
 SERVICE_ACCOUNT_NAME=vertex-pipelines
 SERVICE_ACCOUNT_FULL=vertex-pipelines@sandbox-srastatter.iam.gserviceaccount.com
 CLOUD_SOURCE_REPO=AutoMLOps-repo
-PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region us-central1 --format 'value(status.url)'`
-CLOUD_SCHEDULE="No Schedule Specified"
-CLOUD_SCHEDULE_LOCATION=us-central1
 
 if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "$AF_REGISTRY_NAME"); then
 
@@ -90,5 +86,20 @@ if ! (ls -a | grep $CLOUD_SOURCE_REPO); then
 else
 
   echo "Directory path specified exists and is not empty"
+
+fi
+
+# Create cloud build trigger
+# Account needs to have Cloud Build Editor
+if ! (gcloud beta builds triggers list --project="$PROJECT_ID" | grep --fixed-strings "$CLOUD_SOURCE_REPO" && gcloud beta builds triggers list --project="$PROJECT_ID" | grep --fixed-strings "AutoMLOps/cloudbuild.yaml"); then
+
+  gcloud beta builds triggers create cloud-source-repositories \
+  --repo=$CLOUD_SOURCE_REPO \
+  --branch-pattern=main \
+  --build-config=AutoMLOps/cloudbuild.yaml
+
+else
+
+  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${CLOUD_SOURCE_REPO}"
 
 fi

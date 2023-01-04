@@ -1,39 +1,33 @@
 import argparse
 import json
 from kfp.v2.components import executor
-import json
-import pandas as pd
-from google.cloud import storage
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
-import pickle
-import os
+
+import kfp
+from kfp.v2 import dsl
+from kfp.v2.dsl import *
+from typing import *
 
 def train_model(
-    model_directory: str,
-    data_path: str,
+    output_model_directory: str,
+    dataset: Input[Dataset],
+    metrics: Output[Metrics],
+    model: Output[Model]
 ):
-    """Trains a decision tree on the training data.
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.metrics import roc_curve
+    from sklearn.model_selection import train_test_split
+    from joblib import dump
+    import pandas as pd
+    import tensorflow as tf
+    import pickle
+    import os
 
-    Args:
-        model_directory: GS location of saved model.,
-        data_path: GS location where the training data.,
-    """    
-    
-    def save_model(model, model_directory):
+    def save_model(model, uri):
         """Saves a model to uri."""
-        filename = f'model.pkl'
-        with open(filename, 'wb') as f:
+        with tf.io.gfile.GFile(uri, 'w') as f:
             pickle.dump(model, f)
-        
-        bucket_name = model_directory.split('/')[2]
-        prefix='/'.join(model_directory.split('/')[3:])
-        storage_client = storage.Client()
-        bucket = storage_client.get_bucket(bucket_name)
-        blob = bucket.blob(os.path.join(prefix, filename))
-        blob.upload_from_filename(filename)
-    
-    df = pd.read_csv(data_path)
+
+    df = pd.read_csv(dataset.path)
     labels = df.pop("Class").tolist()
     data = df.values.tolist()
     x_train, x_test, y_train, y_test = train_test_split(data, labels)
@@ -41,9 +35,14 @@ def train_model(
     skmodel.fit(x_train,y_train)
     score = skmodel.score(x_test,y_test)
     print('accuracy is:',score)
-    
-    output_uri = os.path.join(model_directory, f'model.pkl')
-    save_model(skmodel, model_directory)
+    metrics.log_metric("accuracy",(score * 100.0))
+    metrics.log_metric("framework", "Scikit Learn")
+    metrics.log_metric("dataset_size", len(df))
+
+    output_uri = os.path.join(output_model_directory, f'model.pkl')
+    save_model(skmodel, output_uri)
+    model.path = output_model_directory
+
 
 def main():
     """Main executor."""

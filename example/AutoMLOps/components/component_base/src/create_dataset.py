@@ -1,28 +1,25 @@
 import argparse
 import json
 from kfp.v2.components import executor
-import json
-import pandas as pd
-from google.cloud import bigquery
+
+import kfp
+from kfp.v2 import dsl
+from kfp.v2.dsl import *
+from typing import *
 
 def create_dataset(
     bq_table: str,
-    data_path: str,
-    project_id: str,
+    output_data_path: OutputPath("Dataset"),
+    project: str
 ):
-    """Loads data from BQ and writes a dataframe as a csv to GCS.
+    from google.cloud import bigquery
+    import pandas as pd
+    bq_client = bigquery.Client(project=project)
 
-    Args:
-        bq_table: No description provided.,
-        data_path: GS location where the training data is written.,
-        project_id: Project_id.,
-    """    
-    
-    bq_client = bigquery.Client(project=project_id)
-    
+
     def get_query(bq_input_table: str) -> str:
         """Generates BQ Query to read data.
-    
+
         Args:
         bq_input_table: The full name of the bq input table to be read into
         the dataframe (e.g. <project>.<dataset>.<table>)
@@ -32,7 +29,7 @@ def create_dataset(
         SELECT *
         FROM `{bq_input_table}`
         """
-    
+
     def load_bq_data(query: str, client: bigquery.Client) -> pd.DataFrame:
         """Loads data from bq into a Pandas Dataframe for EDA.
         Args:
@@ -43,9 +40,10 @@ def create_dataset(
         """
         df = client.query(query).to_dataframe()
         return df
-    
+
     dataframe = load_bq_data(get_query(bq_table), bq_client)
-    dataframe.to_csv(data_path)
+    dataframe.to_csv(output_data_path)
+
 
 def main():
     """Main executor."""

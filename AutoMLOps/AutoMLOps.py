@@ -34,6 +34,7 @@ BUILD_COMPONENTS_SH_FILE = TOP_LVL_NAME + 'scripts/build_components.sh'
 RUN_PIPELINE_SH_FILE = TOP_LVL_NAME + 'scripts/run_pipeline.sh'
 RUN_ALL_SH_FILE = TOP_LVL_NAME + 'scripts/run_all.sh'
 RESOURCES_SH_FILE = TOP_LVL_NAME + 'scripts/create_resources.sh'
+SCHEDULER_SH_FILE = TOP_LVL_NAME + 'scripts/create_scheduler.sh'
 SUBMIT_JOB_FILE = TOP_LVL_NAME + 'scripts/submit_to_runner_svc.sh'
 CLOUDBUILD_FILE = TOP_LVL_NAME + 'cloudbuild.yaml'
 PIPELINE_FILE = TOP_LVL_NAME + 'pipelines/pipeline.py'
@@ -113,7 +114,7 @@ def generate(project_id: str,
 
     Args: See go() function.
     """
-    # Validate schedule is cron formatted and that run_local is set to False
+    BuilderUtils.validate_schedule(schedule, run_local)
     default_bucket_name = f'{project_id}-bucket' if gs_bucket_name is None else gs_bucket_name
     default_pipeline_runner_sa = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com' if pipeline_runner_sa is None else pipeline_runner_sa
     BuilderUtils.make_dirs(DIRS)
@@ -132,24 +133,26 @@ def generate(project_id: str,
         autoflake_srcfiles()
     create_requirements(use_kfp_spec)
     create_dockerfile()
-    create_resources(run_local) # issue, what if cloud-run doesn't already exist...
     if not run_local:
         CloudRunBuilder.formalize(TOP_LVL_NAME)
-    move_files(csr_name)
 
 def run(run_local: bool):
     """Builds, compiles, and submits the PipelineJob.
+
+    TODO(@srastatter): clean this up, messy
+    - chdir is bad practice, can cause issues when the scripts fail
 
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
+    csr_name = defaults['gcp']['cloud_source_repository']
+    BuilderUtils.execute_script(RESOURCES_SH_FILE, to_null=False)
+    move_files(csr_name)
+
     if run_local:
         os.chdir(TOP_LVL_NAME)
-        try:
-            subprocess.run(['./scripts/run_all.sh'], check=True)
-        except Exception as err:
-            raise Exception(f'Error executing script. {err}') from err
+        BuilderUtils.execute_script('scripts/run_all.sh', to_null=False)
         os.chdir('../')
     else:
         try:
@@ -160,19 +163,25 @@ def run(run_local: bool):
             print('Pushing code to main branch, triggering cloudbuild...')
             time.sleep(30)
             print('Waiting for cloudbuild job to complete...', end='')
-            # This needs refactoring
-            while (not subprocess.run([f'''gcloud builds list | grep {defaults['gcp']['cloud_source_repository']} | grep WORKING'''],
-                shell=True,
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT).returncode):
+
+            cmd = f'''gcloud builds list | grep {csr_name} | grep WORKING || true'''
+            while (subprocess.check_output([cmd], shell=True, stderr=subprocess.STDOUT)):
                 print('..', end='', flush=True)
                 time.sleep(30)
             time.sleep(5)
+
             print('Submitting PipelineJob...')
-            subprocess.run([f'./{TOP_LVL_NAME}scripts/submit_to_runner_svc.sh'], check=True)
+            os.chdir(TOP_LVL_NAME)
+            BuilderUtils.execute_script(f'./scripts/submit_to_runner_svc.sh', to_null=False)
+
+            if defaults['gcp']['cloud_schedule'] != 'No Schedule Specified':
+                print('Creating Cloud Scheduler Job')
+                BuilderUtils.execute_script('scripts/create_scheduler.sh', to_null=False)
+
+            os.chdir('../')
         except Exception as err:
             raise Exception(f'Error pushing to repo. {err}') from err
+
 
 def copy_pipeline():
     """Copy the pipeline scaffold from the tmpfiles dir to the permanent
@@ -316,18 +325,18 @@ def create_scripts(run_local: bool):
         f'  -X POST \{newline}'
         f'  -H "Authorization:bearer $(gcloud auth print-identity-token --quiet)" \{newline}'
         f'  -H "Content-Type: application/json" \{newline}'
-        f'  --data @{TOP_LVL_NAME}pipelines/runtime_parameters/pipeline_parameter_values.json\n'
-    )
+        f'  --data @pipelines/runtime_parameters/pipeline_parameter_values.json\n')
     BuilderUtils.write_and_chmod(PIPELINE_SPEC_SH_FILE, build_pipeline_spec)
     BuilderUtils.write_and_chmod(BUILD_COMPONENTS_SH_FILE, build_components)
     BuilderUtils.write_and_chmod(RUN_PIPELINE_SH_FILE, run_pipeline)
     BuilderUtils.write_and_chmod(RUN_ALL_SH_FILE, run_all)
     if not run_local:
         BuilderUtils.write_and_chmod(SUBMIT_JOB_FILE, submit_job)
+    create_resources_scripts(run_local)
 
-def create_resources(run_local: bool):
-    """Writes and executes a create_resources.sh, which creates a specified
-       artifact registry and gs bucket if they do not alread exist. Also creates
+def create_resources_scripts(run_local: bool):
+    """Writes create_resources.sh and create_scheduler.sh, which creates a specified
+       artifact registry and gs bucket if they do not already exist. Also creates
        a service account to run Vertex AI Pipelines. Requires a defaults.yaml
        config to pull config vars from.
 
@@ -350,13 +359,9 @@ def create_resources(run_local: bool):
         f'''PROJECT_ID={defaults['gcp']['project_id']}\n'''
         f'''BUCKET_NAME={defaults['gcp']['gs_bucket_name']}\n'''
         f'''BUCKET_LOCATION={defaults['pipelines']['pipeline_region']}\n'''
-        f'''PARAMS_PATH={defaults['pipelines']['parameter_values_path']}\n'''
         f'''SERVICE_ACCOUNT_NAME={defaults['gcp']['pipeline_runner_service_account'].split('@')[0]}\n'''
         f'''SERVICE_ACCOUNT_FULL={defaults['gcp']['pipeline_runner_service_account']}\n'''
         f'''CLOUD_SOURCE_REPO={defaults['gcp']['cloud_source_repository']}\n'''
-        f'''PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region us-central1 --format 'value(status.url)'`\n'''
-        f'''CLOUD_SCHEDULE="{defaults['gcp']['cloud_schedule']}"\n'''
-        f'''CLOUD_SCHEDULE_LOCATION={defaults['gcp']['cloud_schedule_location']}\n'''
         f'\n'
         f'if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "$AF_REGISTRY_NAME"); then\n'
         f'\n'
@@ -453,12 +458,24 @@ def create_resources(run_local: bool):
             f'  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
             f'\n'
             f'fi\n')
-    if defaults['gcp']['cloud_schedule'] != 'No Schedule Specified' and not run_local:
-        create_resources_script += (
+    BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, create_resources_script)
+    if defaults['gcp']['cloud_schedule'] != 'No Schedule Specified':
+        create_schedule_script = (
+            f'#!/bin/bash\n'
+            f'# Creates a pipeline schedule.\n'
+            f'# This script should run from the {TOP_LVL_NAME} directory\n'
+            f'# Change directory in case this is not the script root.\n'
+            f'\n' # ADD GLOBALS
+            f'''PROJECT_ID={defaults['gcp']['project_id']}\n'''
+            f'''PARAMS_PATH={defaults['pipelines']['parameter_values_path']}\n'''
+            f'''SERVICE_ACCOUNT_FULL={defaults['gcp']['pipeline_runner_service_account']}\n'''
+            f'''CLOUD_SOURCE_REPO={defaults['gcp']['cloud_source_repository']}\n'''
+            f'''PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region us-central1 --format 'value(status.url)'`\n'''
+            f'''CLOUD_SCHEDULE="{defaults['gcp']['cloud_schedule']}"\n'''
+            f'''CLOUD_SCHEDULE_LOCATION={defaults['gcp']['cloud_schedule_location']}\n'''
             f'\n'
-            f'cd {TOP_LVL_NAME}\n'
             f'# Create cloud scheduler\n'
-            f'if ! (gcloud scheduler jobs list --project="$PROJECT_ID" --location="$CLOUD_SCHEDULE_LOCATION" | grep --fixed-strings "AutoMLOps-schedule"); then\n'
+            f'if ! (gcloud scheduler jobs list --project="$PROJECT_ID" --location="$CLOUD_SCHEDULE_LOCATION" | grep --fixed-strings "AutoMLOps-schedule") && [ -n "$PIPELINE_RUNNER_SVC_URL" ]; then\n'
             f'\n'
             f'  gcloud scheduler jobs create http AutoMLOps-schedule \{newline}'
             f'  --schedule="$CLOUD_SCHEDULE" \{newline}'
@@ -472,25 +489,10 @@ def create_resources(run_local: bool):
             f'\n'
             f'else\n'
             f'\n'
-            f'  echo "Cloud Scheduler AutoMLOps resource already exists in project $PROJECT_ID"\n'
+            f'  echo "Cloud Scheduler AutoMLOps resource already exists in project $PROJECT_ID or Cloud Runner service not found"\n'
             f'\n'
             f'fi\n')
-
-    BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, create_resources_script)
-    try:
-        subprocess.run([f'./{RESOURCES_SH_FILE}'], shell=True, check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT)
-    except Exception as err:
-        raise Exception(f'Error executing script. {err}') from err
-    print(
-        f'''Creating Artifact Registry {defaults['gcp']['af_registry_name']} (if it doesn't exist)...\n'''
-        f'''Creating GS Bucket {defaults['gcp']['gs_bucket_name']} (if it doesn't exist)...\n'''
-        f'''Creating Service Account {defaults['gcp']['pipeline_runner_service_account']} (if it doesn't exist)...\n'''
-        f'''Creating Cloud Source Repo {defaults['gcp']['cloud_source_repository']} (if it doesn't exist)...\n'''
-        f'''Creating Cloud Build Trigger on main branch (if it doesn't exist)...\n'''
-        f'''Updating Service Account privileges (TODO)...\n'''
-        f'''Enabling (TODO) APIs...''')
+        BuilderUtils.write_and_chmod(SCHEDULER_SH_FILE, create_schedule_script)
 
 def create_cloudbuild_config(run_local: bool):
     """Writes a cloudbuild.yaml to the base directory.

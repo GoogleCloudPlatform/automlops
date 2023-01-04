@@ -16,6 +16,7 @@
    other modules in this directory."""
 
 import os
+import subprocess
 import yaml
 
 TMPFILES_DIR = '.tmpfiles'
@@ -168,13 +169,43 @@ def is_component_config(filepath: str) -> bool:
     file_dict = read_yaml_file(filepath)
     return all(key in file_dict.keys() for key in required_keys)
 
+def execute_script(filename: str, to_null: bool):
+    """Executes an external script.
+
+    Args:
+        filename: The name of the script to execute.
+        to_null: Determines where to send output.
+    Raises:
+        Exception: If an error occurs in executing the script.
+    """
+    stdout = subprocess.DEVNULL if to_null else None
+    try:
+        subprocess.run([f'./{filename}'], shell=True, check=True,
+            stdout=stdout,
+            stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as err:
+        raise Exception(f'Error executing script. {err}') from err
+
+def validate_schedule(schedule: str, run_local: str):
+    """Validates that the inputted schedule parameter.
+
+    Args:
+        schedule: Cron formatted value used to create a Scheduled retrain job.
+        run_local: Flag that determines whether to use Cloud Run CI/CD.
+    Raises:
+        Exception: If schedule is not cron formatted or run_local validation fails.
+    """
+    if schedule != 'No Schedule Specified' and run_local:
+        raise Exception('run_local must be set to False to use Cloud Scheduler.')
+
 def validate_name(name: str):
     """Validates that the inputted name parameter is of type str.
 
     Args:
         name: The name of a component or pipeline.
     Raises:
-        Exception: If the name is not of type str."""
+        Exception: If the name is not of type str.
+    """
     if not isinstance(name, str):
         raise Exception('Pipeline and Component names must be of type string.')
 
