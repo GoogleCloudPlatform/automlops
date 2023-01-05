@@ -11,6 +11,7 @@ setup(
     license='Apache-2.0',
     packages=['AutoMLOps'],
     install_requires=['autoflake==2.0.0',
+                      'pyflakes==3.0.1',
                       'pipreqs==0.4.11',
                       'ipython==7.34.0',
                       'PyYAML==5.4.1'],
