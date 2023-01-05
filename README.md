@@ -100,6 +100,9 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
 - Forwarding errors from subprocess.run()
 - Adding in model monitoring parts...?
 - Provide resource links (e.g. pipelineJobs, cloud scheduler jobs, etc) as outputs in the Jupyter Notebook
+- Decide whether to add a [contributing file](go/releasing/preparing#CONTRIBUTING)
+- Decide whether to include apache license headers on generated code (not required according to [this](go/releasing/preparing#license-headers))
+- Pipreqs is problematic...
 
 # Contributors
 
