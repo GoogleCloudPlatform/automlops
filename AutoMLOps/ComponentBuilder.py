@@ -61,7 +61,7 @@ def create_task(component_spec: dict, task_filepath: str, use_kfp_spec: bool):
     else:
         custom_imports = BuilderUtils.read_file(BuilderUtils.IMPORTS_TMPFILE)
         custom_code = component_spec['implementation']['container']['command']
-    default_imports = (
+    default_imports = (BuilderUtils.LICENSE +
         'import argparse\n'
         'import json\n'
         'from kfp.v2.components import executor\n')
@@ -110,7 +110,8 @@ def create_component(component_spec: dict,
         'python3',
         f'''/pipelines/component/src/{component_spec['name']+'.py'}''']
     filename = component_dir + '/component.yaml'
-    BuilderUtils.write_yaml_file(filename, component_spec, 'w')
+    BuilderUtils.write_file(filename, BuilderUtils.LICENSE, 'w')
+    BuilderUtils.write_yaml_file(filename, component_spec, 'a')
 
 def create_component_scaffold(name: str,
                               params: list,

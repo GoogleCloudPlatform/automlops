@@ -36,7 +36,7 @@ def create_dockerfile(cloudrun_base: str):
     Args:
         cloudrun_base: Base dir for cloud_run files.
     """
-    dockerfile = (
+    dockerfile = (BuilderUtils.LICENSE +
         'FROM python:3.9\n'
         '\n'
         '# Allow statements and log messages to immediately appear in the Knative logs\n'
@@ -87,7 +87,7 @@ def create_main(cloudrun_base: str):
     """
     left_bracket = '{'
     right_bracket = '}'
-    code = (
+    code = (BuilderUtils.LICENSE +
         f'"""Cloud Run to run pipeline spec"""\n'''
         f'''import logging\n'''
         f'''import os\n'''

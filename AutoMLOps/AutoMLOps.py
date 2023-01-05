@@ -243,7 +243,7 @@ def create_default_config(project_id: str,
         pipeline_job_spec_path: Path to the compiled pipeline job spec.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
     """
-    defaults = (
+    defaults = (BuilderUtils.LICENSE +
         f'gcp:\n'
         f'  project_id: {project_id}\n'
         f'  af_registry_location: {af_registry_location}\n'
@@ -271,7 +271,7 @@ def create_scripts(run_local: bool):
     """
     newline = '\n'
     build_pipeline_spec = (
-        '#!/bin/bash\n'
+        '#!/bin/bash\n' + BuilderUtils.LICENSE +
         '# Builds the pipeline specs\n'
         f'# This script should run from the {TOP_LVL_NAME} directory\n'
         '# Change directory in case this is not the script root.\n'
@@ -280,14 +280,14 @@ def create_scripts(run_local: bool):
         '\n'
         'python3 -m pipelines.pipeline --config $CONFIG_FILE\n')
     build_components = (
-        '#!/bin/bash\n'
+        '#!/bin/bash\n' + BuilderUtils.LICENSE +
         '# Submits a Cloud Build job that builds and deploys the components\n'
         f'# This script should run from the {TOP_LVL_NAME} directory\n'
         '# Change directory in case this is not the script root.\n'
         '\n'
         'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600\n')
     run_pipeline = (
-        '#!/bin/bash\n'
+        '#!/bin/bash\n' + BuilderUtils.LICENSE +
         '# Submits the PipelineJob to Vertex AI\n'
         f'# This script should run from the {TOP_LVL_NAME} directory\n'
         '# Change directory in case this is not the script root.\n'
@@ -296,7 +296,7 @@ def create_scripts(run_local: bool):
         '\n'
         'python3 -m pipelines.pipeline_runner --config $CONFIG_FILE\n')
     run_all = (
-        '#!/bin/bash\n'
+        '#!/bin/bash\n' + BuilderUtils.LICENSE +
         '# Builds components, pipeline specs, and submits the PipelineJob.\n'
         f'# This script should run from the {TOP_LVL_NAME} directory\n'
         '# Change directory in case this is not the script root.\n'
@@ -314,7 +314,7 @@ def create_scripts(run_local: bool):
         './scripts/run_pipeline.sh\n')
     # pylint: disable=anomalous-backslash-in-string
     submit_job = (
-        f'#!/bin/bash\n'
+        f'#!/bin/bash\n' + BuilderUtils.LICENSE +
         f'# Calls the Cloud Run pipeline Runner service to submit\n'
         f'# a PipelineJob to Vertex AI. This script should run from\n'
         f'# the main directory. Change directory in case this is not the script root.\n'
@@ -351,7 +351,7 @@ def create_resources_scripts(run_local: bool):
     newline = '\n'
     # pylint: disable=anomalous-backslash-in-string
     create_resources_script = (
-        f'#!/bin/bash\n'
+        f'#!/bin/bash\n' + BuilderUtils.LICENSE +
         f'# This script will create an artifact registry and gs bucket if they do not already exist.\n'
         f'\n'
         f'''AF_REGISTRY_NAME={defaults['gcp']['af_registry_name']}\n'''
@@ -461,7 +461,7 @@ def create_resources_scripts(run_local: bool):
     BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, create_resources_script)
     if defaults['gcp']['cloud_schedule'] != 'No Schedule Specified':
         create_schedule_script = (
-            f'#!/bin/bash\n'
+            f'#!/bin/bash\n' + BuilderUtils.LICENSE +
             f'# Creates a pipeline schedule.\n'
             f'# This script should run from the {TOP_LVL_NAME} directory\n'
             f'# Change directory in case this is not the script root.\n'
@@ -502,7 +502,7 @@ def create_cloudbuild_config(run_local: bool):
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
-    cloudbuild_comp_config = (
+    cloudbuild_comp_config = (BuilderUtils.LICENSE +
         f'steps:\n'
         f'# ==============================================================================\n'
         f'# BUILD & PUSH CUSTOM COMPONENT IMAGES\n'
@@ -644,7 +644,7 @@ def create_requirements(use_kfp_spec: bool):
 def create_dockerfile():
     """Writes a Dockerfile to the component_base directory."""
     # pylint: disable=anomalous-backslash-in-string
-    dockerfile = (
+    dockerfile = (BuilderUtils.LICENSE +
         f'FROM {DEFAULT_IMAGE}\n'
         f'RUN python -m pip install --upgrade pip\n'
         f'COPY requirements.txt .\n'

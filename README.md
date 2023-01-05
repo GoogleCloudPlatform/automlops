@@ -1,7 +1,8 @@
 # AutoMLOps
 
-AutoMLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks.
-The tool currently operates as a local package import, with the end goal of becoming a Jupyter plugin to Vertex Workbench managed notebooks. The tool will generate yaml-component definitions, complete with Dockerfiles and requirements.txts for all Kubeflow components defined in a notebook. It will also generate a series of directories to support the creation of Vertex Pipelines.
+AutoMLOps is a tool that generates a production ready MLOps pipeline from Jupyter Notebooks, bridging the gap between Data Science and DevOps and accelerating the adoption and use of Vertex AI. The tool generates an MLOps codebase for users to customize, and provides a way to build and manage a CI/CD integrated MLOps pipeline from the notebook. The tool automatically builds a source repo for versioning, cloudbuild configs and triggers, an artifact registry for storing custom components, gs buckets, service accounts and updated IAM privs for running pipelines, enables APIs (cloud Run, Cloud Build, Artifact Registry, etc.), creates a runner service API in Cloud Run for submitting PipelineJobs to Vertex AI, and a Cloud Scheduler job for submitting PipelineJobs on a recurring basis. These automatic integrations empower data scientists to take their experiments to production more quickly, allowing them to focus on what they do best: providing actionable insights through data.
+
+The tool must be used in a Jupyter Notebook.
 
 # Install
 

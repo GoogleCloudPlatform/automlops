@@ -44,6 +44,7 @@ def formalize(pipeline_parameter_values: dict,
         with open(pipeline_file, 'r+', encoding='utf-8') as file:
             pipeline_scaffold = file.read()
             file.seek(0, 0)
+            file.write(BuilderUtils.LICENSE)
             file.write(pipeline_imports)
             for line in pipeline_scaffold.splitlines():
                 file.write('    ' + line + '\n')
@@ -115,7 +116,7 @@ def get_pipeline_runner() -> str:
     Returns:
         str: Python pipeline_runner code.
     """
-    return (
+    return (BuilderUtils.LICENSE +
         '''import argparse\n'''
         '''import json\n'''
         '''import os\n'''
