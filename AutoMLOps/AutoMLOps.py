@@ -635,7 +635,7 @@ def create_requirements(use_kfp_spec: bool):
             'fsspec\n')
         try:
             subprocess.run([f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force'], shell=True, check=True,
-                stdout=subprocess.DEVNULL,
+                stdout=None,
                 stderr=subprocess.STDOUT)
         except Exception as err:
             raise Exception(f'Error executing pipreqs. {err}') from err

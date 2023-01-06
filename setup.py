@@ -11,10 +11,12 @@ setup(
     license='Apache-2.0',
     packages=['AutoMLOps'],
     install_requires=['autoflake==2.0.0',
-                      'pyflakes==3.0.1',
-                      'pipreqs==0.4.11',
+                      'docopt==0.6.2',
                       'ipython==7.34.0',
-                      'PyYAML==5.4.1'],
+                      'pipreqs==0.4.11',
+                      'pyflakes==3.0.1',
+                      'PyYAML==5.4.1'
+                      'yarg==0.1.9'],
     classifiers=[
         'Development Status :: Draft',
         'Intended Audience :: data science practitioners',
