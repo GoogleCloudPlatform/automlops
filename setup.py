@@ -20,4 +20,11 @@ setup(
         'Intended Audience :: data science practitioners',
         'License :: OSI Approved :: Apache-2.0',  
         'Operating System :: POSIX :: Linux',
-        'Programming Language :: Python :: 3.7',])
+        'License :: OSI Approved :: Apache Software License',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',])
