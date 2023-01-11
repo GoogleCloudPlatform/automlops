@@ -11,7 +11,15 @@ Classifier: Development Status :: Draft
 Classifier: Intended Audience :: data science practitioners
 Classifier: License :: OSI Approved :: Apache-2.0
 Classifier: Operating System :: POSIX :: Linux
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python :: 3
 Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+License-File: LICENSE
 
 UNKNOWN
 

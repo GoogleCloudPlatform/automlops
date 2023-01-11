@@ -343,8 +343,6 @@ def create_resources_scripts(run_local: bool):
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
-    # TODO: Enable Cloud Run, Cloud Build, Artifact Registry, Cloud Source Repos, and Cloud Storage APIs
-    # TODO: Add Cloud Run Admin and Service Account User to both cloud build and pipelines SA
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
     left_bracket = '{'
     right_bracket = '}'
@@ -357,6 +355,7 @@ def create_resources_scripts(run_local: bool):
         f'''AF_REGISTRY_NAME={defaults['gcp']['af_registry_name']}\n'''
         f'''AF_REGISTRY_LOCATION={defaults['gcp']['af_registry_location']}\n'''
         f'''PROJECT_ID={defaults['gcp']['project_id']}\n'''
+        f'''PROJECT_NUMBER=gcloud projects describe {defaults['gcp']['project_id']} --format="value(projectNumber)"'''
         f'''BUCKET_NAME={defaults['gcp']['gs_bucket_name']}\n'''
         f'''BUCKET_LOCATION={defaults['pipelines']['pipeline_region']}\n'''
         f'''SERVICE_ACCOUNT_NAME={defaults['gcp']['pipeline_runner_service_account'].split('@')[0]}\n'''
@@ -397,12 +396,26 @@ def create_resources_scripts(run_local: bool):
         f'  echo "Service Account: ${left_bracket}SERVICE_ACCOUNT_NAME{right_bracket} already exists in project $PROJECT_ID"\n'
         f'\n'
         f'fi\n'
+        f'\n'
+        f'# Enable APIs\n'
+        f'gcloud services enable aiplatform.googleapis.com \{newline}'
+        f'artifactregistry.googleapis.com \{newline}'
+        f'cloudbuild.googleapis.com \{newline}'
+        f'cloudscheduler.googleapis.com \{newline}'
+        f'compute.googleapis.com \{newline}'
+        f'iam.googleapis.com \{newline}'
+        f'iamcredentials.googleapis.com \{newline}'
+        f'ml.googleapis.com \{newline}'
+        f'run.googleapis.com \{newline}'
+        f'storage.googleapis.com \{newline}'
+        f'sourcerepo.googleapis.com\n'
+        f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
         f'    --role="roles/aiplatform.user" \n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
+        f'    --member="serviceAccountf:$SERVICE_ACCOUNT_FULL" \{newline}'
         f'    --role="roles/artifactregistry.reader" \n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
@@ -420,6 +433,22 @@ def create_resources_scripts(run_local: bool):
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
         f'    --role="roles/storage.admin"\n'
+        f'\n'
+        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
+        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
+        f'    --role="roles/run.admin"\n'
+        f'\n'
+        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
+        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
+        f'    --role="roles/iam.serviceAccountUser"\n'
+        f'\n'
+        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
+        f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
+        f'    --role="roles/run.admin"\n'
+        f'\n'
+        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
+        f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
+        f'    --role="roles/iam.serviceAccountUser"\n'
         f'\n'
         f'# Create source repo\n'
         f'if ! (gcloud source repos list --project="$PROJECT_ID" | grep --fixed-strings "$CLOUD_SOURCE_REPO"); then\n'
@@ -635,7 +664,7 @@ def create_requirements(use_kfp_spec: bool):
             'fsspec\n')
         try:
             subprocess.run([f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force'], shell=True, check=True,
-                stdout=subprocess.DEVNULL,
+                stdout=None,
                 stderr=subprocess.STDOUT)
         except Exception as err:
             raise Exception(f'Error executing pipreqs. {err}') from err
