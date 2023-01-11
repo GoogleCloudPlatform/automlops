@@ -15,7 +15,7 @@ setup(
                       'ipython==7.34.0',
                       'pipreqs==0.4.11',
                       'pyflakes==3.0.1',
-                      'PyYAML==5.4.1'
+                      'PyYAML==5.4.1',
                       'yarg==0.1.9'],
     classifiers=[
         'Development Status :: Draft',
