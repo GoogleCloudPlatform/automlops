@@ -158,8 +158,8 @@ def run(run_local: bool):
         try:
             # Push the code to csr
             subprocess.run(['git', 'add', '.'], check=True)
-            subprocess.run(['git', 'commit', '-m', '"Run AutoMLOps"'], check=True)
-            subprocess.run(['git', 'push', 'origin', 'main', '--force'], check=True)
+            subprocess.run(['git', 'commit', '-m', 'Run AutoMLOps'], check=True)
+            subprocess.run(['git', 'push', '--all', 'origin', '--force'], check=True)
             print('Pushing code to main branch, triggering cloudbuild...')
             time.sleep(30)
             print('Waiting for cloudbuild job to complete...', end='')
@@ -355,7 +355,7 @@ def create_resources_scripts(run_local: bool):
         f'''AF_REGISTRY_NAME={defaults['gcp']['af_registry_name']}\n'''
         f'''AF_REGISTRY_LOCATION={defaults['gcp']['af_registry_location']}\n'''
         f'''PROJECT_ID={defaults['gcp']['project_id']}\n'''
-        f'''PROJECT_NUMBER=gcloud projects describe {defaults['gcp']['project_id']} --format="value(projectNumber)"'''
+        f'''PROJECT_NUMBER=`gcloud projects describe {defaults['gcp']['project_id']} --format 'value(projectNumber)'`\n'''
         f'''BUCKET_NAME={defaults['gcp']['gs_bucket_name']}\n'''
         f'''BUCKET_LOCATION={defaults['pipelines']['pipeline_region']}\n'''
         f'''SERVICE_ACCOUNT_NAME={defaults['gcp']['pipeline_runner_service_account'].split('@')[0]}\n'''
@@ -415,7 +415,7 @@ def create_resources_scripts(run_local: bool):
         f'    --role="roles/aiplatform.user" \n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccountf:$SERVICE_ACCOUNT_FULL" \{newline}'
+        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
         f'    --role="roles/artifactregistry.reader" \n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
@@ -479,7 +479,7 @@ def create_resources_scripts(run_local: bool):
             f'\n'
             f'  gcloud beta builds triggers create cloud-source-repositories \{newline}'
             f'  --repo=$CLOUD_SOURCE_REPO \{newline}'
-            f'  --branch-pattern=main \{newline}'
+            f'  --branch-pattern=^master$ \{newline}'
             f'  --build-config={TOP_LVL_NAME}cloudbuild.yaml\n'
             f'\n'
             f'else\n'
