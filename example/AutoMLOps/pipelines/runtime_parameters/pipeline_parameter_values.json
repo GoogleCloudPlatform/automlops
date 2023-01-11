@@ -1,6 +1,0 @@
-{
-    "bq_table": "sandbox-srastatter.mlops_boxer_test.dry-beans",
-    "output_model_directory": "gs://mlops-boxer-test/trained_models/2023-01-05 14:17:41.971180",
-    "project": "sandbox-srastatter",
-    "region": "us-central1"
-}

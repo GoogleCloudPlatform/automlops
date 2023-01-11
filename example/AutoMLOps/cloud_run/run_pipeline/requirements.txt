@@ -1,5 +1,0 @@
-kfp
-google-cloud-aiplatform
-Flask
-gunicorn
-pyyaml

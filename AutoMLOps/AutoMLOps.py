@@ -479,7 +479,7 @@ def create_resources_scripts(run_local: bool):
             f'\n'
             f'  gcloud beta builds triggers create cloud-source-repositories \{newline}'
             f'  --repo=$CLOUD_SOURCE_REPO \{newline}'
-            f'  --branch-pattern=^master$ \{newline}'
+            f'  --branch-pattern="^(main|master)$" \{newline}'
             f'  --build-config={TOP_LVL_NAME}cloudbuild.yaml\n'
             f'\n'
             f'else\n'
