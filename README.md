@@ -103,6 +103,7 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
 - Decide whether to add a [contributing file](go/releasing/preparing#CONTRIBUTING)
 - Decide whether to include apache license headers on generated code (not required according to [this](go/releasing/preparing#license-headers))
 - Pipreqs is problematic...
+- Using $(gcloud auth print-identity-token --quiet) to generate auth tokens is a hack
 
 # Contributors
 

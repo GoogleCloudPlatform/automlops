@@ -60,16 +60,17 @@ def go(project_id: str,
        pipeline_params: dict,
        af_registry_location: str = 'us-central1',
        af_registry_name: str = 'vertex-mlops-af',
+       cloud_run_location: str = 'us-central1',
+       csr_name: str = 'AutoMLOps-repo',
        gs_bucket_location: str = 'us-central1',
        gs_bucket_name: str = None,
-       csr_name: str = 'AutoMLOps-repo',
-       schedule: str = 'No Schedule Specified',
-       schedule_location: str = 'us-central1',
        parameter_values_path: str = 'pipelines/runtime_parameters/pipeline_parameter_values.json',
        pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json',
        pipeline_runner_sa: str = None,
-       use_kfp_spec: bool = False,
-       run_local: bool = True):
+       run_local: bool = True,
+       schedule: str = 'No Schedule Specified',
+       schedule_location: str = 'us-central1',
+       use_kfp_spec: bool = False):
     """Generates relevant pipeline and component artifacts,
        then builds, compiles, and submits the PipelineJob.
 
@@ -78,38 +79,40 @@ def go(project_id: str,
         pipeline_params: Dictionary containing runtime pipeline parameters.
         af_registry_location: Region of the Artifact Registry.
         af_registry_name: Artifact Registry name where components are stored.
+        cloud_run_location: The location of the cloud runner service.
+        csr_name: The name of the cloud source repo to use.
         gs_bucket_location: Region of the GS bucket.
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
-        csr_name: The name of the cloud source repo to use.
-        schedule: Cron formatted value used to create a Scheduled retrain job.
-        schedule_location: The location of the scheduler resource.
         parameter_values_path: Path to json pipeline params.
         pipeline_job_spec_path: Path to the compiled pipeline job spec.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
-        use_kfp_spec: Flag that determines the format of the component yamls.
         run_local: Flag that determines whether to use Cloud Run CI/CD.
+        schedule: Cron formatted value used to create a Scheduled retrain job.
+        schedule_location: The location of the scheduler resource.
+        use_kfp_spec: Flag that determines the format of the component yamls.
     """
     generate(project_id, pipeline_params, af_registry_location,
-             af_registry_name, gs_bucket_location, gs_bucket_name,
-             csr_name, schedule, schedule_location,
-             parameter_values_path, pipeline_job_spec_path,
-             pipeline_runner_sa, use_kfp_spec, run_local)
+             af_registry_name, cloud_run_location, csr_name,
+             gs_bucket_location, gs_bucket_name, parameter_values_path,
+             pipeline_job_spec_path, pipeline_runner_sa, run_local,
+             schedule, schedule_location, use_kfp_spec)
     run(run_local)
 
 def generate(project_id: str,
              pipeline_params: dict,
              af_registry_location: str = 'us-central1',
              af_registry_name: str = 'vertex-mlops-af',
+             cloud_run_location: str = 'us-central1',
+             csr_name: str = 'AutoMLOps-repo',
              gs_bucket_location: str = 'us-central1',
              gs_bucket_name: str = None,
-             csr_name: str = 'AutoMLOps-repo',
-             schedule: str = 'No Schedule Specified',
-             schedule_location: str = 'us-central1',
              parameter_values_path: str = 'pipelines/runtime_parameters/pipeline_parameter_values.json',
              pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json',
              pipeline_runner_sa: str = None,
-             use_kfp_spec: bool = False,
-             run_local: bool = True):
+             run_local: bool = True,
+             schedule: str = 'No Schedule Specified',
+             schedule_location: str = 'us-central1',
+             use_kfp_spec: bool = False):
     """Generates relevant pipeline and component artifacts.
 
     Args: See go() function.
@@ -118,10 +121,11 @@ def generate(project_id: str,
     default_bucket_name = f'{project_id}-bucket' if gs_bucket_name is None else gs_bucket_name
     default_pipeline_runner_sa = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com' if pipeline_runner_sa is None else pipeline_runner_sa
     BuilderUtils.make_dirs(DIRS)
-    create_default_config(project_id, af_registry_location, af_registry_name,
-                          gs_bucket_location, default_bucket_name, csr_name,
-                          schedule, schedule_location, parameter_values_path,
-                          pipeline_job_spec_path, default_pipeline_runner_sa)
+    create_default_config(af_registry_location, af_registry_name, cloud_run_location,
+                          csr_name, gs_bucket_location, default_bucket_name,
+                          parameter_values_path, pipeline_job_spec_path, default_pipeline_runner_sa,
+                          project_id, schedule, schedule_location)
+
     create_scripts(run_local)
     create_cloudbuild_config(run_local)
     copy_pipeline()
@@ -215,51 +219,54 @@ def move_files(csr_name: str):
     except subprocess.CalledProcessError as err:
         raise Exception(f'Error touching file. {err}') from err
 
-def create_default_config(project_id: str,
-                          af_registry_location: str,
+def create_default_config(af_registry_location: str,
                           af_registry_name: str,
+                          cloud_run_location: str,
+                          csr_name: str,
                           gs_bucket_location: str,
                           gs_bucket_name: str,
-                          csr_name: str,
-                          schedule: str,
-                          schedule_location: str,
                           parameter_values_path: str,
                           pipeline_job_spec_path: str,
-                          pipeline_runner_sa: str):
+                          pipeline_runner_sa: str,
+                          project_id: str,
+                          schedule: str,
+                          schedule_location: str):
     """Writes default variables to defaults.yaml. This defaults
        file is used by subsequent functions and by the pipeline
        files themselves.
 
     Args:
-        project_id: The project ID.
         af_registry_location: Region of the Artifact Registry.
         af_registry_name: Artifact Registry name where components are stored.
+        cloud_run_location: The location of the cloud runner service.
+        csr_name: The name of the cloud source repo to use.
         gs_bucket_location: Region of the GS bucket.
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
-        csr_name: The name of the cloud source repo to use.
-        schedule: Cron formatted value used to create a Scheduled retrain job.
-        schedule_location: The location of the scheduler resource.
         parameter_values_path: Path to json pipeline params.
         pipeline_job_spec_path: Path to the compiled pipeline job spec.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
+        project_id: The project ID.
+        schedule: Cron formatted value used to create a Scheduled retrain job.
+        schedule_location: The location of the scheduler resource.
     """
     defaults = (BuilderUtils.LICENSE +
         f'gcp:\n'
-        f'  project_id: {project_id}\n'
         f'  af_registry_location: {af_registry_location}\n'
         f'  af_registry_name: {af_registry_name}\n'
-        f'  gs_bucket_name: {gs_bucket_name}\n'
-        f'  pipeline_runner_service_account: {pipeline_runner_sa}\n'
-        f'  cloud_source_repository: {csr_name}\n'
+        f'  cloud_run_location: {cloud_run_location}\n'
         f'  cloud_schedule: {schedule}\n'
         f'  cloud_schedule_location: {schedule_location}\n'
+        f'  cloud_source_repository: {csr_name}\n'
+        f'  gs_bucket_name: {gs_bucket_name}\n'
+        f'  pipeline_runner_service_account: {pipeline_runner_sa}\n'
+        f'  project_id: {project_id}\n'
         f'\n'
         f'pipelines:\n'
-        f'  pipeline_region: {gs_bucket_location}\n'
         f'  parameter_values_path: {parameter_values_path}\n'
-        f'  pipeline_storage_path: gs://{gs_bucket_name}/pipeline_root\n'
         f'  pipeline_component_directory: components\n'
-        f'  pipeline_job_spec_path: {pipeline_job_spec_path}\n')
+        f'  pipeline_job_spec_path: {pipeline_job_spec_path}\n'
+        f'  pipeline_region: {gs_bucket_location}\n'
+        f'  pipeline_storage_path: gs://{gs_bucket_name}/pipeline_root\n')
     BuilderUtils.write_file(DEFAULTS_FILE, defaults, 'w+')
 
 def create_scripts(run_local: bool):
@@ -269,6 +276,7 @@ def create_scripts(run_local: bool):
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
+    defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
     newline = '\n'
     build_pipeline_spec = (
         '#!/bin/bash\n' + BuilderUtils.LICENSE +
@@ -319,11 +327,13 @@ def create_scripts(run_local: bool):
         f'# a PipelineJob to Vertex AI. This script should run from\n'
         f'# the main directory. Change directory in case this is not the script root.\n'
         f'\n'
-        f'''PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region us-central1 --format 'value(status.url)'`'''
-        f'\n'
+        f'''RUNNER_SA={defaults['gcp']['pipeline_runner_service_account']}\n'''
+        f'''PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region {defaults['gcp']['cloud_run_location']} --format 'value(status.url)'`\n'''
+        f'ID_TOKEN=`gcloud auth print-identity-token --impersonate-service-account=$RUNNER_SA --audiences="$PIPELINE_RUNNER_SVC_URL" --quiet`\n'
+        f'echo "Submitting training job to Cloud Runner Service $PIPELINE_RUNNER_SVC_URL using @pipelines/runtime_parameters/pipeline_parameter_values.json"\n'
         f'curl -v --ipv4 --http1.1 --trace-ascii - $PIPELINE_RUNNER_SVC_URL \{newline}'
         f'  -X POST \{newline}'
-        f'  -H "Authorization:bearer $(gcloud auth print-identity-token --quiet)" \{newline}'
+        f'  -H "Authorization:bearer $ID_TOKEN" \{newline}'
         f'  -H "Content-Type: application/json" \{newline}'
         f'  --data @pipelines/runtime_parameters/pipeline_parameter_values.json\n')
     BuilderUtils.write_and_chmod(PIPELINE_SPEC_SH_FILE, build_pipeline_spec)
@@ -361,28 +371,42 @@ def create_resources_scripts(run_local: bool):
         f'''SERVICE_ACCOUNT_NAME={defaults['gcp']['pipeline_runner_service_account'].split('@')[0]}\n'''
         f'''SERVICE_ACCOUNT_FULL={defaults['gcp']['pipeline_runner_service_account']}\n'''
         f'''CLOUD_SOURCE_REPO={defaults['gcp']['cloud_source_repository']}\n'''
+        f'''EXECUTING_ACCOUNT=`gcloud config list account --format "value(core.account)"`\n'''
+        f'\n'
+        f'if ! (gcloud config list account --format "value(core.account)" | grep --fixed-strings "gserviceaccount"); then\n'
+        f'\n'
+        f'  EXECUTING_ACCOUNT_TYPE=user\n'
+        f'\n'
+        f'else\n'
+        f'\n'
+        f'  EXECUTING_ACCOUNT_TYPE=serviceAccount\n'
+        f'\n'
+        f'fi\n'
         f'\n'
         f'# Enable APIs\n'
+        f'echo "Updating required API services in project $PROJECT_ID"\n'
         f'gcloud services enable cloudresourcemanager.googleapis.com \{newline}'
-        f'aiplatform.googleapis.com \{newline}'
-        f'artifactregistry.googleapis.com \{newline}'
-        f'cloudbuild.googleapis.com \{newline}'
-        f'cloudscheduler.googleapis.com \{newline}'
-        f'compute.googleapis.com \{newline}'
-        f'iam.googleapis.com \{newline}'
-        f'iamcredentials.googleapis.com \{newline}'
-        f'ml.googleapis.com \{newline}'
-        f'run.googleapis.com \{newline}'
-        f'storage.googleapis.com \{newline}'
-        f'sourcerepo.googleapis.com\n'
+        f'  aiplatform.googleapis.com \{newline}'
+        f'  artifactregistry.googleapis.com \{newline}'
+        f'  cloudbuild.googleapis.com \{newline}'
+        f'  cloudscheduler.googleapis.com \{newline}'
+        f'  compute.googleapis.com \{newline}'
+        f'  iam.googleapis.com \{newline}'
+        f'  iamcredentials.googleapis.com \{newline}'
+        f'  ml.googleapis.com \{newline}'
+        f'  run.googleapis.com \{newline}'
+        f'  storage.googleapis.com \{newline}'
+        f'  sourcerepo.googleapis.com\n'
         f'\n'
         f'if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "$AF_REGISTRY_NAME"); then\n'
         f'\n'
+        f'  echo "Creating Artifact Registry: ${left_bracket}AF_REGISTRY_NAME{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud artifacts repositories create "$AF_REGISTRY_NAME" \{newline}'
         f'    --repository-format=docker \{newline}'
         f'    --location=$AF_REGISTRY_LOCATION \{newline}'
         f'    --project="$PROJECT_ID" \{newline}'
         f'    --description="Artifact Registry ${left_bracket}AF_REGISTRY_NAME{right_bracket} in ${left_bracket}AF_REGISTRY_LOCATION{right_bracket}." \n'
+        f'\n'
         f'else\n'
         f'\n'
         f'  echo "Artifact Registry: ${left_bracket}AF_REGISTRY_NAME{right_bracket} already exists in project $PROJECT_ID"\n'
@@ -392,6 +416,7 @@ def create_resources_scripts(run_local: bool):
         f'\n'
         f'if !(gsutil ls -b gs://$BUCKET_NAME | grep --fixed-strings "$BUCKET_NAME"); then\n'
         f'\n'
+        f'  echo "Creating GS Bucket: ${left_bracket}BUCKET_NAME{right_bracket} in project $PROJECT_ID"\n'
         f'  gsutil mb -l ${left_bracket}BUCKET_LOCATION{right_bracket} gs://$BUCKET_NAME\n'
         f'\n'
         f'else\n'
@@ -402,6 +427,7 @@ def create_resources_scripts(run_local: bool):
         f'\n'
         f'if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep --fixed-strings "$SERVICE_ACCOUNT_FULL"); then\n'
         f'\n'
+        f'  echo "Creating Service Account: ${left_bracket}SERVICE_ACCOUNT_NAME{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \{newline}'
         f'      --description="For submitting PipelineJobs" \{newline}'
         f'      --display-name="Pipeline Runner Service Account"\n'
@@ -411,49 +437,71 @@ def create_resources_scripts(run_local: bool):
         f'\n'
         f'fi\n'
         f'\n'
+        f'echo "Updating required IAM roles in project $PROJECT_ID"\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/aiplatform.user" \n'
+        f'    --role="roles/aiplatform.user" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/artifactregistry.reader" \n'
+        f'    --role="roles/artifactregistry.reader" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/bigquery.user" \n'
+        f'    --role="roles/bigquery.user" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'   --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'   --role="roles/bigquery.dataEditor" \n'
+        f'   --role="roles/bigquery.dataEditor" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/iam.serviceAccountUser" \n'
+        f'    --role="roles/iam.serviceAccountUser" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/storage.admin"\n'
+        f'    --role="roles/storage.admin" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/run.admin"\n'
+        f'    --role="roles/run.admin" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/iam.serviceAccountUser"\n'
+        f'    --role="roles/iam.serviceAccountUser" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
-        f'    --role="roles/run.admin"\n'
+        f'    --role="roles/run.admin" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
         f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
-        f'    --role="roles/iam.serviceAccountUser"\n'
+        f'    --role="roles/iam.serviceAccountUser" \{newline}'
+        f'    --no-user-output-enabled\n'
+        f'\n'
+        f'gcloud iam service-accounts add-iam-policy-binding $SERVICE_ACCOUNT_FULL \{newline}'
+        f'    --member="$EXECUTING_ACCOUNT_TYPE:$EXECUTING_ACCOUNT" \{newline}'
+        f'    --role="roles/iam.serviceAccountTokenCreator" \{newline}'
+        f'    --no-user-output-enabled\n'
+        f'\n'        
+        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
+        f'    --member="$EXECUTING_ACCOUNT_TYPE:$EXECUTING_ACCOUNT" \{newline}'
+        f'    --role="roles/iam.serviceAccountUser" \{newline}'
+        f'    --no-user-output-enabled\n'
         f'\n'
         f'# Create source repo\n'
         f'if ! (gcloud source repos list --project="$PROJECT_ID" | grep --fixed-strings "$CLOUD_SOURCE_REPO"); then\n'
         f'\n'
+        f'  echo "Creating Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud source repos create $CLOUD_SOURCE_REPO\n'
         f'\n'
         f'else\n'
@@ -464,6 +512,7 @@ def create_resources_scripts(run_local: bool):
         f'\n'
         f'if ! (ls -a | grep $CLOUD_SOURCE_REPO); then\n'
         f'\n'
+        f'  echo "Cloning Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
         f'  gcloud source repos clone $CLOUD_SOURCE_REPO --project=$PROJECT_ID\n'
         f'\n'
         f'else\n'
@@ -475,9 +524,9 @@ def create_resources_scripts(run_local: bool):
         create_resources_script += (
             f'\n'
             f'# Create cloud build trigger\n'
-            f'# Account needs to have Cloud Build Editor\n'
             f'if ! (gcloud beta builds triggers list --project="$PROJECT_ID" | grep --fixed-strings "$CLOUD_SOURCE_REPO" && gcloud beta builds triggers list --project="$PROJECT_ID" | grep --fixed-strings "{TOP_LVL_NAME}cloudbuild.yaml"); then\n'
             f'\n'
+            f'  echo "Creating Cloudbuild Trigger on branch ^(main|master)$ in project $PROJECT_ID for repo ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
             f'  gcloud beta builds triggers create cloud-source-repositories \{newline}'
             f'  --repo=$CLOUD_SOURCE_REPO \{newline}'
             f'  --branch-pattern="^(main|master)$" \{newline}'
@@ -500,13 +549,14 @@ def create_resources_scripts(run_local: bool):
             f'''PARAMS_PATH={defaults['pipelines']['parameter_values_path']}\n'''
             f'''SERVICE_ACCOUNT_FULL={defaults['gcp']['pipeline_runner_service_account']}\n'''
             f'''CLOUD_SOURCE_REPO={defaults['gcp']['cloud_source_repository']}\n'''
-            f'''PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region us-central1 --format 'value(status.url)'`\n'''
+            f'''PIPELINE_RUNNER_SVC_URL=`gcloud run services describe run-pipeline --platform managed --region {defaults['gcp']['cloud_run_location']} --format 'value(status.url)'`\n'''
             f'''CLOUD_SCHEDULE="{defaults['gcp']['cloud_schedule']}"\n'''
             f'''CLOUD_SCHEDULE_LOCATION={defaults['gcp']['cloud_schedule_location']}\n'''
             f'\n'
             f'# Create cloud scheduler\n'
             f'if ! (gcloud scheduler jobs list --project="$PROJECT_ID" --location="$CLOUD_SCHEDULE_LOCATION" | grep --fixed-strings "AutoMLOps-schedule") && [ -n "$PIPELINE_RUNNER_SVC_URL" ]; then\n'
             f'\n'
+            f'  echo "Creating Cloud Scheduler Job: AutoMLOps-schedule in project $PROJECT_ID"\n'
             f'  gcloud scheduler jobs create http AutoMLOps-schedule \{newline}'
             f'  --schedule="$CLOUD_SCHEDULE" \{newline}'
             f'  --uri=$PIPELINE_RUNNER_SVC_URL \{newline}'
@@ -580,7 +630,7 @@ def create_cloudbuild_config(run_local: bool):
         f'''           "--image",\n'''
         f'''           "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest",\n'''
         f'''           "--region",\n'''
-        f'''           "us-central1",\n'''
+        f'''           "{defaults['gcp']['cloud_run_location']}",\n'''
         f'''           "--service-account",\n'''
         f'''           "{defaults['gcp']['pipeline_runner_service_account']}"]\n'''
         f'''    id: "deploy_run_pipeline"\n'''
