@@ -2,13 +2,56 @@
 
 AutoMLOps is a tool that generates a production ready MLOps pipeline from Jupyter Notebooks, bridging the gap between Data Science and DevOps and accelerating the adoption and use of Vertex AI. The tool generates an MLOps codebase for users to customize, and provides a way to build and manage a CI/CD integrated MLOps pipeline from the notebook. The tool automatically builds a source repo for versioning, cloudbuild configs and triggers, an artifact registry for storing custom components, gs buckets, service accounts and updated IAM privs for running pipelines, enables APIs (cloud Run, Cloud Build, Artifact Registry, etc.), creates a runner service API in Cloud Run for submitting PipelineJobs to Vertex AI, and a Cloud Scheduler job for submitting PipelineJobs on a recurring basis. These automatic integrations empower data scientists to take their experiments to production more quickly, allowing them to focus on what they do best: providing actionable insights through data.
 
-The tool must be used in a Jupyter Notebook.
+# Prerequisites
+
+In order to use AutoMLOps, the following are required:
+
+- Jupyter (or Jupyter-compatible) notebook environment
+- [Notebooks API](https://pantheon.corp.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
+- Python 3.0 - 3.10
+- `git` installed
+- `git` logged-in:
+```
+  git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+```
+- [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc) are setup. This can be done through the following commands:
+```
+gcloud auth application-default login
+gcloud config set account <account@example.com>
+```
 
 # Install
 
 Clone the repo and install either via setup.py or wheel (wheel requires less processing):
 - setup.py: `pip install .`
 - wheel: `pip install dist/AutoMLOps-1.0.0-py2.py3-none-any.whl`
+
+# Dependencies
+- `autoflake==2.0.0`,
+- `docopt==0.6.2`,
+- `ipython==7.34.0`,
+- `pipreqs==0.4.11`,
+- `pyflakes==3.0.1`,
+- `PyYAML==5.4.1`,
+- `yarg==0.1.9`
+
+# APIs & IAM
+The tool will enable the following APIs:
+- cloudresourcemanager.googleapis.com
+- aiplatform.googleapis.com
+- artifactregistry.googleapis.com
+- cloudbuild.googleapis.com
+- cloudscheduler.googleapis.com
+- compute.googleapis.com
+- iam.googleapis.com
+- iamcredentials.googleapis.com
+- ml.googleapis.com
+- run.googleapis.com
+- storage.googleapis.com
+- sourcerepo.googleapis.com
+
+TODO(srastatter): list IAM updates
 
 # User Guide
 
@@ -41,6 +84,7 @@ Optional parameters (defaults shown):
 10. `pipeline_runner_sa: str = None`
 11. `use_kfp_spec: bool = False` # see above
 12. `run_local: bool = True` # see above
+13. `cloud_run_location = 'us-central1'`
 
 The tool will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the tool will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule` then it will set up a Cloud Schedule to run accordingly. 
 
@@ -92,18 +136,13 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
 
 # Next Steps / Backlog
 - Verify delivery mechanism (setup.py with wheel)
-- Improve this documentation
+- Improve documentation
 - Add unit tests to code
-- Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of GS buckets, Artifact registries, assignment of IAM privileges, creation of service accounts, etc. for running the pipeline.
+- Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory
-- Pub/Sub topic for cloud runner service?
-- Forwarding errors from subprocess.run()
-- Adding in model monitoring parts...?
+- Adding model monitoring part
 - Provide resource links (e.g. pipelineJobs, cloud scheduler jobs, etc) as outputs in the Jupyter Notebook
-- Decide whether to add a [contributing file](go/releasing/preparing#CONTRIBUTING)
-- Decide whether to include apache license headers on generated code (not required according to [this](go/releasing/preparing#license-headers))
-- Pipreqs is problematic...
-- Using $(gcloud auth print-identity-token --quiet) to generate auth tokens is a hack
+- Look into alternatives to Pipreqs
 
 # Contributors
 

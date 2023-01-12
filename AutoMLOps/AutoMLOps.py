@@ -185,7 +185,34 @@ def run(run_local: bool):
             os.chdir('../')
         except Exception as err:
             raise Exception(f'Error pushing to repo. {err}') from err
+    resources_generation_manifest(defaults, run_local)
 
+def resources_generation_manifest(defaults: dict, run_local: bool):
+    """Prints urls of generated resources.
+
+    Args:
+        defaults: Dictionary containing resource names.
+        run_local: Flag that determines whether to use Cloud Run CI/CD.
+    """
+    print('#################################################################'
+          '#                                                               #'
+          '#                       RESOURCES MANIFEST                      #'
+          '#---------------------------------------------------------------#'
+          '#     Generated resources can be found at the following urls    #'
+          '#                                                               #'
+          '#################################################################')
+    print(f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
+    print(f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
+    print('Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts')
+    print('APIs: https://console.cloud.google.com/apis')
+    print(f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['cloud_source_repository']}''')
+    print('Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds')
+    print('Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
+    if not run_local:
+        print('Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers')  
+        print(f'''Cloud Run Service: https://console.cloud.google.com/run/detail/{defaults['gcp']['cloud_run_location']}/run-pipeline''')
+    if defaults['gcp']['cloud_schedule'] != 'No Schedule Specified':
+        print('Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
 
 def copy_pipeline():
     """Copy the pipeline scaffold from the tmpfiles dir to the permanent
