@@ -19,6 +19,7 @@ import os
 import subprocess
 import yaml
 
+# pylint: disable=line-too-long
 TMPFILES_DIR = '.tmpfiles'
 IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
 CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'

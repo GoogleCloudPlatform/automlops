@@ -103,10 +103,10 @@ def go(project_id: str,
     """
     generate(project_id, pipeline_params, af_registry_location,
              af_registry_name, cb_trigger_location, cb_trigger_name,
-             cloud_run_location, cloud_run_name, csr_branch_name, 
-             csr_name, gs_bucket_location, gs_bucket_name, 
-             parameter_values_path, pipeline_job_spec_path, pipeline_runner_sa, 
-             run_local, schedule_location, schedule_name, 
+             cloud_run_location, cloud_run_name, csr_branch_name,
+             csr_name, gs_bucket_location, gs_bucket_name,
+             parameter_values_path, pipeline_job_spec_path, pipeline_runner_sa,
+             run_local, schedule_location, schedule_name,
              schedule_pattern, use_kfp_spec)
     run(run_local)
 
@@ -190,7 +190,7 @@ def run(run_local: bool):
             print('Waiting for cloudbuild job to complete...', end='')
 
             cmd = f'''gcloud builds list --region={cb_trigger_location} | grep {csr_name} | grep WORKING || true'''
-            while (subprocess.check_output([cmd], shell=True, stderr=subprocess.STDOUT)):
+            while subprocess.check_output([cmd], shell=True, stderr=subprocess.STDOUT):
                 print('..', end='', flush=True)
                 time.sleep(30)
             time.sleep(5)
@@ -386,7 +386,7 @@ def create_scripts(run_local: bool):
         './scripts/run_pipeline.sh\n')
     # pylint: disable=anomalous-backslash-in-string
     submit_job = (
-        f'#!/bin/bash\n' + BuilderUtils.LICENSE +
+        '#!/bin/bash\n' + BuilderUtils.LICENSE +
         f'# Calls the Cloud Run pipeline Runner service to submit\n'
         f'# a PipelineJob to Vertex AI. This script should run from\n'
         f'# the main directory. Change directory in case this is not the script root.\n'
@@ -425,7 +425,7 @@ def create_resources_scripts(run_local: bool):
     newline = '\n'
     # pylint: disable=anomalous-backslash-in-string
     create_resources_script = (
-        f'#!/bin/bash\n' + BuilderUtils.LICENSE +
+        '#!/bin/bash\n' + BuilderUtils.LICENSE +
         f'# This script will create an artifact registry and gs bucket if they do not already exist.\n'
         f'\n'
         f'''GREEN='\033[0;32m'\n'''
@@ -623,7 +623,7 @@ def create_resources_scripts(run_local: bool):
     BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, create_resources_script)
     if defaults['gcp']['cloud_schedule_pattern'] != 'No Schedule Specified':
         create_schedule_script = (
-            f'#!/bin/bash\n' + BuilderUtils.LICENSE +
+            '#!/bin/bash\n' + BuilderUtils.LICENSE +
             f'# Creates a pipeline schedule.\n'
             f'# This script should run from the {TOP_LVL_NAME} directory\n'
             f'# Change directory in case this is not the script root.\n'
