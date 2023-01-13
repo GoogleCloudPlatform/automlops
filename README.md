@@ -9,8 +9,8 @@ In order to use AutoMLOps, the following are required:
 - Jupyter (or Jupyter-compatible) notebook environment
 - [Notebooks API](https://pantheon.corp.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
 - Python 3.0 - 3.10
-- Google Cloud SDK 407.0.0
-- beta 2022.10.21
+- [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
+- [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
 - `git` installed
 - `git` logged-in:
 ```
@@ -53,7 +53,21 @@ The tool will enable the following APIs:
 - storage.googleapis.com
 - sourcerepo.googleapis.com
 
-TODO(srastatter): list IAM updates
+The tool will update IAM priviledges for the following accounts:
+1. Pipeline Runner Service Account (one is created if it does exist, defaults to: vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com). Roles added:
+- roles/aiplatform.user
+- roles/artifactregistry.reader
+- roles/bigquery.user
+- roles/bigquery.dataEditor
+- roles/iam.serviceAccountUser
+- roles/storage.admin
+- roles/run.admin
+2. Cloudbuild Default Service Account (PROJECT_NUMBER@cloudbuild.gserviceaccount.com). Roles added:
+- roles/run.admin
+- roles/iam.serviceAccountUser
+3. Executing Account (current gcloud account, can be viewed by running the command `gcloud config list account`). Roles added:
+- roles/iam.serviceAccountTokenCreator
+- roles/iam.serviceAccountUser
 
 # User Guide
 
@@ -76,19 +90,24 @@ Required parameters:
 Optional parameters (defaults shown):
 1. `af_registry_location: str = 'us-central1'`
 2. `af_registry_name: str = 'vertex-mlops-af'`
-3. `gs_bucket_location: str = 'us-central1'`
-4. `gs_bucket_name: str = None`
-5. `csr_name: str = 'AutoMLOps-repo'`
-6. `schedule_pattern: str = 'No Schedule Specified'` # must be cron formatted
-7. `schedule_location: str = 'us-central1'`
-8. `parameter_values_path: str = 'pipelines/runtime_parameters/pipeline_parameter_values.json'`
-9. `pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json'`
-10. `pipeline_runner_sa: str = None`
-11. `use_kfp_spec: bool = False` # see above
-12. `run_local: bool = True` # see above
-13. `cloud_run_location = 'us-central1'`
+3. `cb_trigger_location: str = 'us-central1'`
+4. `cb_trigger_name: str = 'automlops-trigger'`
+5. `cloud_run_location: str = 'us-central1'`
+6. `cloud_run_name: str = 'run-pipeline'`
+7. `csr_branch_name: str = 'automlops'`
+8. `csr_name: str = 'AutoMLOps-repo'`
+9. `gs_bucket_location: str = 'us-central1'`
+10. `gs_bucket_name: str = None`
+11. `parameter_values_path: str = 'pipelines/runtime_parameters/pipeline_parameter_values.json'`
+12. `pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json'`
+13. `pipeline_runner_sa: str = None`
+14. `run_local: bool = True`
+15. `schedule_location: str = ' us-central1'`
+16. `schedule_name: str = 'AutoMLOps-schedule'`
+17. `schedule_pattern: str = 'No Schedule Specified'`
+18. `use_kfp_spec: bool = False`
 
-The tool will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the tool will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule` then it will set up a Cloud Schedule to run accordingly. 
+The tool will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the tool will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. 
 
 # Layout
 
@@ -147,6 +166,8 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
 
 # Contributors
 
-[srastatter@](https://moma.corp.google.com/person/srastatter@google.com): Technical Lead
+[Sean Rastatter](mailto:srastatter@google.com): Technical Lead
 
-[tonydiloreto@](https://moma.corp.google.com/person/tonydiloreto@google.com): Project Manager
+[Tony Diloreto](mailto:tonydiloreto@google.com): Project Manager
+
+[Allegra Noto](mailto:allegranoto@google.com): Engineer
