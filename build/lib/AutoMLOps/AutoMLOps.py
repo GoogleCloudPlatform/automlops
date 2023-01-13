@@ -194,16 +194,16 @@ def resources_generation_manifest(defaults: dict, run_local: bool):
         defaults: Dictionary containing resource names.
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
-    print('#################################################################'
-          '#                                                               #'
-          '#                       RESOURCES MANIFEST                      #'
-          '#---------------------------------------------------------------#'
-          '#     Generated resources can be found at the following urls    #'
-          '#                                                               #'
-          '#################################################################')
+    print('#################################################################\n'
+          '#                                                               #\n'
+          '#                       RESOURCES MANIFEST                      #\n'
+          '#---------------------------------------------------------------#\n'
+          '#     Generated resources can be found at the following urls    #\n'
+          '#                                                               #\n'
+          '#################################################################\n')
     print(f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
     print(f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
-    print('Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts')
+    print(f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
     print('APIs: https://console.cloud.google.com/apis')
     print(f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['cloud_source_repository']}''')
     print('Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds')

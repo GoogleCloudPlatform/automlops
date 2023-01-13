@@ -141,7 +141,6 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory
 - Adding model monitoring part
-- Provide resource links (e.g. pipelineJobs, cloud scheduler jobs, etc) as outputs in the Jupyter Notebook
 - Look into alternatives to Pipreqs
 
 # Contributors
