@@ -9,6 +9,8 @@ In order to use AutoMLOps, the following are required:
 - Jupyter (or Jupyter-compatible) notebook environment
 - [Notebooks API](https://pantheon.corp.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
 - Python 3.0 - 3.10
+- Google Cloud SDK 407.0.0
+- beta 2022.10.21
 - `git` installed
 - `git` logged-in:
 ```
@@ -77,7 +79,7 @@ Optional parameters (defaults shown):
 3. `gs_bucket_location: str = 'us-central1'`
 4. `gs_bucket_name: str = None`
 5. `csr_name: str = 'AutoMLOps-repo'`
-6. `schedule: str = 'No Schedule Specified'` # must be cron formatted
+6. `schedule_pattern: str = 'No Schedule Specified'` # must be cron formatted
 7. `schedule_location: str = 'us-central1'`
 8. `parameter_values_path: str = 'pipelines/runtime_parameters/pipeline_parameter_values.json'`
 9. `pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json'`
@@ -137,7 +139,7 @@ If `run_local=False`, the tool will generate and use a fully featured CI/CD envi
 # Next Steps / Backlog
 - Verify delivery mechanism (setup.py with wheel)
 - Improve documentation
-- Add unit tests to code
+- Add unit tests
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory
 - Adding model monitoring part

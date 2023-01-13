@@ -201,16 +201,16 @@ def execute_script(filename: str, to_null: bool):
     except subprocess.CalledProcessError as err:
         raise Exception(f'Error executing script. {err}') from err
 
-def validate_schedule(schedule: str, run_local: str):
+def validate_schedule(schedule_pattern: str, run_local: str):
     """Validates that the inputted schedule parameter.
 
     Args:
-        schedule: Cron formatted value used to create a Scheduled retrain job.
+        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     Raises:
         Exception: If schedule is not cron formatted or run_local validation fails.
     """
-    if schedule != 'No Schedule Specified' and run_local:
+    if schedule_pattern != 'No Schedule Specified' and run_local:
         raise Exception('run_local must be set to False to use Cloud Scheduler.')
 
 def validate_name(name: str):
