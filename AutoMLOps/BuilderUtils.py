@@ -164,7 +164,7 @@ def get_components_list(full_path: bool = True) -> list:
     """
     components_list = []
     elements = os.listdir(TMPFILES_DIR)
-    for file in list(filter(lambda y: ('.yaml' or 'yml') in y, elements)):
+    for file in list(filter(lambda y: ('.yaml' or '.yml') in y, elements)):
         path = os.path.join(TMPFILES_DIR, file)
         if is_component_config(path):
             if full_path:

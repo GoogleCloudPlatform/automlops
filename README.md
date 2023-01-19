@@ -111,7 +111,7 @@ AutoMLOps will generate the resources specified by these parameters (e.g. Artifa
 
 # Layout
 
-Included in the repository is an [example notebook](./example/coloring_book.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Included in the repository is an [example notebook](./example/coloring_book.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='automlops-sandbox',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .
@@ -134,6 +134,8 @@ Included in the repository is an [example notebook](./example/coloring_book.ipyn
     ├── build_components.sh                        : Submits a Cloud Build job that builds and deploys the components.
     ├── build_pipeline_spec.sh                     : Builds the pipeline specs
     ├── create_resources.sh                        : Creates an artifact registry and gs bucket if they do not already exist.
+    ├── create_scheduler.sh                        : Creates a cloud scheduler resources to submit a PipelineJob.
+    ├── submit_to_runner_svc.sh                    : Sends a json file to the Cloud runner service to submit a PipelineJob.
     ├── run_pipeline.sh                            : Submit the PipelineJob to Vertex AI.
     ├── run_all.sh                                 : Builds components, pipeline specs, and submits the PipelineJob.
 └── cloudbuild.yaml                                : Cloudbuild configuration file for building custom components.
