@@ -1,6 +1,7 @@
 .imports.py
 .tmpfiles/
 .DS_Store
+.pylintrc
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,13 +1,13 @@
 # AutoMLOps
 
-AutoMLOps is a tool that generates a production ready MLOps pipeline from Jupyter Notebooks, bridging the gap between Data Science and DevOps and accelerating the adoption and use of Vertex AI. The tool generates an MLOps codebase for users to customize, and provides a way to build and manage a CI/CD integrated MLOps pipeline from the notebook. The tool automatically builds a source repo for versioning, cloudbuild configs and triggers, an artifact registry for storing custom components, gs buckets, service accounts and updated IAM privs for running pipelines, enables APIs (cloud Run, Cloud Build, Artifact Registry, etc.), creates a runner service API in Cloud Run for submitting PipelineJobs to Vertex AI, and a Cloud Scheduler job for submitting PipelineJobs on a recurring basis. These automatic integrations empower data scientists to take their experiments to production more quickly, allowing them to focus on what they do best: providing actionable insights through data.
+AutoMLOps is a service that generates a production ready MLOps pipeline from Jupyter Notebooks, bridging the gap between Data Science and DevOps and accelerating the adoption and use of Vertex AI. The service generates an MLOps codebase for users to customize, and provides a way to build and manage a CI/CD integrated MLOps pipeline from the notebook. AutoMLOps automatically builds a source repo for versioning, cloudbuild configs and triggers, an artifact registry for storing custom components, gs buckets, service accounts and updated IAM privs for running pipelines, enables APIs (cloud Run, Cloud Build, Artifact Registry, etc.), creates a runner service API in Cloud Run for submitting PipelineJobs to Vertex AI, and a Cloud Scheduler job for submitting PipelineJobs on a recurring basis. These automatic integrations empower data scientists to take their experiments to production more quickly, allowing them to focus on what they do best: providing actionable insights through data.
 
 # Prerequisites
 
 In order to use AutoMLOps, the following are required:
 
 - Jupyter (or Jupyter-compatible) notebook environment
-- [Notebooks API](https://pantheon.corp.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
+- [Notebooks API](https://console.cloud.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
 - Python 3.0 - 3.10
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
 - [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
@@ -39,7 +39,7 @@ Clone the repo and install either via setup.py or wheel (wheel requires less pro
 - `yarg==0.1.9`
 
 # APIs & IAM
-The tool will enable the following APIs:
+AutoMLOps will enable the following APIs:
 - cloudresourcemanager.googleapis.com
 - aiplatform.googleapis.com
 - artifactregistry.googleapis.com
@@ -53,7 +53,7 @@ The tool will enable the following APIs:
 - storage.googleapis.com
 - sourcerepo.googleapis.com
 
-The tool will update IAM priviledges for the following accounts:
+AutoMLOps will update IAM priviledges for the following accounts:
 1. Pipeline Runner Service Account (one is created if it does exist, defaults to: vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com). Roles added:
 - roles/aiplatform.user
 - roles/artifactregistry.reader
@@ -75,7 +75,7 @@ For a user-guide, please view these [slides](https://docs.google.com/presentatio
 
 # Options
 
-The tool current supports 4 different configurations based on the following flags:
+AutoMLOps currently supports 4 different configurations based on the following flags:
 1. `use_kfp_spec`: (Optional) Bool that specifies whether to use Kubeflow definitions or Python custom definitions. Defaults to False. See [user guide](https://docs.google.com/presentation/d/1suAfces32N098MOzme4LA084P3vA3iJ6hMmQfn1-7Wo/edit?usp=sharing).
 - if True:
     - The pipeline uses Kubeflow objects and syntax, and will generate all the necessary files in the backend to compile and run the pipeline.
@@ -102,16 +102,16 @@ Optional parameters (defaults shown):
 12. `pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json'`
 13. `pipeline_runner_sa: str = None`
 14. `run_local: bool = True`
-15. `schedule_location: str = ' us-central1'`
+15. `schedule_location: str = 'us-central1'`
 16. `schedule_name: str = 'AutoMLOps-schedule'`
 17. `schedule_pattern: str = 'No Schedule Specified'`
 18. `use_kfp_spec: bool = False`
 
-The tool will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the tool will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. 
+AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. 
 
 # Layout
 
-Included in the repository is an [example notebook](./example/coloring_book.ipynb) that demonstrates the usage of the tool. Upon running `AutoMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Included in the repository is an [example notebook](./example/coloring_book.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='sandbox-srastatter',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .
@@ -139,7 +139,7 @@ Included in the repository is an [example notebook](./example/coloring_book.ipyn
 └── cloudbuild.yaml                                : Cloudbuild configuration file for building custom components.
 ```
 
-This tool makes use of the following products by default:
+AutoMLOps makes use of the following products by default:
 - Vertex AI Pipelines
 - Artifact Registry
 - Google Cloud Storage
@@ -149,7 +149,7 @@ This tool makes use of the following products by default:
 - Cloud Scheduler
 
 # Cloud Continuous Integration and Continuous Deployment Workflow
-If `run_local=False`, the tool will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
+If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
 
 <p align="center">
     <img src="./CICD.png" alt="CICD" width="800"/>
