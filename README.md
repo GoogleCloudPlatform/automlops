@@ -111,7 +111,7 @@ AutoMLOps will generate the resources specified by these parameters (e.g. Artifa
 
 # Layout
 
-Included in the repository is an [example notebook](./example/coloring_book.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='automlops-sandbox',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Included in the repository is an [example notebook](./example/automlops_example_notebook.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='automlops-sandbox',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .
