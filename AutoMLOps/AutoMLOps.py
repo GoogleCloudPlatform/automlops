@@ -171,24 +171,16 @@ def run(run_local: bool):
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
     cb_trigger_location = defaults['gcp']['cb_trigger_location']
     csr_name = defaults['gcp']['cloud_source_repository']
-    csr_branch_name = defaults['gcp']['cloud_source_repository_branch']
-    BuilderUtils.execute_script(RESOURCES_SH_FILE, to_null=False)
-    move_files(csr_name)
+    BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
 
     if run_local:
         os.chdir(TOP_LVL_NAME)
-        BuilderUtils.execute_script('scripts/run_all.sh', to_null=False)
+        BuilderUtils.execute_process('./scripts/run_all.sh', to_null=False)
         os.chdir('../')
     else:
         try:
-            # Push the code to csr
-            subprocess.run(['git', 'add', '.'], check=True)
-            subprocess.run(['git', 'commit', '-m', 'Run AutoMLOps'], check=True)
-            subprocess.run(['git', 'push', 'origin', csr_branch_name, '--force'], check=True)
-            print(f'Pushing code to {csr_branch_name} branch, triggering cloudbuild...')
-            time.sleep(30)
+            push_to_csr()
             print('Waiting for cloudbuild job to complete...', end='')
-
             cmd = f'''gcloud builds list --region={cb_trigger_location} | grep {csr_name} | grep WORKING || true'''
             while subprocess.check_output([cmd], shell=True, stderr=subprocess.STDOUT):
                 print('..', end='', flush=True)
@@ -197,11 +189,11 @@ def run(run_local: bool):
 
             print('Submitting PipelineJob...')
             os.chdir(TOP_LVL_NAME)
-            BuilderUtils.execute_script('./scripts/submit_to_runner_svc.sh', to_null=False)
+            BuilderUtils.execute_process('./scripts/submit_to_runner_svc.sh', to_null=False)
 
             if defaults['gcp']['cloud_schedule_pattern'] != 'No Schedule Specified':
                 print('Creating Cloud Scheduler Job')
-                BuilderUtils.execute_script('scripts/create_scheduler.sh', to_null=False)
+                BuilderUtils.execute_process('./scripts/create_scheduler.sh', to_null=False)
 
             os.chdir('../')
         except Exception as err:
@@ -247,26 +239,27 @@ def copy_pipeline():
         raise Exception(f'Pipeline file not found. '
                         f'Rerun pipeline cell. {err}') from err
 
-def move_files(csr_name: str):
-    """Move git repo over to AutoMLOps folder.
-
-    Args:
-        csr_name: The name of the cloud source repo to use.
+def push_to_csr():
+    """Initializes a git repo if one doesn't already exist,
+       then pushes to the specified branch and triggers the cloudbuild job.
     """
-    try:
-        subprocess.run(['mv', f'{csr_name}/.git', '.'], check=True,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError:
-        pass # git repo already exists
-    try:
-        subprocess.run(['rm', '-rf', f'{csr_name}'], check=True)
-    except subprocess.CalledProcessError as err:
-        raise Exception(f'Error deleting file. {err}') from err
-    try:
-        subprocess.run(['touch', f'{TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep'], check=True) # needed to keep dir here
-    except subprocess.CalledProcessError as err:
-        raise Exception(f'Error touching file. {err}') from err
+    defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
+    if not os.path.exists('.git'):
+        BuilderUtils.execute_process('git init', to_null=False)
+        BuilderUtils.execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+        BuilderUtils.execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
+        BuilderUtils.execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
+        # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
+        BuilderUtils.execute_process(f'git add {TOP_LVL_NAME}', to_null=False)
+        BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
+        BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+
+    BuilderUtils.execute_process(f'touch {TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
+    BuilderUtils.execute_process('git add .', to_null=False)
+    BuilderUtils.execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
+    BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+    print(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
+    time.sleep(30)
 
 def create_default_config(af_registry_location: str,
                           af_registry_name: str,
@@ -571,28 +564,10 @@ def create_resources_scripts(run_local: bool):
         f'\n'
         f'  echo "Creating Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud source repos create $CLOUD_SOURCE_REPO\n'
-        f'  gcloud source repos clone $CLOUD_SOURCE_REPO --project=$PROJECT_ID\n'
-        f'  git -C $CLOUD_SOURCE_REPO checkout -B $CLOUD_SOURCE_REPO_BRANCH\n'
-        f'  touch $CLOUD_SOURCE_REPO/.gitkeep\n'
-        f'  git -C $CLOUD_SOURCE_REPO add .\n'
-        f'  git -C $CLOUD_SOURCE_REPO commit -m "init"\n'
-        f'  git -C $CLOUD_SOURCE_REPO push -u origin $CLOUD_SOURCE_REPO_BRANCH\n'
         f'\n'
         f'else\n'
         f'\n'
         f'  echo "Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket} already exists in project $PROJECT_ID"\n'
-        f'\n'
-        f'fi\n'
-        f'\n'
-        f'if ! (ls -a | grep $CLOUD_SOURCE_REPO); then\n'
-        f'\n'
-        f'  echo "Cloning Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
-        f'  gcloud source repos clone $CLOUD_SOURCE_REPO --project=$PROJECT_ID\n'
-        f'  git -C $CLOUD_SOURCE_REPO checkout -B $CLOUD_SOURCE_REPO_BRANCH\n'
-        f'\n'
-        f'else\n'
-        f'\n'
-        f'  echo "Directory path specified exists and is not empty"\n'
         f'\n'
         f'fi\n')
     if not run_local:

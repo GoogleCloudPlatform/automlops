@@ -185,22 +185,22 @@ def is_component_config(filepath: str) -> bool:
     file_dict = read_yaml_file(filepath)
     return all(key in file_dict.keys() for key in required_keys)
 
-def execute_script(filename: str, to_null: bool):
-    """Executes an external script.
+def execute_process(command: str, to_null: bool):
+    """Executes an external shell process.
 
     Args:
-        filename: The name of the script to execute.
+        command: The string of the command to execute.
         to_null: Determines where to send output.
     Raises:
         Exception: If an error occurs in executing the script.
     """
     stdout = subprocess.DEVNULL if to_null else None
     try:
-        subprocess.run([f'./{filename}'], shell=True, check=True,
+        subprocess.run([command], shell=True, check=True,
             stdout=stdout,
             stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
-        raise Exception(f'Error executing script. {err}') from err
+        raise Exception(f'Error executing process. {err}') from err
 
 def validate_schedule(schedule_pattern: str, run_local: str):
     """Validates that the inputted schedule parameter.
