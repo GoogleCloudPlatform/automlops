@@ -40,21 +40,21 @@ Clone the repo and install either via setup.py or wheel (wheel requires less pro
 
 # APIs & IAM
 AutoMLOps will enable the following APIs:
-- cloudresourcemanager.googleapis.com
-- aiplatform.googleapis.com
-- artifactregistry.googleapis.com
-- cloudbuild.googleapis.com
-- cloudscheduler.googleapis.com
-- compute.googleapis.com
-- iam.googleapis.com
-- iamcredentials.googleapis.com
-- ml.googleapis.com
-- run.googleapis.com
-- storage.googleapis.com
-- sourcerepo.googleapis.com
+- [cloudresourcemanager.googleapis.com](https://cloud.google.com/resource-manager/reference/rest)
+- [aiplatform.googleapis.com](https://cloud.google.com/vertex-ai/docs/reference/rest)
+- [artifactregistry.googleapis.com](https://cloud.google.com/artifact-registry/docs/reference/rest)
+- [cloudbuild.googleapis.com](https://cloud.google.com/build/docs/api/reference/rest)
+- [cloudscheduler.googleapis.com](https://cloud.google.com/scheduler/docs/reference/rest)
+- [compute.googleapis.com](https://cloud.google.com/compute/docs/reference/rest/v1)
+- [iam.googleapis.com](https://cloud.google.com/iam/docs/reference/rest)
+- [iamcredentials.googleapis.com](https://cloud.google.com/iam/docs/reference/credentials/rest)
+- [ml.googleapis.com](https://cloud.google.com/ai-platform/training/docs/reference/rest)
+- [run.googleapis.com](https://cloud.google.com/run/docs/reference/rest)
+- [storage.googleapis.com](https://cloud.google.com/storage/docs/apis)
+- [sourcerepo.googleapis.com](https://cloud.google.com/source-repositories/docs/reference/rest)
 
-AutoMLOps will update IAM priviledges for the following accounts:
-1. Pipeline Runner Service Account (one is created if it does exist, defaults to: vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com). Roles added:
+AutoMLOps will update [IAM privileges](https://cloud.google.com/iam/docs/understanding-roles) for the following accounts:
+1. Pipeline Runner Service Account (one is created if it does exist, defaults to: vertex-pipelines@PROJECT_ID.iam.gserviceaccount.com). Roles added:
 - roles/aiplatform.user
 - roles/artifactregistry.reader
 - roles/bigquery.user
@@ -71,16 +71,16 @@ AutoMLOps will update IAM priviledges for the following accounts:
 
 # User Guide
 
-For a user-guide, please view these [slides](https://docs.google.com/presentation/d/1suAfces32N098MOzme4LA084P3vA3iJ6hMmQfn1-7Wo/edit?usp=sharing).
+For a user-guide, please view these [slides](./AutoMLOps_Implementation_Guide_External.pdf).
 
 # Options
 
 AutoMLOps currently supports 4 different configurations based on the following flags:
-1. `use_kfp_spec`: (Optional) Bool that specifies whether to use Kubeflow definitions or Python custom definitions. Defaults to False. See [user guide](https://docs.google.com/presentation/d/1suAfces32N098MOzme4LA084P3vA3iJ6hMmQfn1-7Wo/edit?usp=sharing).
-- if True:
-    - The pipeline uses Kubeflow objects and syntax, and will generate all the necessary files in the backend to compile and run the pipeline.
-- if False:
-    - The pipeline uses a custom defined syntax (through a series of python dictionaries and lists) that effectively removes the need to know Kubeflow syntax to compile and run the pipeline. 
+1. `use_kfp_spec`: (Optional) Bool that specifies whether to use Kubeflow definitions or Python custom definitions. Defaults to False. See [user guide](./AutoMLOps_Implementation_Guide_External.pdf).
+    - if True:
+        - The pipeline uses Kubeflow objects and syntax, and will generate all the necessary files in the backend to compile and run the pipeline.
+    - if False:
+        - The pipeline uses a custom defined syntax (through a series of python dictionaries and lists) that effectively removes the need to know Kubeflow syntax to compile and run the pipeline. 
 2. `run_local`: (Optional) Bool that specifies whether to use generate files resources locally or use cloud CI/CD workflow (see below). Defaults to True. See [CI/CD Workflow](#cloud-continuous-integration-and-continuous-deployment-workflow)
 
 Required parameters:
@@ -142,13 +142,13 @@ Included in the repository is an [example notebook](./example/coloring_book.ipyn
 ```
 
 AutoMLOps makes use of the following products by default:
-- Vertex AI Pipelines
-- Artifact Registry
-- Google Cloud Storage
-- Cloud Build
-- Cloud Build Triggers
-- Cloud Run
-- Cloud Scheduler
+- [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+- [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview)
+- [Google Cloud Storage](https://cloud.google.com/storage/docs/introduction)
+- [Cloud Build](https://cloud.google.com/build/docs/overview)
+- [Cloud Build Triggers](https://cloud.google.com/build/docs/triggers)
+- [Cloud Run](https://cloud.google.com/run/docs/overview/what-is-cloud-run)
+- [Cloud Scheduler](https://cloud.google.com/scheduler/docs/overview)
 
 # Cloud Continuous Integration and Continuous Deployment Workflow
 If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
@@ -158,13 +158,12 @@ If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD env
 </p>
 
 # Next Steps / Backlog
-- Verify delivery mechanism (setup.py with wheel)
-- Improve documentation
-- Add unit tests
+- PyPI
+- Refine unit tests
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory
 - Adding model monitoring part
-- Look into alternatives to Pipreqs
+- Alternatives to Pipreqs
 
 # Contributors
 
@@ -173,3 +172,21 @@ If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD env
 [Tony Diloreto](mailto:tonydiloreto@google.com): Project Manager
 
 [Allegra Noto](mailto:allegranoto@google.com): Engineer
+
+# Disclaimer
+
+**This is not an officially supported Google product.**
+
+Copyright 2023 Google LLC. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
