@@ -169,7 +169,7 @@ If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD env
 
 [Sean Rastatter](mailto:srastatter@google.com): Technical Lead
 
-[Tony Diloreto](mailto:tonydiloreto@google.com): Project Manager
+[Tony DiLoreto](mailto:tonydiloreto@google.com): Project Manager
 
 [Allegra Noto](mailto:allegranoto@google.com): Engineer
 
