@@ -1,4 +1,4 @@
-import pytest, pathlib
+import pytest, pathlib, os
 from . import BuilderUtils
 
 @pytest.fixture
@@ -44,20 +44,30 @@ def test_read_yaml_file(write_yaml):
                 }
             ]})
         
+    # Add test for an error reading a yaml file
+            
 def test_write_yaml_file():
+    # Can we write a yaml file and then read it back in to confirm it matches expected?
+    # I.e. can we assume that tests that were run earlier in the file are correct and use them?
     assert True
 
 def test_read_file():
     assert True
     
 def test_write_file():
+    # What modes should be tested
     assert True
     
 def test_write_and_chmod():
     assert True
     
-def test_delete_file():
-    assert True
+def test_delete_file(tmpdir):
+    
+    f = open(f"{tmpdir}/myfile.txt", "x")
+    
+    BuilderUtils.delete_file(f"{tmpdir}/myfile.txt")
+    
+    assert not os.path.exists(f"{tmpdir}/myfile.txt")
     
 def test_get_components_list():
     assert True
