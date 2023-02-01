@@ -1,10 +1,35 @@
 from . import PipelineBuilder, BuilderUtils
+import pytest
 
 def test_formalize():
     assert True
     
-def test_get_pipeline_imports():
-    assert True
+def test_get_pipeline_imports(mocker):
+    mocker.patch('AutoMLOps.BuilderUtils.get_components_list',
+                 return_value=['my_path1.yml', 'my_path2.yml', 'my_path3.yml'])
+    
+    expected = (
+        f'''import os\n'''
+        f'''import argparse\n'''
+        f'''import yaml\n'''
+        f'''import kfp\n'''
+        f'''from kfp.v2 import compiler, dsl\n'''
+        f'''from kfp.v2.dsl import pipeline, component, Artifact, Dataset, Input, Metrics, Model, Output, InputPath, OutputPath\n'''
+        f'''from kfp.v2.compiler import compiler\n'''
+        f'\n'
+        f'''def load_custom_component(component_name: str):\n'''
+        f'''    component_path = os.path.join('components',\n'''
+        f'''                                component_name,\n'''
+        f'''                              'component.yaml')\n'''
+        f'''    return kfp.components.load_component_from_file(component_path)\n'''
+        f'\n'
+        f'''def create_training_pipeline(pipeline_job_spec_path: str):\n'''
+        f'''    my_path1.yml = load_custom_component(component_name=\'my_path1.yml\')\n'''
+        f'''    my_path2.yml = load_custom_component(component_name=\'my_path2.yml\')\n'''
+        f'''    my_path3.yml = load_custom_component(component_name=\'my_path3.yml\')'''
+        f'\n')
+    
+    assert expected == PipelineBuilder.get_pipeline_imports()
     
 def test_get_pipeline_argparse():
     

@@ -1,21 +1,74 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+from . import AutoMLOps
 
-"""Placeholder - tests"""
+##################################################################################################################################
+# AutoMLOps Testing
+##################################################################################################################################
 
-# pylint: disable=C0103
+###############
+# Generate
+###############
+
+# Given project_id = "my-proj", bucket = my-proj-bucket
+
+# Given gs_bucket_name = "my-bucket", bucket = "my-bucket"
+
+# Given project_id "my-proj", pipeline runner sa = "vertex-pipelines@my-proj.iam.gserviceaccount.com"
+
+# Given pipeline runna sa = "my-runner@my-proj.iam.gserviceaccount.com", pipeline runner = same
+
+# Confirm directories were created as expected, no more no less
+
+# Confirm config file was created, some tests of input vs output
+
+# Confirm scripts were created, tests of input vs output
+
+# Confirm cloudbuild config was created, some tests of input vs output
+
+# Confirm pipeline was copied, that the two are equal
 
 def test_go():
-    """Placeholder"""
     assert True
+    
+def test_generate():
+    assert True
+
+def test_run():
+    assert True
+    
+def test_resources_generation_manifest():
+    assert True
+    
+def test_copy_pipeline():
+    assert True
+    
+def test_push_to_csr():
+    assert True
+
+def test_create_default_config():
+    assert True
+    
+def test_create_scripts():
+    assert True
+     
+def test_create_resources_scripts():
+    assert True
+    
+def test_create_cloudbuild_config():
+    assert True
+    
+def test_autoflake_srcfiles():
+    assert True
+    
+def test_create_requirements():
+    assert True
+    
+def test_create_dockerfile():
+    assert True
+    
+def test_makeComponent():
+    assert True
+
+def test_makePipeline():
+    assert True
+
+

@@ -51,4 +51,15 @@ def test_get_func_definition():
     
     
 def test_filter_and_indent_cell():
-    assert True
+    
+    code_cell = (
+        'AutoMLOps.makeComponent('
+        '   def my_func():'
+        '       #test'
+    )
+    
+    for line in code_cell.splitlines():
+        print(line)
+    
+    assert code_cell == True
+    
