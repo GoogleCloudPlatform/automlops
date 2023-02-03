@@ -45,6 +45,7 @@ AutoMLOps will enable the following APIs:
 - [artifactregistry.googleapis.com](https://cloud.google.com/artifact-registry/docs/reference/rest)
 - [cloudbuild.googleapis.com](https://cloud.google.com/build/docs/api/reference/rest)
 - [cloudscheduler.googleapis.com](https://cloud.google.com/scheduler/docs/reference/rest)
+- [cloudtasks.googleapis.com](https://cloud.google.com/tasks/docs/reference/rest)
 - [compute.googleapis.com](https://cloud.google.com/compute/docs/reference/rest/v1)
 - [iam.googleapis.com](https://cloud.google.com/iam/docs/reference/rest)
 - [iamcredentials.googleapis.com](https://cloud.google.com/iam/docs/reference/credentials/rest)
@@ -65,9 +66,8 @@ AutoMLOps will update [IAM privileges](https://cloud.google.com/iam/docs/underst
 2. Cloudbuild Default Service Account (PROJECT_NUMBER@cloudbuild.gserviceaccount.com). Roles added:
 - roles/run.admin
 - roles/iam.serviceAccountUser
-3. Executing Account (current gcloud account, can be viewed by running the command `gcloud config list account`). Roles added:
-- roles/iam.serviceAccountTokenCreator
-- roles/iam.serviceAccountUser
+- roles/cloudtasks.enqueuer
+- roles/cloudscheduler.admin
 
 # User Guide
 
@@ -94,18 +94,19 @@ Optional parameters (defaults shown):
 4. `cb_trigger_name: str = 'automlops-trigger'`
 5. `cloud_run_location: str = 'us-central1'`
 6. `cloud_run_name: str = 'run-pipeline'`
-7. `csr_branch_name: str = 'automlops'`
-8. `csr_name: str = 'AutoMLOps-repo'`
-9. `gs_bucket_location: str = 'us-central1'`
-10. `gs_bucket_name: str = None`
-11. `parameter_values_path: str = 'pipelines/runtime_parameters/pipeline_parameter_values.json'`
-12. `pipeline_job_spec_path: str = 'scripts/pipeline_spec/pipeline_job.json'`
+7. `cloud_tasks_queue_location: str = 'us-central1'`
+8. `cloud_tasks_queue_name: str = 'queueing-svc'`
+9. `csr_branch_name: str = 'automlops'`
+10. `csr_name: str = 'AutoMLOps-repo'`
+11. `gs_bucket_location: str = 'us-central1'`
+12. `gs_bucket_name: str = None`
 13. `pipeline_runner_sa: str = None`
 14. `run_local: bool = True`
 15. `schedule_location: str = 'us-central1'`
 16. `schedule_name: str = 'AutoMLOps-schedule'`
 17. `schedule_pattern: str = 'No Schedule Specified'`
 18. `use_kfp_spec: bool = False`
+19. `vpc_connector: str = None`
 
 AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. 
 
@@ -117,6 +118,7 @@ Included in the repository is an [example notebook](./example/automlops_example_
 .
 ├── cloud_run                                      : Cloud Runner service for submitting PipelineJobs.
     ├──run_pipeline                                : Contains main.py file, Dockerfile and requirements.txt
+    ├──queueing_svc                                : Contains files for scheduling and queueing jobs to runner service
 ├── components                                     : Custom vertex pipeline components.
     ├──component_base                              : Contains all the python files, Dockerfile and requirements.txt
     ├──create_dataset                              : Pull data from a BQ table and writes it as a csv to GS.
@@ -134,8 +136,6 @@ Included in the repository is an [example notebook](./example/automlops_example_
     ├── build_components.sh                        : Submits a Cloud Build job that builds and deploys the components.
     ├── build_pipeline_spec.sh                     : Builds the pipeline specs
     ├── create_resources.sh                        : Creates an artifact registry and gs bucket if they do not already exist.
-    ├── create_scheduler.sh                        : Creates a cloud scheduler resources to submit a PipelineJob.
-    ├── submit_to_runner_svc.sh                    : Sends a json file to the Cloud runner service to submit a PipelineJob.
     ├── run_pipeline.sh                            : Submit the PipelineJob to Vertex AI.
     ├── run_all.sh                                 : Builds components, pipeline specs, and submits the PipelineJob.
 └── cloudbuild.yaml                                : Cloudbuild configuration file for building custom components.
@@ -149,12 +149,13 @@ AutoMLOps makes use of the following products by default:
 - [Cloud Build Triggers](https://cloud.google.com/build/docs/triggers)
 - [Cloud Run](https://cloud.google.com/run/docs/overview/what-is-cloud-run)
 - [Cloud Scheduler](https://cloud.google.com/scheduler/docs/overview)
+- [Cloud Tasks](https://cloud.google.com/tasks/docs)
 
 # Cloud Continuous Integration and Continuous Deployment Workflow
 If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
 
 <p align="center">
-    <img src="./CICD.png" alt="CICD" width="800"/>
+    <img src="./CICD.png" alt="CICD" width="1000"/>
 </p>
 
 # Next Steps / Backlog

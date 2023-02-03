@@ -1,8 +1,8 @@
 Metadata-Version: 2.1
 Name: AutoMLOps
-Version: 1.0.0
+Version: 1.0.1
 Summary: AutoMLOps is a service that generates a production-style         MLOps pipeline from Jupyter Notebooks.
-Home-page: https://source.cloud.google.com/sandbox-srastatter/1-ClickMLOps
+Home-page: https://github.com/GoogleCloudPlatform/automlops
 Author: Sean Rastatter
 Author-email: srastatter@google.com
 License: Apache-2.0

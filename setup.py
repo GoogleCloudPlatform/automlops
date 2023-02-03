@@ -15,10 +15,10 @@ from setuptools import setup
 
 setup(
     name='AutoMLOps',
-    version='1.0.0',
+    version='1.0.1',
     description='AutoMLOps is a service that generates a production-style \
         MLOps pipeline from Jupyter Notebooks.',
-    url='https://source.cloud.google.com/sandbox-srastatter/1-ClickMLOps',
+    url='https://github.com/GoogleCloudPlatform/automlops',
     author='Sean Rastatter',
     author_email='srastatter@google.com',
     license='Apache-2.0',
