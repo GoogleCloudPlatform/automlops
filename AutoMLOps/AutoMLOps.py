@@ -217,10 +217,13 @@ def push_to_csr():
             BuilderUtils.execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
             BuilderUtils.execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
             BuilderUtils.execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
-            # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
-            BuilderUtils.execute_process(f'git add {TOP_LVL_NAME}', to_null=False)
-            BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
-            BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+            has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+            if not has_remote_branch:
+                # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
+                BuilderUtils.execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
+                BuilderUtils.execute_process('git add .gitkeep', to_null=False)
+                BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
+                BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
 
         BuilderUtils.execute_process(f'touch {TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
         BuilderUtils.execute_process('git add .', to_null=False)
@@ -679,10 +682,7 @@ def autoflake_srcfiles():
     """Removes unused imports from the python srcfiles. By default,
        all imports listed in the imports cell will be written to
        each srcfile. Autoflake removes the ones not being used."""
-    try:
-        subprocess.run([f'python3 -m autoflake --in-place --remove-all-unused-imports {COMPONENT_BASE_SRC}/*.py'], shell=True, check=True)
-    except Exception as err:
-        raise Exception(f'Error executing autoflake. {err}') from err
+    BuilderUtils.execute_process(f'python3 -m autoflake --in-place --remove-all-unused-imports {COMPONENT_BASE_SRC}/*.py', to_null=False)
 
 def create_requirements(use_kfp_spec: bool):
     """Writes a requirements.txt to the component_base directory.
@@ -739,12 +739,7 @@ def create_requirements(use_kfp_spec: bool):
             'pyarrow\n'
             'gcsfs\n'
             'fsspec\n')
-        try:
-            subprocess.run([f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force'], shell=True, check=True,
-                stdout=None,
-                stderr=subprocess.STDOUT)
-        except Exception as err:
-            raise Exception(f'Error executing pipreqs. {err}') from err
+        BuilderUtils.execute_process(f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force', to_null=False)
         BuilderUtils.write_file(reqs_filename, gcp_reqs, 'a')
 
 def create_dockerfile():
