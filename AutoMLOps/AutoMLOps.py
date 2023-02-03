@@ -74,7 +74,7 @@ def go(project_id: str,
        schedule_name: str = 'AutoMLOps-schedule',
        schedule_pattern: str = 'No Schedule Specified',
        use_kfp_spec: bool = False,
-       vpc_connector: str = None):
+       vpc_connector: str = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts,
        then builds, compiles, and submits the PipelineJob.
 
