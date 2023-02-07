@@ -21,7 +21,7 @@ jobs:
         python-version: "3.10"
     - name: Check for licenses
       run: |
-        ./src/scripts/license_check.sh
+        ./license_check.sh
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
