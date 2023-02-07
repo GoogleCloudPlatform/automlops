@@ -18,13 +18,17 @@
 import os
 import re
 import subprocess
+import logging
 
-# need to update this sys pathing
-from . import BuilderUtils
-from . import ComponentBuilder
-from . import PipelineBuilder
-from . import CloudRunBuilder
-from . import JupyterUtilsMagic
+from AutoMLOps import BuilderUtils
+from AutoMLOps import ComponentBuilder
+from AutoMLOps import PipelineBuilder
+from AutoMLOps import CloudRunBuilder
+from AutoMLOps import JupyterUtilsMagic
+
+logger = logging.getLogger()
+log_level = os.environ.get('LOG_LEVEL', 'INFO')
+logger.setLevel(log_level)
 
 TOP_LVL_NAME = 'AutoMLOps/'
 DEFAULTS_FILE = TOP_LVL_NAME + 'configs/defaults.yaml'
@@ -139,15 +143,15 @@ def generate(project_id: str,
     default_bucket_name = f'{project_id}-bucket' if gs_bucket_name is None else gs_bucket_name
     default_pipeline_runner_sa = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com' if pipeline_runner_sa is None else pipeline_runner_sa
     BuilderUtils.make_dirs(DIRS)
-    create_default_config(af_registry_location, af_registry_name, cb_trigger_location,
-                          cb_trigger_name, cloud_run_location, cloud_run_name,
-                          cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
-                          csr_name, gs_bucket_location, default_bucket_name,
-                          default_pipeline_runner_sa, project_id, schedule_location,
-                          schedule_name, schedule_pattern, vpc_connector)
+    _create_default_config(af_registry_location, af_registry_name, cb_trigger_location,
+                           cb_trigger_name, cloud_run_location, cloud_run_name,
+                           cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
+                           csr_name, gs_bucket_location, default_bucket_name,
+                           default_pipeline_runner_sa, project_id, schedule_location,
+                           schedule_name, schedule_pattern, vpc_connector)
 
-    create_scripts(run_local)
-    create_cloudbuild_config(run_local)
+    _create_scripts(run_local)
+    _create_cloudbuild_config(run_local)
     # copy tmp pipeline file over to AutoMLOps dir
     BuilderUtils.execute_process(f'cp {BuilderUtils.PIPELINE_TMPFILE} {PIPELINE_FILE}', to_null=False)
     # Create components and pipelines
@@ -156,9 +160,9 @@ def generate(project_id: str,
         ComponentBuilder.formalize(path, TOP_LVL_NAME, DEFAULTS_FILE, use_kfp_spec)
     PipelineBuilder.formalize(pipeline_params, TOP_LVL_NAME)
     if not use_kfp_spec:
-        autoflake_srcfiles()
-    create_requirements(use_kfp_spec)
-    create_dockerfile()
+        _autoflake_srcfiles()
+    _create_requirements(use_kfp_spec)
+    _create_dockerfile()
     if not run_local:
         CloudRunBuilder.formalize(TOP_LVL_NAME, DEFAULTS_FILE)
 
@@ -174,17 +178,17 @@ def run(run_local: bool):
         BuilderUtils.execute_process('./scripts/run_all.sh', to_null=False)
         os.chdir('../')
     else:
-        push_to_csr()
-    resources_generation_manifest(run_local)
+        _push_to_csr()
+    _resources_generation_manifest(run_local)
 
-def resources_generation_manifest(run_local: bool):
-    """Prints urls of generated resources.
+def _resources_generation_manifest(run_local: bool):
+    """Logs urls of generated resources.
 
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
-    print('\n'
+    logging.info('\n'
           '#################################################################\n'
           '#                                                               #\n'
           '#                       RESOURCES MANIFEST                      #\n'
@@ -192,21 +196,22 @@ def resources_generation_manifest(run_local: bool):
           '#     Generated resources can be found at the following urls    #\n'
           '#                                                               #\n'
           '#################################################################\n')
-    print(f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
-    print(f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
-    print(f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
-    print('APIs: https://console.cloud.google.com/apis')
-    print(f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['cloud_source_repository']}/+/{defaults['gcp']['cloud_source_repository_branch']}:''')
-    print(f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
-    print('Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
+    # pylint: disable=logging-fstring-interpolation
+    logging.info(f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
+    logging.info(f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
+    logging.info(f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
+    logging.info('APIs: https://console.cloud.google.com/apis')
+    logging.info(f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['cloud_source_repository']}/+/{defaults['gcp']['cloud_source_repository_branch']}:''')
+    logging.info(f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
+    logging.info('Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
     if not run_local:
-        print(f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['cb_trigger_location']}''')
-        print(f'''Cloud Run Service: https://console.cloud.google.com/run/detail/{defaults['gcp']['cloud_run_location']}/{defaults['gcp']['cloud_run_name']}''')
-        print(f'''Cloud Tasks Queue: https://console.cloud.google.com/cloudtasks/queue/{defaults['gcp']['cloud_tasks_queue_location']}/{defaults['gcp']['cloud_tasks_queue_name']}/tasks''')
+        logging.info(f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['cb_trigger_location']}''')
+        logging.info(f'''Cloud Run Service: https://console.cloud.google.com/run/detail/{defaults['gcp']['cloud_run_location']}/{defaults['gcp']['cloud_run_name']}''')
+        logging.info(f'''Cloud Tasks Queue: https://console.cloud.google.com/cloudtasks/queue/{defaults['gcp']['cloud_tasks_queue_location']}/{defaults['gcp']['cloud_tasks_queue_name']}/tasks''')
     if defaults['gcp']['cloud_schedule_pattern'] != 'No Schedule Specified':
-        print('Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
+        logging.info('Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
 
-def push_to_csr():
+def _push_to_csr():
     """Initializes a git repo if one doesn't already exist,
        then pushes to the specified branch and triggers the cloudbuild job.
     """
@@ -229,29 +234,30 @@ def push_to_csr():
         BuilderUtils.execute_process('git add .', to_null=False)
         BuilderUtils.execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
         BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
-        print(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
-        print(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
+        # pylint: disable=logging-fstring-interpolation
+        logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
+        logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
     except Exception as err:
         raise Exception(f'Error pushing to repo. {err}') from err
 
-def create_default_config(af_registry_location: str,
-                          af_registry_name: str,
-                          cb_trigger_location: str,
-                          cb_trigger_name: str,
-                          cloud_run_location: str,
-                          cloud_run_name: str,
-                          cloud_tasks_queue_location: str,
-                          cloud_tasks_queue_name: str,
-                          csr_branch_name: str,
-                          csr_name: str,
-                          gs_bucket_location: str,
-                          gs_bucket_name: str,
-                          pipeline_runner_sa: str,
-                          project_id: str,
-                          schedule_location: str,
-                          schedule_name: str,
-                          schedule_pattern: str,
-                          vpc_connector: str):
+def _create_default_config(af_registry_location: str,
+                           af_registry_name: str,
+                           cb_trigger_location: str,
+                           cb_trigger_name: str,
+                           cloud_run_location: str,
+                           cloud_run_name: str,
+                           cloud_tasks_queue_location: str,
+                           cloud_tasks_queue_name: str,
+                           csr_branch_name: str,
+                           csr_name: str,
+                           gs_bucket_location: str,
+                           gs_bucket_name: str,
+                           pipeline_runner_sa: str,
+                           project_id: str,
+                           schedule_location: str,
+                           schedule_name: str,
+                           schedule_pattern: str,
+                           vpc_connector: str):
     """Writes default variables to defaults.yaml. This defaults
        file is used by subsequent functions and by the pipeline
        files themselves.
@@ -306,7 +312,7 @@ def create_default_config(af_registry_location: str,
         f'  pipeline_storage_path: gs://{gs_bucket_name}/pipeline_root\n')
     BuilderUtils.write_file(DEFAULTS_FILE, defaults, 'w+')
 
-def create_scripts(run_local: bool):
+def _create_scripts(run_local: bool):
     """Writes various shell scripts used for pipeline and component
        construction, as well as pipeline execution.
 
@@ -359,9 +365,9 @@ def create_scripts(run_local: bool):
     BuilderUtils.write_and_chmod(BUILD_COMPONENTS_SH_FILE, build_components)
     BuilderUtils.write_and_chmod(RUN_PIPELINE_SH_FILE, run_pipeline)
     BuilderUtils.write_and_chmod(RUN_ALL_SH_FILE, run_all)
-    create_resources_scripts(run_local)
+    _create_resources_scripts(run_local)
 
-def create_resources_scripts(run_local: bool):
+def _create_resources_scripts(run_local: bool):
     """Writes create_resources.sh and create_scheduler.sh, which creates a specified
        artifact registry and gs bucket if they do not already exist. Also creates
        a service account to run Vertex AI Pipelines. Requires a defaults.yaml
@@ -556,7 +562,7 @@ def create_resources_scripts(run_local: bool):
             f'fi\n')
     BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, create_resources_script)
 
-def create_cloudbuild_config(run_local: bool):
+def _create_cloudbuild_config(run_local: bool):
     """Writes a cloudbuild.yaml to the base directory.
        Requires a defaults.yaml config to pull config vars from.
 
@@ -678,13 +684,13 @@ def create_cloudbuild_config(run_local: bool):
             cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + cloudbuild_scheduler_config + custom_comp_image + cloudrun_image
     BuilderUtils.write_file(CLOUDBUILD_FILE, cb_file_contents, 'w+')
 
-def autoflake_srcfiles():
+def _autoflake_srcfiles():
     """Removes unused imports from the python srcfiles. By default,
        all imports listed in the imports cell will be written to
        each srcfile. Autoflake removes the ones not being used."""
     BuilderUtils.execute_process(f'python3 -m autoflake --in-place --remove-all-unused-imports {COMPONENT_BASE_SRC}/*.py', to_null=False)
 
-def create_requirements(use_kfp_spec: bool):
+def _create_requirements(use_kfp_spec: bool):
     """Writes a requirements.txt to the component_base directory.
        If not using kfp spec, infers pip requirements from the
        python srcfiles using pipreqs. Some default gcp packages
@@ -742,7 +748,7 @@ def create_requirements(use_kfp_spec: bool):
         BuilderUtils.execute_process(f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force', to_null=False)
         BuilderUtils.write_file(reqs_filename, gcp_reqs, 'a')
 
-def create_dockerfile():
+def _create_dockerfile():
     """Writes a Dockerfile to the component_base directory."""
     # pylint: disable=anomalous-backslash-in-string
     dockerfile = (BuilderUtils.LICENSE +

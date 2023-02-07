@@ -19,7 +19,7 @@ import os
 from IPython import get_ipython
 from IPython.core.magic import Magics, cell_magic, magics_class
 
-from . import BuilderUtils
+from AutoMLOps import BuilderUtils
 
 @magics_class
 class JupyterUtilsMagic(Magics):
