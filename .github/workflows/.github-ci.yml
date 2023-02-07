@@ -2,11 +2,14 @@ name: AutoMLOps CI Workflow
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches:
+      - main
   pull_request:
-    branches: [ $default-branch ]
+    branches:
+      - main
   merge_group:
-    branches: [ $default-branch ]
+    branches:
+      - main
 
 jobs:
   test:
