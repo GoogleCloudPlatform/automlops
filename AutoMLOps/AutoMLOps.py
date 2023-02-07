@@ -219,29 +219,26 @@ def _push_to_csr():
        then pushes to the specified branch and triggers the cloudbuild job.
     """
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
-    try:
-        if not os.path.exists('.git'):
-            BuilderUtils.execute_process('git init', to_null=False)
-            BuilderUtils.execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
-            BuilderUtils.execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
-            BuilderUtils.execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
-            has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
-            if not has_remote_branch:
-                # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
-                BuilderUtils.execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
-                BuilderUtils.execute_process('git add .gitkeep', to_null=False)
-                BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
-                BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+    if not os.path.exists('.git'):
+        BuilderUtils.execute_process('git init', to_null=False)
+        BuilderUtils.execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+        BuilderUtils.execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
+        BuilderUtils.execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
+        has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+        if not has_remote_branch:
+            # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
+            BuilderUtils.execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
+            BuilderUtils.execute_process('git add .gitkeep', to_null=False)
+            BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
+            BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
 
-        BuilderUtils.execute_process(f'touch {TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
-        BuilderUtils.execute_process('git add .', to_null=False)
-        BuilderUtils.execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
-        BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
-        # pylint: disable=logging-fstring-interpolation
-        logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
-        logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
-    except Exception as err:
-        raise Exception(f'Error pushing to repo. {err}') from err
+    BuilderUtils.execute_process(f'touch {TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
+    BuilderUtils.execute_process('git add .', to_null=False)
+    BuilderUtils.execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
+    BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+    # pylint: disable=logging-fstring-interpolation
+    logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
+    logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
 
 def _create_default_config(af_registry_location: str,
                            af_registry_name: str,

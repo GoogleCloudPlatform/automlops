@@ -67,5 +67,5 @@ try:
     make_tmpfiles_dir()
 
 except AttributeError as err:
-    raise Exception(f'Cannot load JupyterUtilsMagic, '
-                    f'this is not a notebook. {err}') from err
+    raise AttributeError(f'Cannot load JupyterUtilsMagic, '
+                         f'this is not a notebook. {err}') from err

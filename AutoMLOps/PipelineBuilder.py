@@ -51,7 +51,7 @@ def formalize(pipeline_parameter_values: dict,
             file.write(pipeline_argparse)
         file.close()
     except OSError as err:
-        raise Exception(f'Error interacting with file. {err}') from err
+        raise OSError(f'Error interacting with file. {err}') from err
     # construct pipeline_runner.py
     BuilderUtils.write_file(pipeline_runner_file, get_pipeline_runner(), 'w+')
     # construct pipeline_parameter_values.json

@@ -72,7 +72,7 @@ def read_yaml_file(filepath: str) -> dict:
             file_dict = yaml.safe_load(file)
         file.close()
     except yaml.YAMLError as err:
-        raise Exception(f'Error reading file. {err}') from err
+        raise yaml.YAMLError(f'Error reading file. {err}') from err
     return file_dict
 
 def write_yaml_file(filepath: str, contents: dict, mode: str):
@@ -90,7 +90,7 @@ def write_yaml_file(filepath: str, contents: dict, mode: str):
             yaml.safe_dump(contents, file, sort_keys=False)
         file.close()
     except yaml.YAMLError as err:
-        raise Exception(f'Error writing to file. {err}') from err
+        raise yaml.YAMLError(f'Error writing to file. {err}') from err
 
 def read_file(filepath: str) -> str:
     """Reads a file and returns contents as a string.
@@ -108,7 +108,7 @@ def read_file(filepath: str) -> str:
             contents = file.read()
         file.close()
     except FileNotFoundError as err:
-        raise Exception(f'Error reading file. {err}') from err
+        raise FileNotFoundError(f'Error reading file. {err}') from err
     return contents
 
 def write_file(filepath: str, text: str, mode: str):
@@ -126,7 +126,7 @@ def write_file(filepath: str, text: str, mode: str):
             file.write(text)
         file.close()
     except OSError as err:
-        raise Exception(f'Error writing to file. {err}') from err
+        raise OSError(f'Error writing to file. {err}') from err
 
 def write_and_chmod(filepath: str, text: str):
     """Writes a file at the specified path and chmods the file
@@ -143,7 +143,7 @@ def write_and_chmod(filepath: str, text: str):
         st = os.stat(filepath)
         os.chmod(filepath, st.st_mode | 0o111)
     except OSError as err:
-        raise Exception(f'Error chmod-ing file. {err}') from err
+        raise OSError(f'Error chmod-ing file. {err}') from err
 
 def delete_file(filepath: str):
     """Deletes a file at the specified path.
@@ -204,7 +204,7 @@ def execute_process(command: str, to_null: bool):
             stdout=stdout,
             stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
-        raise Exception(f'Error executing process. {err}') from err
+        raise RuntimeError(f'Error executing process. {err}') from err
 
 def validate_schedule(schedule_pattern: str, run_local: str):
     """Validates that the inputted schedule parameter.
@@ -216,7 +216,7 @@ def validate_schedule(schedule_pattern: str, run_local: str):
         Exception: If schedule is not cron formatted or run_local validation fails.
     """
     if schedule_pattern != 'No Schedule Specified' and run_local:
-        raise Exception('run_local must be set to False to use Cloud Scheduler.')
+        raise ValueError('run_local must be set to False to use Cloud Scheduler.')
 
 def validate_name(name: str):
     """Validates that the inputted name parameter is of type str.
@@ -227,7 +227,7 @@ def validate_name(name: str):
         Exception: If the name is not of type str.
     """
     if not isinstance(name, str):
-        raise Exception('Pipeline and Component names must be of type string.')
+        raise TypeError('Pipeline and Component names must be of type string.')
 
 def validate_params(params: list):
     """Verifies that the inputted params follow the correct
@@ -247,15 +247,15 @@ def validate_params(params: list):
         try:
             name = param['name']
             if not isinstance(name, str):
-                raise Exception('Parameter name must be of type string.')
+                raise TypeError('Parameter name must be of type string.')
             param_type = param['type']
             if not isinstance(param_type, type):
-                raise Exception('Parameter type must be a valid python type.')
+                raise TypeError('Parameter type must be a valid python type.')
         except KeyError as err:
-            raise Exception(f'Parameter {param} does not contain '
-                            f'required keys. {err}') from err
+            raise ValueError(f'Parameter {param} does not contain '
+                             f'required keys. {err}') from err
         if param['name'] in s:
-            raise Exception(f'''Duplicate parameter {param['name']} found.''')
+            raise ValueError(f'''Duplicate parameter {param['name']} found.''')
         else:
             s.add(param['name'])
         if 'description' not in param.keys():
@@ -281,23 +281,23 @@ def validate_pipeline_structure(pipeline: list):
         try:
             component_name = component['component_name']
             if component_name not in components_list:
-                raise Exception(f'Component {component_name} not found - '
+                raise ValueError(f'Component {component_name} not found - '
                     f'No matching yaml definition in tmpfiles directory.')
             param_mapping = component['param_mapping']
         except KeyError as err:
-            raise Exception(f'Component {component} does not contain '
+            raise ValueError(f'Component {component} does not contain '
                 f'required keys. {err}') from err
         for param_tuple in param_mapping:
             if not isinstance(param_tuple, tuple):
-                raise Exception(f'Mapping contains a non-tuple '
+                raise TypeError(f'Mapping contains a non-tuple '
                                 f'element {param_tuple}')
             elif len(param_tuple) != 2:
-                raise Exception(f'Mapping must contain only 2 elements, '
+                raise TypeError(f'Mapping must contain only 2 elements, '
                                 f'tuple {param_tuple} is invalid.')
             else:
                 for item in param_tuple:
                     if not isinstance(item, str):
-                        raise Exception(f'Mapping must be str-str, '
+                        raise TypeError(f'Mapping must be str-str, '
                                         f'tuple {param_tuple} is invalid.')
 
 def update_params(params: list) -> list:
@@ -328,6 +328,6 @@ def update_params(params: list) -> list:
         try:
             param['type'] = python_kfp_types_mapper[param['type']]
         except KeyError as err:
-            raise Exception(f'Unsupported python type - we only support '
-                            f'primitive types at this time. {err}') from err
+            raise ValueError(f'Unsupported python type - we only support '
+                             f'primitive types at this time. {err}') from err
     return params
