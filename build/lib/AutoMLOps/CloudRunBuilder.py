@@ -14,7 +14,7 @@
 
 """Builds cloud_run files."""
 
-from . import BuilderUtils
+from AutoMLOps import BuilderUtils
 
 # pylint: disable=line-too-long
 def formalize(top_lvl_name: str,

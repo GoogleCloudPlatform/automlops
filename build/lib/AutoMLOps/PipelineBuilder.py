@@ -16,7 +16,7 @@
 
 import json
 
-from . import BuilderUtils
+from AutoMLOps import BuilderUtils
 
 # pylint: disable=line-too-long
 def formalize(pipeline_parameter_values: dict,
@@ -117,9 +117,9 @@ def get_pipeline_runner() -> str:
     return (BuilderUtils.LICENSE +
         '''import argparse\n'''
         '''import json\n'''
+        '''import logging\n'''
         '''import os\n'''
         '''import yaml\n'''
-        '''import logging\n'''
         '\n'
         '''from google.cloud import aiplatform\n'''
         '\n'
