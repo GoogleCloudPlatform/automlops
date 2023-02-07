@@ -22,7 +22,7 @@ definitions, complete with Dockerfiles and requirements.txts for all
 Kubeflow components defined in a notebook. It will also generate a
 series of directories to support the creation of Vertex Pipelines.
 """
-
-__version__ = "1.0.1"
+# pylint: disable=invalid-name
+__version__ = '1.0.1'
 __author__ = 'Sean Rastatter'
 __credits__ = 'Google'

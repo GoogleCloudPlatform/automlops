@@ -14,6 +14,8 @@
 
 """Jupyter Magics to be imported into notebook."""
 
+# pylint: disable=C0103
+
 import os
 
 from IPython import get_ipython

@@ -15,11 +15,13 @@
 """Utility functions and globals to be used by all
    other modules in this directory."""
 
+# pylint: disable=C0103
+# pylint: disable=line-too-long
+
 import os
 import subprocess
 import yaml
 
-# pylint: disable=line-too-long
 TMPFILES_DIR = '.tmpfiles'
 IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
 CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'

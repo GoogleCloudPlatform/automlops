@@ -15,6 +15,10 @@
 """AutoMLOps is a tool that generates a production-style MLOps pipeline
    from Jupyter Notebooks."""
 
+# pylint: disable=C0103
+# pylint: disable=unused-import
+# pylint: disable=line-too-long
+
 import os
 import re
 import subprocess
@@ -57,7 +61,6 @@ DIRS = [
     TOP_LVL_NAME + 'scripts',
     TOP_LVL_NAME + 'scripts/pipeline_spec']
 
-# pylint: disable=line-too-long
 def go(project_id: str,
        pipeline_params: dict,
        af_registry_location: str = 'us-central1',

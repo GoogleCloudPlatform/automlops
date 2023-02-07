@@ -14,11 +14,13 @@
 
 """Builds pipeline files."""
 
+# pylint: disable=C0103
+# pylint: disable=line-too-long
+
 import json
 
 from AutoMLOps import BuilderUtils
 
-# pylint: disable=line-too-long
 def formalize(pipeline_parameter_values: dict,
               top_lvl_name: str):
     """Constructs and writes pipeline.py, pipeline_runner.py, and pipeline_parameter_values.json files.
