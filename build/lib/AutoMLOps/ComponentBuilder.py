@@ -14,9 +14,11 @@
 
 """Builds component files."""
 
+# pylint: disable=C0103
+# pylint: disable=line-too-long
+
 from AutoMLOps import BuilderUtils
 
-# pylint: disable=line-too-long
 def formalize(component_path: str,
               top_lvl_name: str,
               defaults_file: str,

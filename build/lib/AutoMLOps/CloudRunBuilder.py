@@ -14,9 +14,11 @@
 
 """Builds cloud_run files."""
 
+# pylint: disable=C0103
+# pylint: disable=line-too-long
+
 from AutoMLOps import BuilderUtils
 
-# pylint: disable=line-too-long
 def formalize(top_lvl_name: str,
               defaults_file: str,):
     """Constructs and writes a Dockerfile, requirements.txt, and
