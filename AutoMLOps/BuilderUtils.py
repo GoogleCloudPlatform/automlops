@@ -24,6 +24,8 @@ TMPFILES_DIR = '.tmpfiles'
 IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
 CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'
 PIPELINE_TMPFILE = f'{TMPFILES_DIR}/pipeline_scaffold.py'
+PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
+PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
 LICENSE = (
     '# Licensed under the Apache License, Version 2.0 (the "License");\n'
     '# you may not use this file except in compliance with the License.\n'
