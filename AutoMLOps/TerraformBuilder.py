@@ -68,10 +68,10 @@ def _create_main(run_local: bool):
         f'  version                 = "14.1.0"\n'
         f'  project_id              = var.project_id\n'
         f'  activate_apis           = [\n'
-        f'    "cloudresourcemanager.googleapis.com",\n'
         f'    "aiplatform.googleapis.com",\n'
         f'    "artifactregistry.googleapis.com",\n'
         f'    "cloudbuild.googleapis.com",\n'
+        f'    "cloudresourcemanager.googleapis.com",\n'
         f'    "cloudscheduler.googleapis.com",\n'
         f'    "cloudtasks.googleapis.com",\n'
         f'    "compute.googleapis.com",\n'
@@ -106,6 +106,14 @@ def _create_main(run_local: bool):
         f'resource "google_sourcerepo_repository" "my-repo" {LEFT_BRACKET}\n'
         f'  project                 = var.project_id\n'
         f'  name                    = var.csr_name\n'
+        f'  depends_on              = [module.google_project_service]\n'
+        f'{RIGHT_BRACKET}\n'
+        f'\n'
+        f'# Create cloud tasks queue\n'
+        f'resource "google_cloud_tasks_queue" "my-task" {LEFT_BRACKET}\n'
+        f'  project                 = var.project_id\n'
+        f'  name                    = var.cloud_tasks_queue_name\n'
+        f'  location                = var.cloud_tasks_queue_location\n'
         f'  depends_on              = [module.google_project_service]\n'
         f'{RIGHT_BRACKET}\n'
         f'\n'
@@ -255,6 +263,17 @@ def _create_variables(defaults: dict,
        f'  type          = string\n'
        f'  default       = "vertex-pipelines"\n'
        f'{RIGHT_BRACKET}\n'
+       f'\n'
+       f'variable "cloud_tasks_queue_name" {LEFT_BRACKET}\n'
+       f'  description   = "Name of cloud tasks queue"\n'
+       f'  type          = string\n'
+       f'  default       = "queueing-svc"\n'
+       f'{RIGHT_BRACKET}\n'
+       f'variable "cloud_tasks_queue_location" {LEFT_BRACKET}\n'
+       f'  description   = "Cloud tasks queue location"\n'
+       f'  type          = string\n'
+       f'  default       = "us-central1"\n'
+       f'{RIGHT_BRACKET}\n'
     )
     
     if not run_local:
@@ -310,6 +329,8 @@ def _create_variable_vals(defaults: dict,
         f'''gs_bucket_location          = "{defaults['pipelines']['pipeline_region']}"\n\n'''
         f'''af_registry_name            = "{defaults['gcp']['af_registry_name']}"\n\n'''
         f'''af_registry_location        = "{defaults['gcp']['af_registry_location']}"\n\n'''
+        f'''cloud_tasks_queue_name      = "{defaults['gcp']['cloud_tasks_queue_name']}"\n\n'''
+        f'''cloud_tasks_queue_location  = "{defaults['gcp']['cloud_tasks_queue_location']}"\n\n'''
     )
     
     if not run_local:
