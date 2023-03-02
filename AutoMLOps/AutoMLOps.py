@@ -178,8 +178,8 @@ def generate(project_id: str,
     else:
         _create_resources_scripts(run_local)
 
-def run(run_local: bool,
-        use_terraform: bool):
+def run(run_local: bool = True,
+        use_terraform: bool = False):
     """Builds, compiles, and submits the PipelineJob.
 
     Args:

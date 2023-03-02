@@ -48,7 +48,7 @@ def formalize(top_lvl_name: str,
     BuilderUtils.write_and_chmod(terraform_folder + 'iam.tf', _create_iam())
     BuilderUtils.write_and_chmod(terraform_folder + 'variables.tf', _create_variables(defaults, run_local))
     BuilderUtils.write_and_chmod(terraform_folder + 'variables.auto.tfvars', _create_variable_vals(defaults, run_local))
-    BuilderUtils.write_and_chmod(run_sh, _create_runner_script())
+    BuilderUtils.write_and_chmod(run_sh, _create_runner_script(defaults))
     
 
 def _create_main(run_local: bool):
@@ -89,6 +89,19 @@ def _create_main(run_local: bool):
         f'  project                 = var.project_id\n'
         f'  name                    = var.gs_bucket_name\n'
         f'  location                = var.gs_bucket_location\n'
+        f'  depends_on              = [module.google_project_service]\n'
+        f'{RIGHT_BRACKET}\n'
+        f'\n'
+        f'# Create GCS bucket to hold state file\n'
+        f'resource "google_storage_bucket" "gcs_statefile_bucket" {LEFT_BRACKET}\n'
+        f'  project                 = var.project_id\n'
+        f'  name                    = "${LEFT_BRACKET}var.project_id{RIGHT_BRACKET}-bucket-tfstate"\n'
+        f'  location                = var.gs_bucket_location\n'
+        f'  force_destroy           = false\n'
+        f'  storage_class           = "STANDARD"\n'
+        f'  versioning {LEFT_BRACKET}\n'
+        f'    enabled               = true\n'
+        f'  {RIGHT_BRACKET}\n'
         f'  depends_on              = [module.google_project_service]\n'
         f'{RIGHT_BRACKET}\n'
         f'\n'
@@ -343,16 +356,34 @@ def _create_variable_vals(defaults: dict,
         )
     
     return variable_vals
-    
-def _create_runner_script():
+
+def _create_runner_script(defaults):
     """Generates code for run_terraform.sh, the runner shell script for the terraform module.
 
     Returns:
         str: Terraform runner script.
     """
     return (
-        '#!/bin/bash\n' + BuilderUtils.LICENSE +
-        'terraform init\n'
-        'terraform validate\n'
-        'terraform apply -auto-approve\n'  
+        f'''#!/bin/bash\n'''
+        + BuilderUtils.LICENSE +
+        f'''# Submit initial terraform run creating all resources\n'''
+        f'''terraform init\n'''
+        f'''terraform validate\n'''
+        f'''terraform apply -auto-approve\n'''
+        f'''\n'''
+        f'''# Create backend.tf to copy the state file to the newly created bucket\n'''
+        f'''touch backend.tf\n'''
+        f'''cat <<EOF >backend.tf\n'''
+        f'''terraform {LEFT_BRACKET}\n'''
+        f'''  backend "gcs" {LEFT_BRACKET}\n'''
+        f'''    bucket = "{defaults['gcp']['project_id']}-bucket-tfstate"\n'''
+        f'''    prefix = "terraform/state"\n'''
+        f'''  {RIGHT_BRACKET}\n'''
+        f'''{RIGHT_BRACKET}\n'''
+        f'''EOF\n'''
+        f'''\n'''
+        f'''# Submit terraform run to copy the state file to the cloud bucket'''
+        f'''terraform init -force-copy\n'''
+        f'''terraform validate\n'''
+        f'''terraform apply -auto-approve\n'''
     )
