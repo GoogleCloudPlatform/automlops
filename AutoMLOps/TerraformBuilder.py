@@ -37,18 +37,26 @@ def formalize(top_lvl_name: str,
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
     defaults = BuilderUtils.read_yaml_file(defaults_file)
+        
+    BuilderUtils.make_dirs([top_lvl_name + 'terraform',
+                            top_lvl_name + 'terraform/environment',
+                            top_lvl_name + 'terraform/state_bucket'])
     
-    BuilderUtils.make_dirs([top_lvl_name + 'terraform'])
-    
-    terraform_folder = top_lvl_name + 'terraform/'
-    run_sh = terraform_folder + 'run_terraform.sh'
+    terraform_folder = top_lvl_name + 'terraform/environment/'
     
     BuilderUtils.write_and_chmod(terraform_folder + 'main.tf', _create_main(run_local))
     BuilderUtils.write_and_chmod(terraform_folder + 'versions.tf', _create_versions())
     BuilderUtils.write_and_chmod(terraform_folder + 'iam.tf', _create_iam())
     BuilderUtils.write_and_chmod(terraform_folder + 'variables.tf', _create_variables(defaults, run_local))
     BuilderUtils.write_and_chmod(terraform_folder + 'variables.auto.tfvars', _create_variable_vals(defaults, run_local))
-    BuilderUtils.write_and_chmod(run_sh, _create_runner_script(defaults))
+    BuilderUtils.write_and_chmod(terraform_folder + 'backend.tf', _create_backend(defaults))
+    BuilderUtils.write_and_chmod(terraform_folder + 'terraform_runner.sh', _create_runner_script())
+    
+    state_bucket_config = top_lvl_name + 'terraform/state_bucket/'
+    BuilderUtils.write_and_chmod(state_bucket_config + 'main.tf', _create_state_bucket_config())
+    BuilderUtils.write_and_chmod(state_bucket_config + 'variables.tf', _create_state_bucket_variables())
+    BuilderUtils.write_and_chmod(state_bucket_config + 'variables.auto.tfvars', _create_state_bucket_variable_vals(defaults))
+    BuilderUtils.write_and_chmod(state_bucket_config + 'state_bucket_runner.sh', _create_state_bucket_runner())
     
 
 def _create_main(run_local: bool):
@@ -89,19 +97,6 @@ def _create_main(run_local: bool):
         f'  project                 = var.project_id\n'
         f'  name                    = var.gs_bucket_name\n'
         f'  location                = var.gs_bucket_location\n'
-        f'  depends_on              = [module.google_project_service]\n'
-        f'{RIGHT_BRACKET}\n'
-        f'\n'
-        f'# Create GCS bucket to hold state file\n'
-        f'resource "google_storage_bucket" "gcs_statefile_bucket" {LEFT_BRACKET}\n'
-        f'  project                 = var.project_id\n'
-        f'  name                    = "${LEFT_BRACKET}var.project_id{RIGHT_BRACKET}-bucket-tfstate"\n'
-        f'  location                = var.gs_bucket_location\n'
-        f'  force_destroy           = false\n'
-        f'  storage_class           = "STANDARD"\n'
-        f'  versioning {LEFT_BRACKET}\n'
-        f'    enabled               = true\n'
-        f'  {RIGHT_BRACKET}\n'
         f'  depends_on              = [module.google_project_service]\n'
         f'{RIGHT_BRACKET}\n'
         f'\n'
@@ -242,6 +237,7 @@ def _create_variables(defaults: dict,
        f'  description   = "The ID of the project in which to provision resources."\n'
        f'  type          = string\n'
        f'{RIGHT_BRACKET}\n'
+       f'\n'
        f'variable "project_number" {LEFT_BRACKET}\n'
        f'  description   = "The number of the project in which to provision resources."\n'
        f'  type          = string\n'
@@ -250,7 +246,6 @@ def _create_variables(defaults: dict,
        f'variable "gs_bucket_name" {LEFT_BRACKET}\n'
        f'  description   = "Name of GCS bucket to create."\n'
        f'  type          = string\n'
-       f'  default       = "{defaults["gcp"]["project_id"]}-bucket"\n'
        f'{RIGHT_BRACKET}\n'
        '\n'
        f'variable "gs_bucket_location" {LEFT_BRACKET}\n'
@@ -357,8 +352,8 @@ def _create_variable_vals(defaults: dict,
     
     return variable_vals
 
-def _create_runner_script(defaults):
-    """Generates code for run_terraform.sh, the runner shell script for the terraform module.
+def _create_runner_script():
+    """Generates code for terraform_runner.sh, the runner shell script for the terraform module.
 
     Returns:
         str: Terraform runner script.
@@ -366,24 +361,86 @@ def _create_runner_script(defaults):
     return (
         f'''#!/bin/bash\n'''
         + BuilderUtils.LICENSE +
-        f'''# Submit initial terraform run creating all resources\n'''
+        f'''# Submit terraform run creating all resources\n'''
         f'''terraform init\n'''
         f'''terraform validate\n'''
         f'''terraform apply -auto-approve\n'''
-        f'''\n'''
-        f'''# Create backend.tf to copy the state file to the newly created bucket\n'''
-        f'''touch backend.tf\n'''
-        f'''cat <<EOF >backend.tf\n'''
+    )
+    
+
+def _create_backend(defaults):
+    return (
+        BuilderUtils.LICENSE +
         f'''terraform {LEFT_BRACKET}\n'''
         f'''  backend "gcs" {LEFT_BRACKET}\n'''
-        f'''    bucket = "{defaults['gcp']['project_id']}-bucket-tfstate"\n'''
+        f'''    bucket = "{defaults['gcp']['gs_bucket_name']}-bucket-tfstate"\n'''
         f'''    prefix = "terraform/state"\n'''
         f'''  {RIGHT_BRACKET}\n'''
-        f'''{RIGHT_BRACKET}\n'''
-        f'''EOF\n'''
-        f'''\n'''
-        f'''# Submit terraform run to copy the state file to the cloud bucket'''
-        f'''terraform init -force-copy\n'''
+        f'''{RIGHT_BRACKET}'''
+    )
+
+def _create_state_bucket_config():
+    return (
+        BuilderUtils.LICENSE +
+        _create_versions() +
+        f'\n'
+        f'# Enable Google Cloud APIs\n'
+        f'module "google_project_service" {LEFT_BRACKET}\n'
+        f'  source                  = "terraform-google-modules/project-factory/google//modules/project_services"\n'
+        f'  version                 = "14.1.0"\n'
+        f'  project_id              = var.project_id\n'
+        f'  activate_apis           = ["storage.googleapis.com"]\n'
+        f'{RIGHT_BRACKET}\n'
+        f'\n'
+        f'# Create GCS bucket to hold state file\n'
+        f'resource "google_storage_bucket" "gcs_statefile_bucket" {LEFT_BRACKET}\n'
+        f'  project                 = var.project_id\n'
+        f'  name                    = var.gs_bucket_name\n'
+        f'  location                = var.gs_bucket_location\n'
+        f'  force_destroy           = false\n'
+        f'  storage_class           = "STANDARD"\n'
+        f'  versioning {LEFT_BRACKET}\n'
+        f'    enabled               = true\n'
+        f'  {RIGHT_BRACKET}\n'
+        f'  depends_on              = [module.google_project_service]\n'
+        f'{RIGHT_BRACKET}\n'
+        f'\n'
+    )
+
+def _create_state_bucket_variables():
+    return (
+        BuilderUtils.LICENSE +
+        f'variable "project_id" {LEFT_BRACKET}\n'
+        f'  description   = "The ID of the project in which to provision resources."\n'
+        f'  type          = string\n'
+        f'{RIGHT_BRACKET}\n'
+        f'\n'
+        f'variable "gs_bucket_name" {LEFT_BRACKET}\n'
+        f'  description   = "Name of GCS bucket to create."\n'
+        f'  type          = string\n'
+        f'{RIGHT_BRACKET}\n'
+        '\n'
+        f'variable "gs_bucket_location" {LEFT_BRACKET}\n'
+        f'  description   = "Region for GCS bucket."\n'
+        f'  type          = string\n'
+        f'  default       = "us-central1"\n'
+        f'{RIGHT_BRACKET}\n'
+    )
+    
+def _create_state_bucket_variable_vals(defaults):
+    return (
+        BuilderUtils.LICENSE +
+        f'''project_id                  = "{defaults['gcp']['project_id']}"\n\n'''
+        f'''gs_bucket_name              = "{defaults['gcp']['gs_bucket_name']}-bucket-tfstate"\n\n'''
+        f'''gs_bucket_location          = "{defaults['gcp']['gs_bucket_location']}"\n\n'''
+    )
+    
+def _create_state_bucket_runner():
+    return (
+        f'''#!/bin/bash\n'''
+        + BuilderUtils.LICENSE +
+        f'''# Submit initial terraform run creating gcs bucket to hold state file\n'''
+        f'''terraform init\n'''
         f'''terraform validate\n'''
         f'''terraform apply -auto-approve\n'''
     )

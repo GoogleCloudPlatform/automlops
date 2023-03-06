@@ -49,7 +49,6 @@ IMPORTS_FILE = '.imports.py'
 DEFAULT_IMAGE = 'python:3.9'
 COMPONENT_BASE = TOP_LVL_NAME + 'components/component_base'
 COMPONENT_BASE_SRC = TOP_LVL_NAME + 'components/component_base/src'
-TERRAFORM_RUNNER = 'run_terraform.sh'
 OUTPUT_DIR = BuilderUtils.TMPFILES_DIR
 DIRS = [
     TOP_LVL_NAME,
@@ -187,8 +186,10 @@ def run(run_local: bool = True,
         use_terraform: Flag that determines whether to create resources using Terraform or a shell script.
     """
     if use_terraform:
-        os.chdir(TOP_LVL_NAME + 'terraform/')    
-        BuilderUtils.execute_process('./'+TERRAFORM_RUNNER, to_null=False)
+        os.chdir(TOP_LVL_NAME + 'terraform/state_bucket/')    
+        BuilderUtils.execute_process('./'+ 'state_bucket_runner.sh', to_null=False)
+        os.chdir('../environment/')
+        BuilderUtils.execute_process('./'+ 'terraform_runner.sh', to_null=False)
         os.chdir('../../')
     
     if run_local:
@@ -318,6 +319,7 @@ def _create_default_config(af_registry_location: str,
         f'  cloud_schedule_pattern: {schedule_pattern}\n'
         f'  cloud_source_repository: {csr_name}\n'
         f'  cloud_source_repository_branch: {csr_branch_name}\n'
+        f'  gs_bucket_location: {gs_bucket_location}\n'
         f'  gs_bucket_name: {gs_bucket_name}\n'
         f'  pipeline_runner_service_account: {pipeline_runner_sa}\n'
         f'  project_id: {project_id}\n'
