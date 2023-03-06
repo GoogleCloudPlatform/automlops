@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2023-03-06
+
+Official release on PyPI.
+
+## [1.0.3] - 2023-03-06
+
+Staging for PyPI.
+
+### Changed
+  
+- Cleaning up wheel and egg files from repo.
+- Remove dist/ and build/ directories.
+
 ## [1.0.2] - 2023-03-06
 
 Added feature to allow for accelerated/distributed model training.

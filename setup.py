@@ -14,11 +14,16 @@
 """Setup AutoMLOps modules"""
 from setuptools import setup
 
+with open('README.md', 'r', encoding='utf-8') as file:
+    readme_contents = file.read()
+
 setup(
-    name='AutoMLOps',
-    version='1.0.2',
+    name='google-cloud-automlops',
+    version='1.0.5',
     description='AutoMLOps is a service that generates a production-style \
         MLOps pipeline from Jupyter Notebooks.',
+    long_description=readme_contents,
+    long_description_content_type='text/markdown',
     url='https://github.com/GoogleCloudPlatform/automlops',
     author='Sean Rastatter',
     author_email='srastatter@google.com',
@@ -32,13 +37,12 @@ setup(
                       'PyYAML==5.4.1',
                       'yarg==0.1.9'],
     classifiers=[
-        'Development Status :: Draft',
-        'Intended Audience :: data science practitioners',
-        'License :: OSI Approved :: Apache-2.0',
-        'Operating System :: POSIX :: Linux',
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Developers',
         'License :: OSI Approved :: Apache Software License',
+        'Operating System :: POSIX :: Linux',
+        'Operating System :: MacOS :: MacOS X',
         'Natural Language :: English',
-        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
