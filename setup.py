@@ -16,7 +16,7 @@ from setuptools import setup
 
 setup(
     name='AutoMLOps',
-    version='1.0.1',
+    version='1.0.2',
     description='AutoMLOps is a service that generates a production-style \
         MLOps pipeline from Jupyter Notebooks.',
     url='https://github.com/GoogleCloudPlatform/automlops',

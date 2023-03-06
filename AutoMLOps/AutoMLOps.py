@@ -19,10 +19,11 @@
 # pylint: disable=unused-import
 # pylint: disable=line-too-long
 
+import logging
 import os
 import re
 import subprocess
-import logging
+from typing import Dict, List
 
 from AutoMLOps import BuilderUtils
 from AutoMLOps import ComponentBuilder
@@ -63,7 +64,7 @@ DIRS = [
     TOP_LVL_NAME + 'scripts/pipeline_spec']
 
 def go(project_id: str,
-       pipeline_params: dict,
+       pipeline_params: Dict,
        af_registry_location: str = 'us-central1',
        af_registry_name: str = 'vertex-mlops-af',
        cb_trigger_location: str = 'us-central1',
@@ -74,6 +75,7 @@ def go(project_id: str,
        cloud_tasks_queue_name: str = 'queueing-svc',
        csr_branch_name: str = 'automlops',
        csr_name: str = 'AutoMLOps-repo',
+       custom_training_job_specs: List[Dict] = None,
        gs_bucket_location: str = 'us-central1',
        gs_bucket_name: str = None,
        pipeline_runner_sa: str = None,
@@ -100,6 +102,7 @@ def go(project_id: str,
         cloud_tasks_queue_name: The name of the cloud tasks queue.
         csr_branch_name: The name of the csr branch to push to to trigger cb job.
         csr_name: The name of the cloud source repo to use.
+        custom_training_job_specs: Specifies the specs to run the training job with.
         gs_bucket_location: Region of the GS bucket.
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
@@ -115,13 +118,13 @@ def go(project_id: str,
              af_registry_name, cb_trigger_location, cb_trigger_name,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
-             gs_bucket_location, gs_bucket_name, pipeline_runner_sa,
-             run_local, use_terraform, schedule_location, schedule_name,
-             schedule_pattern, use_kfp_spec, vpc_connector)
+             custom_training_job_specs, gs_bucket_location, gs_bucket_name,
+             pipeline_runner_sa, run_local, use_terraform, schedule_location, 
+             schedule_name, schedule_pattern, use_kfp_spec, vpc_connector)
     run(run_local, use_terraform)
 
 def generate(project_id: str,
-             pipeline_params: dict,
+             pipeline_params: Dict,
              af_registry_location: str = 'us-central1',
              af_registry_name: str = 'vertex-mlops-af',
              cb_trigger_location: str = 'us-central1',
@@ -132,6 +135,7 @@ def generate(project_id: str,
              cloud_tasks_queue_name: str = 'queueing-svc',
              csr_branch_name: str = 'automlops',
              csr_name: str = 'AutoMLOps-repo',
+             custom_training_job_specs: List[Dict] = None,
              gs_bucket_location: str = 'us-central1',
              gs_bucket_name: str = None,
              pipeline_runner_sa: str = None,
@@ -165,7 +169,7 @@ def generate(project_id: str,
     components_path_list = BuilderUtils.get_components_list()
     for path in components_path_list:
         ComponentBuilder.formalize(path, TOP_LVL_NAME, DEFAULTS_FILE, use_kfp_spec)
-    PipelineBuilder.formalize(pipeline_params, TOP_LVL_NAME)
+    PipelineBuilder.formalize(custom_training_job_specs, DEFAULTS_FILE, pipeline_params, TOP_LVL_NAME)
     if not use_kfp_spec:
         _autoflake_srcfiles()
     _create_requirements(use_kfp_spec)
@@ -438,7 +442,7 @@ def _create_resources_scripts(run_local: bool):
         f'  sourcerepo.googleapis.com\n'
         f'\n'
         f'echo -e "$GREEN Checking for Artifact Registry: $AF_REGISTRY_NAME in project $PROJECT_ID $NC"\n'
-        f'if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "$AF_REGISTRY_NAME"); then\n'
+        f'if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "(^|[[:blank:]])$AF_REGISTRY_NAME($|[[:blank:]]))"; then\n'
         f'\n'
         f'  echo "Creating Artifact Registry: ${left_bracket}AF_REGISTRY_NAME{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud artifacts repositories create "$AF_REGISTRY_NAME" \{newline}'
@@ -455,7 +459,7 @@ def _create_resources_scripts(run_local: bool):
         f'\n'
         f'\n'
         f'echo -e "$GREEN Checking for GS Bucket: $BUCKET_NAME in project $PROJECT_ID $NC"\n'
-        f'if !(gsutil ls -b gs://$BUCKET_NAME | grep --fixed-strings "$BUCKET_NAME"); then\n'
+        f'if !(gsutil ls -b gs://$BUCKET_NAME | grep --fixed-strings "(^|[[:blank:]])$BUCKET_NAME($|[[:blank:]]))"; then\n'
         f'\n'
         f'  echo "Creating GS Bucket: ${left_bracket}BUCKET_NAME{right_bracket} in project $PROJECT_ID"\n'
         f'  gsutil mb -l ${left_bracket}BUCKET_LOCATION{right_bracket} gs://$BUCKET_NAME\n'
@@ -467,7 +471,7 @@ def _create_resources_scripts(run_local: bool):
         f'fi\n'
         f'\n'
         f'echo -e "$GREEN Checking for Service Account: $SERVICE_ACCOUNT_NAME in project $PROJECT_ID $NC"\n'
-        f'if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep --fixed-strings "$SERVICE_ACCOUNT_FULL"); then\n'
+        f'if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep --fixed-strings "(^|[[:blank:]])$SERVICE_ACCOUNT_FULL($|[[:blank:]]))"; then\n'
         f'\n'
         f'  echo "Creating Service Account: ${left_bracket}SERVICE_ACCOUNT_NAME{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \{newline}'
@@ -536,7 +540,7 @@ def _create_resources_scripts(run_local: bool):
         f'    --no-user-output-enabled\n'
         f'\n'
         f'echo -e "$GREEN Checking for Cloud Source Repository: $CLOUD_SOURCE_REPO in project $PROJECT_ID $NC"\n'
-        f'if ! (gcloud source repos list --project="$PROJECT_ID" | grep --fixed-strings "$CLOUD_SOURCE_REPO"); then\n'
+        f'if ! (gcloud source repos list --project="$PROJECT_ID" | grep --fixed-strings "(^|[[:blank:]])$CLOUD_SOURCE_REPO($|[[:blank:]]))"; then\n'
         f'\n'
         f'  echo "Creating Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket} in project $PROJECT_ID"\n'
         f'  gcloud source repos create $CLOUD_SOURCE_REPO\n'
@@ -551,7 +555,7 @@ def _create_resources_scripts(run_local: bool):
             f'\n'
             f'# Create cloud tasks queue\n'
             f'echo -e "$GREEN Checking for Cloud Tasks Queue: $CLOUD_TASKS_QUEUE_NAME in project $PROJECT_ID $NC"\n'
-            f'if ! (gcloud tasks queues list --location $CLOUD_TASKS_QUEUE_LOCATION | grep --fixed-strings "$CLOUD_TASKS_QUEUE_NAME"); then\n'
+            f'if ! (gcloud tasks queues list --location $CLOUD_TASKS_QUEUE_LOCATION | grep --fixed-strings "(^|[[:blank:]])$CLOUD_TASKS_QUEUE_NAME($|[[:blank:]]))"; then\n'
             f'\n'
             f'  echo "Creating Cloud Tasks Queue: ${left_bracket}CLOUD_TASKS_QUEUE_NAME{right_bracket} in project $PROJECT_ID"\n'
             f'  gcloud tasks queues create $CLOUD_TASKS_QUEUE_NAME \{newline}'
@@ -565,7 +569,7 @@ def _create_resources_scripts(run_local: bool):
             f'\n'
             f'# Create cloud build trigger\n'
             f'echo -e "$GREEN Checking for Cloudbuild Trigger: $CB_TRIGGER_NAME in project $PROJECT_ID $NC"\n'
-            f'if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$CB_TRIGGER_LOCATION" | grep --fixed-strings "name: $CB_TRIGGER_NAME"); then\n'
+            f'if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$CB_TRIGGER_LOCATION" | grep --fixed-strings "(^|[[:blank:]])name: $CB_TRIGGER_NAME($|[[:blank:]]))"; then\n'
             f'\n'
             f'  echo "Creating Cloudbuild Trigger on branch $CLOUD_SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
             f'  gcloud beta builds triggers create cloud-source-repositories \{newline}'
