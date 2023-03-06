@@ -31,7 +31,7 @@ setup(
     packages=['AutoMLOps'],
     install_requires=['autoflake==2.0.0',
                       'docopt==0.6.2',
-                      'ipython==7.34.0',
+                      'ipython==8.10.0',
                       'pipreqs==0.4.11',
                       'pyflakes==3.0.1',
                       'PyYAML==5.4.1',
