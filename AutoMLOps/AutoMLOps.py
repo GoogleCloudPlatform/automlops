@@ -30,6 +30,7 @@ from AutoMLOps import ComponentBuilder
 from AutoMLOps import PipelineBuilder
 from AutoMLOps import CloudRunBuilder
 from AutoMLOps import JupyterUtilsMagic
+from AutoMLOps import TerraformBuilder
 
 logger = logging.getLogger()
 log_level = os.environ.get('LOG_LEVEL', 'INFO')
@@ -79,6 +80,7 @@ def go(project_id: str,
        gs_bucket_name: str = None,
        pipeline_runner_sa: str = None,
        run_local: bool = True,
+       use_terraform: bool = False,
        schedule_location: str = 'us-central1',
        schedule_name: str = 'AutoMLOps-schedule',
        schedule_pattern: str = 'No Schedule Specified',
@@ -105,6 +107,7 @@ def go(project_id: str,
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
         run_local: Flag that determines whether to use Cloud Run CI/CD.
+        use_terraform: Flag that determines whether to create resources using Terraform or a shell script.
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
@@ -116,10 +119,9 @@ def go(project_id: str,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
-             pipeline_runner_sa, run_local, schedule_location,
-             schedule_name, schedule_pattern, use_kfp_spec,
-             vpc_connector)
-    run(run_local)
+             pipeline_runner_sa, run_local, use_terraform, schedule_location, 
+             schedule_name, schedule_pattern, use_kfp_spec, vpc_connector)
+    run(run_local, use_terraform)
 
 def generate(project_id: str,
              pipeline_params: Dict,
@@ -138,6 +140,7 @@ def generate(project_id: str,
              gs_bucket_name: str = None,
              pipeline_runner_sa: str = None,
              run_local: bool = True,
+             use_terraform: bool = False,
              schedule_location: str = 'us-central1',
              schedule_name: str = 'AutoMLOps-schedule',
              schedule_pattern: str = 'No Schedule Specified',
@@ -173,14 +176,26 @@ def generate(project_id: str,
     _create_dockerfile()
     if not run_local:
         CloudRunBuilder.formalize(TOP_LVL_NAME, DEFAULTS_FILE)
+    if use_terraform:
+        TerraformBuilder.formalize(TOP_LVL_NAME, DEFAULTS_FILE, run_local)
+    else:
+        _create_resources_scripts(run_local)
 
-def run(run_local: bool):
+def run(run_local: bool = True,
+        use_terraform: bool = False):
     """Builds, compiles, and submits the PipelineJob.
 
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
+        use_terraform: Flag that determines whether to create resources using Terraform or a shell script.
     """
-    BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
+    if use_terraform:
+        os.chdir(TOP_LVL_NAME + 'terraform/state_bucket/')    
+        BuilderUtils.execute_process('./'+ 'state_bucket_runner.sh', to_null=False)
+        os.chdir('../environment/')
+        BuilderUtils.execute_process('./'+ 'terraform_runner.sh', to_null=False)
+        os.chdir('../../')
+    
     if run_local:
         os.chdir(TOP_LVL_NAME)
         BuilderUtils.execute_process('./scripts/run_all.sh', to_null=False)
@@ -287,6 +302,10 @@ def _create_default_config(af_registry_location: str,
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         vpc_connector: The name of the vpc connector to use.
     """
+    
+    project_number = str(subprocess.check_output(f'gcloud projects describe {project_id} --format "value(projectNumber)"', shell=True, stderr=subprocess.STDOUT)).replace("b'", "").replace("\\n'", "")
+    
+    
     defaults = (BuilderUtils.LICENSE +
         f'# These values are descriptive only - do not change.\n'
         f'# Rerun AutoMLOps.generate() to change these values.\n'
@@ -308,6 +327,7 @@ def _create_default_config(af_registry_location: str,
         f'  gs_bucket_name: {gs_bucket_name}\n'
         f'  pipeline_runner_service_account: {pipeline_runner_sa}\n'
         f'  project_id: {project_id}\n'
+        f'  project_number: {project_number}\n'
         f'  vpc_connector: {vpc_connector}\n'
         f'\n'
         f'pipelines:\n'
@@ -371,14 +391,12 @@ def _create_scripts(run_local: bool):
     BuilderUtils.write_and_chmod(BUILD_COMPONENTS_SH_FILE, build_components)
     BuilderUtils.write_and_chmod(RUN_PIPELINE_SH_FILE, run_pipeline)
     BuilderUtils.write_and_chmod(RUN_ALL_SH_FILE, run_all)
-    _create_resources_scripts(run_local)
 
 def _create_resources_scripts(run_local: bool):
     """Writes create_resources.sh and create_scheduler.sh, which creates a specified
        artifact registry and gs bucket if they do not already exist. Also creates
        a service account to run Vertex AI Pipelines. Requires a defaults.yaml
        config to pull config vars from.
-
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
