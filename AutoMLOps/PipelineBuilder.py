@@ -18,10 +18,13 @@
 # pylint: disable=line-too-long
 
 import json
+from typing import Dict, List
 
 from AutoMLOps import BuilderUtils
 
-def formalize(pipeline_parameter_values: dict,
+def formalize(custom_training_job_specs: List[Dict],
+              defaults_file: str,
+              pipeline_parameter_values: dict,
               top_lvl_name: str):
     """Constructs and writes pipeline.py, pipeline_runner.py, and pipeline_parameter_values.json files.
         pipeline.py: Generates a Kubeflow pipeline spec from custom components.
@@ -29,16 +32,19 @@ def formalize(pipeline_parameter_values: dict,
         pipeline_parameter_values.json: Provides runtime parameters for the PipelineJob.
 
     Args:
+        custom_training_job_specs: Specifies the specs to run the training job with.
+        defaults_file: Path to the default config variables yaml.
         pipeline_parameter_values: Dictionary of runtime parameters for the PipelineJob.
         top_lvl_name: Top directory name.
     Raises:
         Exception: If an error is encountered reading/writing to a file.
     """
+    defaults = BuilderUtils.read_yaml_file(defaults_file)
     pipeline_file = top_lvl_name + 'pipelines/pipeline.py'
     pipeline_runner_file = top_lvl_name + 'pipelines/pipeline_runner.py'
     pipeline_params_file = top_lvl_name + BuilderUtils.PARAMETER_VALUES_PATH
     # construct pipeline.py
-    pipeline_imports = get_pipeline_imports()
+    pipeline_imports = get_pipeline_imports(custom_training_job_specs, defaults['gcp']['project_id'])
     pipeline_argparse = get_pipeline_argparse()
     try:
         with open(pipeline_file, 'r+', encoding='utf-8') as file:
@@ -58,23 +64,29 @@ def formalize(pipeline_parameter_values: dict,
     serialized_params = json.dumps(pipeline_parameter_values, indent=4)
     BuilderUtils.write_file(pipeline_params_file, serialized_params, 'w+')
 
-def get_pipeline_imports() -> str:
+def get_pipeline_imports(custom_training_job_specs: List[Dict], project_id: str) -> str:
     """Generates python code that imports modules and loads all custom components.
+    Args:
+        custom_training_job_specs: Specifies the specs to run the training job with.
+        project_id: The project_id to run the pipeline. 
 
     Returns:
         str: Python pipeline_imports code.
     """
     components_list = BuilderUtils.get_components_list(full_path=False)
+    gcpc_imports = (
+        'from functools import partial\n'
+        'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
     quote = '\''
     newline_tab = '\n    '
     return (
-        f'''import os\n'''
         f'''import argparse\n'''
-        f'''import yaml\n'''
+        f'''import os\n'''
+        f'''{gcpc_imports if custom_training_job_specs else ''}'''
         f'''import kfp\n'''
         f'''from kfp.v2 import compiler, dsl\n'''
         f'''from kfp.v2.dsl import pipeline, component, Artifact, Dataset, Input, Metrics, Model, Output, InputPath, OutputPath\n'''
-        f'''from kfp.v2.compiler import compiler\n'''
+        f'''import yaml\n'''
         f'\n'
         f'''def load_custom_component(component_name: str):\n'''
         f'''    component_path = os.path.join('components',\n'''
@@ -83,8 +95,50 @@ def get_pipeline_imports() -> str:
         f'''    return kfp.components.load_component_from_file(component_path)\n'''
         f'\n'
         f'''def create_training_pipeline(pipeline_job_spec_path: str):\n'''
-        f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in components_list)}'''
-        f'\n')
+        f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in components_list)}\n'''
+        f'\n'
+        f'''{get_custom_job_specs(custom_training_job_specs, project_id)}''')
+
+def get_custom_job_specs(custom_training_job_specs: List[Dict], project_id: str) -> str:
+    """Generates python code that creates a custom training op from the specified component.
+    Args:
+        custom_training_job_specs: Specifies the specs to run the training job with.
+        project_id: The project_id to run the pipeline. 
+
+    Returns:
+        str: Python custom training op code.
+    """
+    quote = '\''
+    newline_tab = '\n    '
+    output_string = '' if not custom_training_job_specs else (
+            f'''    {newline_tab.join(f'{spec["component_spec"]}_custom_training_job_specs = {format_spec_dict(spec)}' for spec in custom_training_job_specs)}'''
+            f'\n'
+            f'''    {newline_tab.join(f'{spec["component_spec"]}_job_op = create_custom_training_job_op_from_component(**{spec["component_spec"]}_custom_training_job_specs)' for spec in custom_training_job_specs)}'''
+            f'\n'
+            f'''    {newline_tab.join(f'{spec["component_spec"]} = partial({spec["component_spec"]}_job_op, project={quote}{project_id}{quote})' for spec in custom_training_job_specs)}'''        
+            f'\n')
+    return output_string
+
+def format_spec_dict(job_spec: dict) -> str:
+    """Takes in a job spec dictionary and removes the quotes around the component op name. 
+       e.g. 'component_spec': 'train_model' becomes 'component_spec': train_model.
+       This is necessary to in order for the op to be callable within the Python code.
+
+    Args:
+        job_spec: Dictionary with job spec info.
+
+    Returns:
+        str: Python formatted dictionary code.
+    """
+    quote = '\''
+    left_bracket = '{'
+    right_bracket = '}'
+    newline = '\n'
+
+    return (
+        f'''{left_bracket}\n'''
+        f'''    {f'{newline}    '.join(f"   {quote}{k}{quote}: {quote if k != 'component_spec' else ''}{v}{quote if k != 'component_spec' else ''}," for k, v in job_spec.items())}{newline}'''
+        f'''    {right_bracket}\n''')
 
 def get_pipeline_argparse() -> str:
     """Generates python code that loads default pipeline parameters from the defaults config_file.
@@ -93,6 +147,7 @@ def get_pipeline_argparse() -> str:
         str: Python pipeline_argparse code.
     """
     return (
+        '''\n'''
         '''    compiler.Compiler().compile(\n'''
         '''        pipeline_func=pipeline,\n'''
         '''        package_path=pipeline_job_spec_path)\n'''

@@ -2,6 +2,7 @@ LICENSE
 README.md
 setup.py
 AutoMLOps/AutoMLOps.py
+AutoMLOps/AutoMLOps_test.py
 AutoMLOps/BuilderUtils.py
 AutoMLOps/CloudRunBuilder.py
 AutoMLOps/ComponentBuilder.py
