@@ -12,13 +12,12 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-import os
 import argparse
-import yaml
+import os
 import kfp
 from kfp.v2 import compiler, dsl
 from kfp.v2.dsl import pipeline, component, Artifact, Dataset, Input, Metrics, Model, Output, InputPath, OutputPath
-from kfp.v2.compiler import compiler
+import yaml
 
 def load_custom_component(component_name: str):
     component_path = os.path.join('components',
@@ -30,6 +29,7 @@ def create_training_pipeline(pipeline_job_spec_path: str):
     deploy_model = load_custom_component(component_name='deploy_model')
     train_model = load_custom_component(component_name='train_model')
     create_dataset = load_custom_component(component_name='create_dataset')
+
     
     @dsl.pipeline(
         name='training-pipeline',
@@ -67,6 +67,7 @@ def create_training_pipeline(pipeline_job_spec_path: str):
            region=region,
         ).after(train_model_task)
     
+
     compiler.Compiler().compile(
         pipeline_func=pipeline,
         package_path=pipeline_job_spec_path)

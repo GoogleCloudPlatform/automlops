@@ -48,7 +48,7 @@ gcloud services enable cloudresourcemanager.googleapis.com \
   sourcerepo.googleapis.com
 
 echo -e "$GREEN Checking for Artifact Registry: $AF_REGISTRY_NAME in project $PROJECT_ID $NC"
-if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "$AF_REGISTRY_NAME"); then
+if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep --fixed-strings "(^|[[:blank:]])$AF_REGISTRY_NAME($|[[:blank:]]))"; then
 
   echo "Creating Artifact Registry: ${AF_REGISTRY_NAME} in project $PROJECT_ID"
   gcloud artifacts repositories create "$AF_REGISTRY_NAME" \
@@ -65,7 +65,7 @@ fi
 
 
 echo -e "$GREEN Checking for GS Bucket: $BUCKET_NAME in project $PROJECT_ID $NC"
-if !(gsutil ls -b gs://$BUCKET_NAME | grep --fixed-strings "$BUCKET_NAME"); then
+if !(gsutil ls -b gs://$BUCKET_NAME | grep --fixed-strings "(^|[[:blank:]])$BUCKET_NAME($|[[:blank:]]))"; then
 
   echo "Creating GS Bucket: ${BUCKET_NAME} in project $PROJECT_ID"
   gsutil mb -l ${BUCKET_LOCATION} gs://$BUCKET_NAME
@@ -77,7 +77,7 @@ else
 fi
 
 echo -e "$GREEN Checking for Service Account: $SERVICE_ACCOUNT_NAME in project $PROJECT_ID $NC"
-if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep --fixed-strings "$SERVICE_ACCOUNT_FULL"); then
+if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep --fixed-strings "(^|[[:blank:]])$SERVICE_ACCOUNT_FULL($|[[:blank:]]))"; then
 
   echo "Creating Service Account: ${SERVICE_ACCOUNT_NAME} in project $PROJECT_ID"
   gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \
@@ -146,7 +146,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --no-user-output-enabled
 
 echo -e "$GREEN Checking for Cloud Source Repository: $CLOUD_SOURCE_REPO in project $PROJECT_ID $NC"
-if ! (gcloud source repos list --project="$PROJECT_ID" | grep --fixed-strings "$CLOUD_SOURCE_REPO"); then
+if ! (gcloud source repos list --project="$PROJECT_ID" | grep --fixed-strings "(^|[[:blank:]])$CLOUD_SOURCE_REPO($|[[:blank:]]))"; then
 
   echo "Creating Cloud Source Repository: ${CLOUD_SOURCE_REPO} in project $PROJECT_ID"
   gcloud source repos create $CLOUD_SOURCE_REPO
@@ -159,7 +159,7 @@ fi
 
 # Create cloud tasks queue
 echo -e "$GREEN Checking for Cloud Tasks Queue: $CLOUD_TASKS_QUEUE_NAME in project $PROJECT_ID $NC"
-if ! (gcloud tasks queues list --location $CLOUD_TASKS_QUEUE_LOCATION | grep --fixed-strings "$CLOUD_TASKS_QUEUE_NAME"); then
+if ! (gcloud tasks queues list --location $CLOUD_TASKS_QUEUE_LOCATION | grep --fixed-strings "(^|[[:blank:]])$CLOUD_TASKS_QUEUE_NAME($|[[:blank:]]))"; then
 
   echo "Creating Cloud Tasks Queue: ${CLOUD_TASKS_QUEUE_NAME} in project $PROJECT_ID"
   gcloud tasks queues create $CLOUD_TASKS_QUEUE_NAME \
@@ -173,7 +173,7 @@ fi
 
 # Create cloud build trigger
 echo -e "$GREEN Checking for Cloudbuild Trigger: $CB_TRIGGER_NAME in project $PROJECT_ID $NC"
-if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$CB_TRIGGER_LOCATION" | grep --fixed-strings "name: $CB_TRIGGER_NAME"); then
+if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$CB_TRIGGER_LOCATION" | grep --fixed-strings "(^|[[:blank:]])name: $CB_TRIGGER_NAME($|[[:blank:]]))"; then
 
   echo "Creating Cloudbuild Trigger on branch $CLOUD_SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${CLOUD_SOURCE_REPO}"
   gcloud beta builds triggers create cloud-source-repositories \

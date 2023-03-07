@@ -84,6 +84,7 @@ def create_requirements(top_lvl_name: str):
     cloud_run_reqs = (
         'kfp\n'
         'google-cloud-aiplatform\n'
+        'google-cloud-pipeline-components\n'
         'Flask\n'
         'gunicorn\n'
         'pyyaml\n'

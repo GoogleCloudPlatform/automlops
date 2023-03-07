@@ -8,7 +8,7 @@ In order to use AutoMLOps, the following are required:
 
 - Jupyter (or Jupyter-compatible) notebook environment
 - [Notebooks API](https://console.cloud.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
-- Python 3.0 - 3.10
+- Python 3.7 - 3.10
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
 - [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
 - `git` installed
@@ -25,9 +25,9 @@ gcloud config set account <account@example.com>
 
 # Install
 
-Clone the repo and install either via setup.py or wheel (wheel requires less processing):
-- setup.py: `pip install .`
-- wheel: `pip install dist/AutoMLOps-1.0.0-py2.py3-none-any.whl`
+Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/): `pip install google-cloud-automlops` 
+
+Or Install locally by cloning the repo and running `pip install .`
 
 # Dependencies
 - `autoflake==2.0.0`,
@@ -37,6 +37,17 @@ Clone the repo and install either via setup.py or wheel (wheel requires less pro
 - `pyflakes==3.0.1`,
 - `PyYAML==5.4.1`,
 - `yarg==0.1.9`
+
+# GCP Services
+AutoMLOps makes use of the following products by default:
+- [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+- [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview)
+- [Google Cloud Storage](https://cloud.google.com/storage/docs/introduction)
+- [Cloud Build](https://cloud.google.com/build/docs/overview)
+- [Cloud Build Triggers](https://cloud.google.com/build/docs/triggers)
+- [Cloud Run](https://cloud.google.com/run/docs/overview/what-is-cloud-run)
+- [Cloud Scheduler](https://cloud.google.com/scheduler/docs/overview)
+- [Cloud Tasks](https://cloud.google.com/tasks/docs)
 
 # APIs & IAM
 AutoMLOps will enable the following APIs:
@@ -98,17 +109,48 @@ Optional parameters (defaults shown):
 8. `cloud_tasks_queue_name: str = 'queueing-svc'`
 9. `csr_branch_name: str = 'automlops'`
 10. `csr_name: str = 'AutoMLOps-repo'`
-11. `gs_bucket_location: str = 'us-central1'`
-12. `gs_bucket_name: str = None`
-13. `pipeline_runner_sa: str = None`
-14. `run_local: bool = True`
-15. `schedule_location: str = 'us-central1'`
-16. `schedule_name: str = 'AutoMLOps-schedule'`
-17. `schedule_pattern: str = 'No Schedule Specified'`
-18. `use_kfp_spec: bool = False`
-19. `vpc_connector: str = None`
+11. `custom_training_job_specs: list[dict] = None`
+12. `gs_bucket_location: str = 'us-central1'`
+13. `gs_bucket_name: str = None`
+14. `pipeline_runner_sa: str = None`
+15. `run_local: bool = True`
+16. `schedule_location: str = 'us-central1'`
+17. `schedule_name: str = 'AutoMLOps-schedule'`
+18. `schedule_pattern: str = 'No Schedule Specified'`
+19. `use_kfp_spec: bool = False`
+20. `vpc_connector: str = None`
 
-AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. 
+AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
+
+# Customizations
+
+**Set scheduled run:**
+
+Use the `schedule_pattern` parameter to specify a cron job schedule to run the pipeline job on a recurring basis.
+```
+schedule_pattern = '0 */12 * * *'
+```
+
+**Set pipeline compute resources:**
+
+Use the `custom_training_job_specs` parameter to specify resources for any custom component in the pipeline.
+```
+custom_training_job_specs = [{
+    'component_spec': 'train_model',
+    'display_name': 'train-model-accelerated',
+    'machine_type': 'a2-highgpu-1g',
+    'accelerator_type': 'NVIDIA_TESLA_A100',
+    'accelerator_count': '1'
+}]
+```
+
+**Use a VPC connector:**
+
+Use the `vpc_connector` parameter to specify a vpc connector. 
+```
+vpc_connector = 'example-vpc'
+```
+
 
 # Layout
 
@@ -141,16 +183,6 @@ Included in the repository is an [example notebook](./example/automlops_example_
 └── cloudbuild.yaml                                : Cloudbuild configuration file for building custom components.
 ```
 
-AutoMLOps makes use of the following products by default:
-- [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
-- [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview)
-- [Google Cloud Storage](https://cloud.google.com/storage/docs/introduction)
-- [Cloud Build](https://cloud.google.com/build/docs/overview)
-- [Cloud Build Triggers](https://cloud.google.com/build/docs/triggers)
-- [Cloud Run](https://cloud.google.com/run/docs/overview/what-is-cloud-run)
-- [Cloud Scheduler](https://cloud.google.com/scheduler/docs/overview)
-- [Cloud Tasks](https://cloud.google.com/tasks/docs)
-
 # Cloud Continuous Integration and Continuous Deployment Workflow
 If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
 
@@ -158,8 +190,19 @@ If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD env
     <img src="./CICD.png" alt="CICD" width="1000"/>
 </p>
 
+# Pipeline Components
+
+The [example notebook](example/automlops_example_notebook.ipynb) comes with 3 components as part of the pipeline. Additional sample code for commonly used services can be found below:
+
+- [Feature Store](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/feature_store)
+- [BigQuery ML](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/bigquery_ml)
+- [Model Registry](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/model_registry)
+- [Experiments](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/experiments)
+- [ExplainableAI](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/explainable_ai)
+- [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/notebooks)
+- [Google Cloud Pipeline Components](https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/official/pipelines/custom_model_training_and_batch_prediction.ipynb)
+
 # Next Steps / Backlog
-- PyPI
 - Refine unit tests
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory

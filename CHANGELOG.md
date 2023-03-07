@@ -1,6 +1,36 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2023-03-06
+
+Official release on PyPI.
+
+## [1.0.3] - 2023-03-06
+
+Staging for PyPI.
+
+### Changed
+  
+- Cleaning up wheel and egg files from repo.
+- Remove dist/ and build/ directories.
+
+## [1.0.2] - 2023-03-06
+
+Added feature to allow for accelerated/distributed model training.
+ 
+### Added
+- Support for custom training job specs (specifies which resources to use for pipeline jobs).
+ 
+### Changed
+  
+- Updated readme and implementation guide.
+- New custom_training_job_specs parameter.
+- Changed workflow for PipelineBuilder
+ 
+### Fixed
+ 
+- Bug related to grep substring match for create_resources script.
+
 ## [1.0.1] - 2023-02-01
 
 Reworked process to submit jobs to cloud runner service.
