@@ -99,7 +99,7 @@ def read_file(filepath: str) -> str:
     Args:
         filepath: Path to the yaml.
     Returns:
-        dict: Contents of the yaml.
+        str: Contents of the file.
     Raises:
         Exception: If an error is encountered reading the file.
     """
