@@ -1,10 +1,36 @@
 from . import ComponentBuilder
 
+COMPONENT_DICT = (
+    {
+        'name': 'my_component',
+        'description':'my_test_component',
+        'inputs': 
+            {
+                'name': 'input1',
+                'type': 'String',
+                'description': 'No description provided.'
+            },
+        'implementation': 
+            {
+                'container': 
+                    {
+                        'image': 'docker_container',
+                        'command': 'my_command'
+                    }
+            }
+    }
+)
+
 def test_formalize():
     assert True
     
-def test_create_task():
-    assert True
+def test_create_task(tmpdir):
+    
+    actual = ComponentBuilder.create_task(component_spec=COMPONENT_DICT,
+                                          task_filepath=tmpdir,
+                                          use_kfp_spec=False)
+    
+    assert actual
     
 def test_create_component():
     assert True

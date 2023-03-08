@@ -1,11 +1,11 @@
-import pytest, pathlib, os
+import pytest, pathlib, os, yaml
 from . import BuilderUtils
 
-@pytest.fixture
-def write_yaml():
-    file_path = pathlib.Path("testing.yaml")
-    file_path.write_text(
-            
+TEXT_FILE = (    
+    'This is a test file.\n'
+    'Test.')
+
+GENERIC_YAML = (
     '# ===================================================\n'
     '# Test Yaml File'
     '# ===================================================\n'
@@ -19,64 +19,187 @@ def write_yaml():
     '  - name: "my_name2"\n'
     '    id: "my_id2"\n'
     '    description: my_description2'
-    )
+)
+
+GENERIC_DICT = (
+    {
+        'Test1' : [
+            {
+                'name': 'my_name1',
+                'id': 'my_id1',
+                'description': 'my_description1'
+            }
+        ],
+        'Test2': [
+            {
+                'name': 'my_name2',
+                'id': 'my_id2',
+                'description': 'my_description2'
+            }
+        ]
+    }
+)
+
+COMPONENT_YAML = (
+    'name: my_component\n'
+    'description: my test component\n'
+    'inputs:\n'
+    '- name: input1\n'
+    '  type: String\n'
+    '  description: No description provided.\n'
+    'implementation:\n'
+    '  container:\n'
+    '    image: docker_container\n'
+)
+
+COMPONENT_DICT = (
+    {
+        'name': 'my_component',
+        'description':'my_test_component',
+        'inputs': 
+            {
+                'name': 'input1',
+                'type': 'String',
+                'description': 'No description provided.'
+            },
+        'implementation': 
+            {
+                'container': 
+                    {
+                        'image': 'docker_container'
+                    }
+            }
+    }
+)
+
+@pytest.fixture
+def write_yaml():
+    file_path = pathlib.Path("generic.yaml")
+    file_path.write_text(GENERIC_YAML)
+    yield file_path
+    file_path.unlink()
+    
+@pytest.fixture
+def write_component_config():
+    file_path = pathlib.Path("component.yaml")
+    file_path.write_text(COMPONENT_YAML)
+    yield file_path
+    file_path.unlink()
+    
+@pytest.fixture
+def write_file():
+    file_path = pathlib.Path("text.txt")
+    file_path.write_text(TEXT_FILE)
     yield file_path
     file_path.unlink()
 
-def test_make_dirs():
-    assert True
+def test_make_dirs(tmpdir):
     
-def test_read_yaml_file(write_yaml):
-    
-    assert(BuilderUtils.read_yaml_file(write_yaml) == 
-           {'Test1' : [
-               {
-                   'name': 'my_name1',
-                   'id': 'my_id1',
-                   'description': 'my_description1'
-                }
-               ],
-            'Test2': [
-                {
-                    'name': 'my_name2',
-                    'id': 'my_id2',
-                    'description': 'my_description2'
-                }
-            ]})
-        
-    # Add test for an error reading a yaml file
-            
-def test_write_yaml_file():
-    # Can we write a yaml file and then read it back in to confirm it matches expected?
-    # I.e. can we assume that tests that were run earlier in the file are correct and use them?
-    assert True
+    # Test whether a list of directories are created appropriately
+    directories = [tmpdir + '/directory1', 
+                   tmpdir + '/directory2', 
+                   tmpdir + '/directory3']
 
-def test_read_file():
-    assert True
+    BuilderUtils.make_dirs(directories)
+    assert set(directories) == set(tmpdir.listdir())
     
-def test_write_file():
-    # What modes should be tested
-    assert True
+def test_read_yaml_file(write_yaml, tmpdir):
     
-def test_write_and_chmod():
-    assert True
+    # Test whether a yaml file creates the appropriate dictionary
+    assert(BuilderUtils.read_yaml_file(write_yaml) == GENERIC_DICT
+)
+    # Test whether an error is produced when the file does not exist
+    test_file = tmpdir + 'test.yaml'
+    with pytest.raises(FileNotFoundError):
+        assert BuilderUtils.read_file(test_file)
+    
+     
+def test_write_yaml_file(tmpdir):
+    
+    # Test that the dictionary is successfully converted to a yaml that can be read back into the same dict
+    test_file = tmpdir + "test_write_yaml_file.yaml"
+    BuilderUtils.write_yaml_file(filepath=test_file, contents=GENERIC_DICT, mode='w')
+    
+    assert yaml.safe_load(open(test_file, 'r', encoding='utf-8')) == GENERIC_DICT
+        
+def test_read_file(tmpdir, write_file):
+    
+    # Test correct file
+    assert BuilderUtils.read_file(write_file) == TEXT_FILE
+    
+    # Test incorrect file
+    with pytest.raises(FileNotFoundError):
+        assert BuilderUtils.read_file(tmpdir + 'test.yaml')
+    
+def test_write_file(tmpdir):
+    
+    # Test correct file
+    test_file = tmpdir + "test_write_file.txt"
+    BuilderUtils.write_file(filepath=test_file, text=TEXT_FILE, mode="w")
+    
+    with open(test_file, 'r', encoding='utf-8') as file:
+        contents = file.read()
+        assert contents == TEXT_FILE
+    file.close() 
+    
+    # Test incorrect file
+    with pytest.raises(OSError):
+        assert BuilderUtils.write_file("my_folder/test.yaml", text="text", mode="w")
+    
+def test_write_and_chmod(tmpdir):
+    # With all, check the file was written and that location is correct
+    
+    
+    # Test correct file
+    test_path = tmpdir + 'my_folder1'
+    test_file = test_path + '/test_write_and_chmod.txt'
+    os.makedirs(test_path)
+    BuilderUtils.write_and_chmod(test_file, TEXT_FILE)
+    
+    with open(test_file, 'r', encoding='utf-8') as file:
+        contents = file.read()
+        assert contents == TEXT_FILE
+    file.close()
+    
+    # TEST IF CHMOD WORKED
+    #assert os.getcwd() == test_path
+    
+    # Test incorrect file
+    with pytest.raises(OSError):
+        test_path = tmpdir + 'my_folder2'
+        test_file = test_path + '/test_write_and_chmod.txt'
+        BuilderUtils.write_and_chmod(test_file, TEXT_FILE)
+        
+        with open(test_file, 'r', encoding='utf-8') as file:
+            contents = file.read()
+            assert contents == TEXT_FILE
+        file.close()
     
 def test_delete_file(tmpdir):
     
     f = open(f"{tmpdir}/myfile.txt", "x")
-    
     BuilderUtils.delete_file(f"{tmpdir}/myfile.txt")
-    
     assert not os.path.exists(f"{tmpdir}/myfile.txt")
     
-def test_get_components_list():
+def test_get_components_list(tmpdir, write_component_config):
+    #write_component_config
+    #assert BuilderUtils.get_components_list()
+
     assert True
     
-def test_is_component_config():
-    assert True
-    
+def test_is_component_config(write_yaml, write_component_config):
+    assert BuilderUtils.is_component_config(write_component_config)
+    assert not BuilderUtils.is_component_config(write_yaml)
+
 def test_execute_script():
-    assert True
+    
+    # Test invalid command
+    with pytest.raises(RuntimeError):
+        assert BuilderUtils.execute_process(command='abcde',
+                                            to_null=False)
+        
+    # Test valid command
+    #assert BuilderUtils.execute_process(command='echo 1',to_null=False) == 1
 
 def test_validate_schedule():
     
@@ -88,10 +211,8 @@ def test_validate_schedule():
     # Check that error is not raised when it shouldn't be
     BuilderUtils.validate_schedule(schedule_pattern="*", 
                                    run_local=False)
-    
     BuilderUtils.validate_schedule(schedule_pattern="No Schedule Specified",
                                    run_local=True)
-    
     BuilderUtils.validate_schedule(schedule_pattern="No Schedule Specified",
                                    run_local=False)
     
