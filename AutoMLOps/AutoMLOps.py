@@ -195,6 +195,8 @@ def run(run_local: bool = True,
         os.chdir('../environment/')
         BuilderUtils.execute_process('./'+ 'terraform_runner.sh', to_null=False)
         os.chdir('../../')
+    else:
+        BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
     
     if run_local:
         os.chdir(TOP_LVL_NAME)

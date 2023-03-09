@@ -17,10 +17,7 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-import os
 import subprocess
-import yaml
-
 from AutoMLOps import BuilderUtils
 
 LEFT_BRACKET = '{'
@@ -44,18 +41,18 @@ def formalize(top_lvl_name: str,
     
     terraform_folder = top_lvl_name + 'terraform/environment/'
     
-    BuilderUtils.write_and_chmod(terraform_folder + 'main.tf', _create_main(run_local))
-    BuilderUtils.write_and_chmod(terraform_folder + 'versions.tf', _create_versions())
-    BuilderUtils.write_and_chmod(terraform_folder + 'iam.tf', _create_iam())
-    BuilderUtils.write_and_chmod(terraform_folder + 'variables.tf', _create_variables(defaults, run_local))
-    BuilderUtils.write_and_chmod(terraform_folder + 'variables.auto.tfvars', _create_variable_vals(defaults, run_local))
-    BuilderUtils.write_and_chmod(terraform_folder + 'backend.tf', _create_backend(defaults))
+    BuilderUtils.write_file(terraform_folder + 'main.tf', _create_main(run_local), 'w+')
+    BuilderUtils.write_file(terraform_folder + 'versions.tf', _create_versions(), 'w+')
+    BuilderUtils.write_file(terraform_folder + 'iam.tf', _create_iam(), 'w+')
+    BuilderUtils.write_file(terraform_folder + 'variables.tf', _create_variables(run_local), 'w+')
+    BuilderUtils.write_file(terraform_folder + 'variables.auto.tfvars', _create_variable_vals(defaults, run_local), 'w+')
+    BuilderUtils.write_file(terraform_folder + 'backend.tf', _create_backend(defaults), 'w+')
     BuilderUtils.write_and_chmod(terraform_folder + 'terraform_runner.sh', _create_runner_script())
     
     state_bucket_config = top_lvl_name + 'terraform/state_bucket/'
-    BuilderUtils.write_and_chmod(state_bucket_config + 'main.tf', _create_state_bucket_config())
-    BuilderUtils.write_and_chmod(state_bucket_config + 'variables.tf', _create_state_bucket_variables())
-    BuilderUtils.write_and_chmod(state_bucket_config + 'variables.auto.tfvars', _create_state_bucket_variable_vals(defaults))
+    BuilderUtils.write_file(state_bucket_config + 'main.tf', _create_state_bucket_config(), 'w+')
+    BuilderUtils.write_file(state_bucket_config + 'variables.tf', _create_state_bucket_variables(), 'w+')
+    BuilderUtils.write_file(state_bucket_config + 'variables.auto.tfvars', _create_state_bucket_variable_vals(defaults), 'w+')
     BuilderUtils.write_and_chmod(state_bucket_config + 'state_bucket_runner.sh', _create_state_bucket_runner())
     
 
@@ -220,12 +217,10 @@ def _create_iam():
        f'{RIGHT_BRACKET}\n'
     )
     
-def _create_variables(defaults: dict, 
-                      run_local: bool):
+def _create_variables(run_local: bool):
     """Generates code for variables.tf, the terraform script that describes all variables.
 
     Args:
-        defaults: Default config variables dictionary.
         run_local: Flag that determines whether to use Cloud Run CI/CD.
 
     Returns:
@@ -324,11 +319,7 @@ def _create_variable_vals(defaults: dict,
 
     Returns:
         str: Variable values terraform script.
-    """
-    # Find executing account
-    acct = subprocess.check_output('gcloud config list account --format "value(core.account)"', shell=True, text=True, stderr=subprocess.STDOUT).replace('\n', '')
-    acct_type = "user" if "gserviceaccount" in acct else "serviceAccount"
-    
+    """    
     variable_vals = (
         BuilderUtils.LICENSE +
         f'''project_id                  = "{defaults['gcp']['project_id']}"\n\n'''
@@ -369,6 +360,14 @@ def _create_runner_script():
     
 
 def _create_backend(defaults):
+    """Generates code for backend.tf, the terraform script that contains details on the remote state file.
+
+    Args:
+        defaults: Default config variables dictionary.
+
+    Returns:
+        str: Backend terraform script.
+    """
     return (
         BuilderUtils.LICENSE +
         f'''terraform {LEFT_BRACKET}\n'''
@@ -380,6 +379,11 @@ def _create_backend(defaults):
     )
 
 def _create_state_bucket_config():
+    """Generates code for the terraform script that creates the GCS bucket to hold the remote state file.
+
+    Returns:
+        str: GCS bucket main config terraform script.
+    """
     return (
         BuilderUtils.LICENSE +
         _create_versions() +
@@ -408,6 +412,12 @@ def _create_state_bucket_config():
     )
 
 def _create_state_bucket_variables():
+    """Generates code for variables.tf, the terraform script that describes all variables 
+        to create the GCS bucket to hold the remote state file.
+
+    Returns:
+        str: State bucket variables script.
+    """
     return (
         BuilderUtils.LICENSE +
         f'variable "project_id" {LEFT_BRACKET}\n'
@@ -428,6 +438,15 @@ def _create_state_bucket_variables():
     )
     
 def _create_state_bucket_variable_vals(defaults):
+    """Generates code for variables.auto.tfvars, the terraform script that contains the values of all 
+        variables to create the GCS bucket to hold the remote state file.
+
+    Args:
+        defaults: Default config variables dictionary.
+
+    Returns:
+        str: State bucket variable values terraform script.
+    """
     return (
         BuilderUtils.LICENSE +
         f'''project_id                  = "{defaults['gcp']['project_id']}"\n\n'''
@@ -436,6 +455,12 @@ def _create_state_bucket_variable_vals(defaults):
     )
     
 def _create_state_bucket_runner():
+    """Generates code for state_bucket_runner.sh, the runner shell script for the terraform module
+        that creates the GCS bucket to hold the remote state file.
+
+    Returns:
+        str: Terraform runner script.
+    """
     return (
         f'''#!/bin/bash\n'''
         + BuilderUtils.LICENSE +
