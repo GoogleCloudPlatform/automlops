@@ -8,7 +8,7 @@ In order to use AutoMLOps, the following are required:
 
 - Jupyter (or Jupyter-compatible) notebook environment
 - [Notebooks API](https://console.cloud.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
-- Python 3.0 - 3.10
+- Python 3.7 - 3.10
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
 - [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
 - `git` installed
@@ -25,9 +25,9 @@ gcloud config set account <account@example.com>
 
 # Install
 
-Clone the repo and install either via setup.py or wheel (wheel requires less processing):
-- setup.py: `pip install .`
-- wheel: `pip install dist/AutoMLOps-1.0.2-py2.py3-none-any.whl`
+Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/): `pip install google-cloud-automlops` 
+
+Or Install locally by cloning the repo and running `pip install .`
 
 # Dependencies
 - `autoflake==2.0.0`,
@@ -203,7 +203,6 @@ The [example notebook](example/automlops_example_notebook.ipynb) comes with 3 co
 - [Google Cloud Pipeline Components](https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/official/pipelines/custom_model_training_and_batch_prediction.ipynb)
 
 # Next Steps / Backlog
-- PyPI
 - Refine unit tests
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory
