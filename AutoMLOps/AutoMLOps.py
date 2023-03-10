@@ -119,7 +119,7 @@ def go(project_id: str,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
-             pipeline_runner_sa, run_local, use_terraform, schedule_location, 
+             pipeline_runner_sa, run_local, use_terraform, schedule_location,
              schedule_name, schedule_pattern, use_kfp_spec, vpc_connector)
     run(run_local, use_terraform)
 
@@ -161,7 +161,7 @@ def generate(project_id: str,
                            default_pipeline_runner_sa, project_id, schedule_location,
                            schedule_name, schedule_pattern, vpc_connector)
 
-    _create_scripts(run_local)
+    _create_scripts()
     _create_cloudbuild_config(run_local)
     # copy tmp pipeline file over to AutoMLOps dir
     BuilderUtils.execute_process(f'cp {BuilderUtils.PIPELINE_TMPFILE} {PIPELINE_FILE}', to_null=False)
@@ -190,14 +190,13 @@ def run(run_local: bool = True,
         use_terraform: Flag that determines whether to create resources using Terraform or a shell script.
     """
     if use_terraform:
-        os.chdir(TOP_LVL_NAME + 'terraform/state_bucket/')    
+        os.chdir(TOP_LVL_NAME + 'terraform/state_bucket/')
         BuilderUtils.execute_process('./'+ 'state_bucket_runner.sh', to_null=False)
         os.chdir('../environment/')
         BuilderUtils.execute_process('./'+ 'terraform_runner.sh', to_null=False)
         os.chdir('../../')
     else:
         BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
-    
     if run_local:
         os.chdir(TOP_LVL_NAME)
         BuilderUtils.execute_process('./scripts/run_all.sh', to_null=False)
@@ -304,10 +303,7 @@ def _create_default_config(af_registry_location: str,
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         vpc_connector: The name of the vpc connector to use.
     """
-    
-    project_number = str(subprocess.check_output(f'gcloud projects describe {project_id} --format "value(projectNumber)"', shell=True, stderr=subprocess.STDOUT)).replace("b'", "").replace("\\n'", "")
-    
-    
+    project_number = str(subprocess.check_output(f'''gcloud projects describe {project_id} --format "value(projectNumber)"''', shell=True, stderr=subprocess.STDOUT)).replace("b'", "").replace("\\n'", "")
     defaults = (BuilderUtils.LICENSE +
         f'# These values are descriptive only - do not change.\n'
         f'# Rerun AutoMLOps.generate() to change these values.\n'
@@ -340,7 +336,7 @@ def _create_default_config(af_registry_location: str,
         f'  pipeline_storage_path: gs://{gs_bucket_name}/pipeline_root\n')
     BuilderUtils.write_file(DEFAULTS_FILE, defaults, 'w+')
 
-def _create_scripts(run_local: bool):
+def _create_scripts():
     """Writes various shell scripts used for pipeline and component
        construction, as well as pipeline execution.
 

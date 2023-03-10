@@ -22,8 +22,8 @@ from AutoMLOps import BuilderUtils
 LEFT_BRACKET = '{'
 RIGHT_BRACKET = '}'
 
-def formalize(top_lvl_name: str, 
-              defaults_file: str, 
+def formalize(top_lvl_name: str,
+              defaults_file: str,
               run_local: bool):
     """Constructs and writes terraform scripts: Generates infrastructure using terraform resource management style.
 
@@ -33,13 +33,13 @@ def formalize(top_lvl_name: str,
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
     defaults = BuilderUtils.read_yaml_file(defaults_file)
-        
+
     BuilderUtils.make_dirs([top_lvl_name + 'terraform',
                             top_lvl_name + 'terraform/environment',
                             top_lvl_name + 'terraform/state_bucket'])
-    
+
     terraform_folder = top_lvl_name + 'terraform/environment/'
-    
+
     BuilderUtils.write_file(terraform_folder + 'main.tf', _create_main(run_local), 'w+')
     BuilderUtils.write_file(terraform_folder + 'versions.tf', _create_versions(), 'w+')
     BuilderUtils.write_file(terraform_folder + 'iam.tf', _create_iam(), 'w+')
@@ -47,13 +47,12 @@ def formalize(top_lvl_name: str,
     BuilderUtils.write_file(terraform_folder + 'variables.auto.tfvars', _create_variable_vals(defaults, run_local), 'w+')
     BuilderUtils.write_file(terraform_folder + 'backend.tf', _create_backend(defaults), 'w+')
     BuilderUtils.write_and_chmod(terraform_folder + 'terraform_runner.sh', _create_runner_script())
-    
+
     state_bucket_config = top_lvl_name + 'terraform/state_bucket/'
     BuilderUtils.write_file(state_bucket_config + 'main.tf', _create_state_bucket_config(), 'w+')
     BuilderUtils.write_file(state_bucket_config + 'variables.tf', _create_state_bucket_variables(), 'w+')
     BuilderUtils.write_file(state_bucket_config + 'variables.auto.tfvars', _create_state_bucket_variable_vals(defaults), 'w+')
     BuilderUtils.write_and_chmod(state_bucket_config + 'state_bucket_runner.sh', _create_state_bucket_runner())
-    
 
 def _create_main(run_local: bool):
     """Generates code for main.tf, the terraform script that creates the primary resources.
@@ -122,7 +121,7 @@ def _create_main(run_local: bool):
         f'{RIGHT_BRACKET}\n'
         f'\n'
         )
-    
+
     if not run_local:
         main += (
             f'# Create cloud build trigger\n'
@@ -141,7 +140,7 @@ def _create_main(run_local: bool):
             f'  filename                = "AutoMLOps/cloudbuild.yaml"\n'
             f'{RIGHT_BRACKET}\n'
         )
-        
+
     return main
 
 def _create_versions():
@@ -163,7 +162,7 @@ def _create_versions():
         f'  {RIGHT_BRACKET}\n'
         f'{RIGHT_BRACKET}'
     )
-    
+
 def _create_iam():
     """Generates code for iam.tf, the terraform script that contains changes to IAM permissions.
 
@@ -215,7 +214,7 @@ def _create_iam():
        f'    ]\n'
        f'{RIGHT_BRACKET}\n'
     )
-    
+
 def _create_variables(run_local: bool):
     """Generates code for variables.tf, the terraform script that describes all variables.
 
@@ -277,7 +276,7 @@ def _create_variables(run_local: bool):
        f'  default       = "us-central1"\n'
        f'{RIGHT_BRACKET}\n'
     )
-    
+
     if not run_local:
         variables += (
             f'\n'
@@ -305,7 +304,7 @@ def _create_variables(run_local: bool):
             f'  default       = "AutoMLOps-repo"\n'
             f'{RIGHT_BRACKET}'
         )
-    
+
     return variables
 
 def _create_variable_vals(defaults: dict, 
@@ -330,16 +329,14 @@ def _create_variable_vals(defaults: dict,
         f'''cloud_tasks_queue_name      = "{defaults['gcp']['cloud_tasks_queue_name']}"\n\n'''
         f'''cloud_tasks_queue_location  = "{defaults['gcp']['cloud_tasks_queue_location']}"\n\n'''
     )
-    
+
     if not run_local:
-                
         variable_vals += (
             f'''cb_trigger_name             = "{defaults['gcp']['cb_trigger_name']}"\n\n'''
             f'''cb_trigger_location         = "{defaults['gcp']['cb_trigger_location']}"\n\n'''
             f'''csr_name                    = "{defaults['gcp']['cloud_source_repository']}"\n\n'''
             f'''csr_branch_name             = "{defaults['gcp']['cloud_source_repository_branch']}"\n\n'''
         )
-    
     return variable_vals
 
 def _create_runner_script():
@@ -356,7 +353,6 @@ def _create_runner_script():
         'terraform validate\n'
         'terraform apply -auto-approve\n'
     )
-    
 
 def _create_backend(defaults):
     """Generates code for backend.tf, the terraform script that contains details on the remote state file.
@@ -435,7 +431,7 @@ def _create_state_bucket_variables():
         f'  default       = "us-central1"\n'
         f'{RIGHT_BRACKET}\n'
     )
-    
+
 def _create_state_bucket_variable_vals(defaults):
     """Generates code for variables.auto.tfvars, the terraform script that contains the values of all 
         variables to create the GCS bucket to hold the remote state file.
@@ -452,7 +448,7 @@ def _create_state_bucket_variable_vals(defaults):
         f'''gs_bucket_name              = "{defaults['gcp']['gs_bucket_name']}-bucket-tfstate"\n\n'''
         f'''gs_bucket_location          = "{defaults['gcp']['gs_bucket_location']}"\n\n'''
     )
-    
+
 def _create_state_bucket_runner():
     """Generates code for state_bucket_runner.sh, the runner shell script for the terraform module
         that creates the GCS bucket to hold the remote state file.
