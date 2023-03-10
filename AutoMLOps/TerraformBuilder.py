@@ -307,7 +307,7 @@ def _create_variables(run_local: bool):
 
     return variables
 
-def _create_variable_vals(defaults: dict, 
+def _create_variable_vals(defaults: dict,
                           run_local: bool):
     """Generates code for variables.auto.tfvars, the terraform script that contains the values of all variables.
 
@@ -317,7 +317,7 @@ def _create_variable_vals(defaults: dict,
 
     Returns:
         str: Variable values terraform script.
-    """    
+    """
     variable_vals = (
         BuilderUtils.LICENSE +
         f'''project_id                  = "{defaults['gcp']['project_id']}"\n\n'''

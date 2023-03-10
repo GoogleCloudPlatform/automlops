@@ -303,7 +303,7 @@ def _create_default_config(af_registry_location: str,
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         vpc_connector: The name of the vpc connector to use.
     """
-    project_number = str(subprocess.check_output(f'''gcloud projects describe {project_id} --format "value(projectNumber)"''', shell=True, stderr=subprocess.STDOUT)).replace("b'", "").replace("\\n'", "")
+    project_number = str(subprocess.check_output(f'''gcloud projects describe {project_id} --format "value(projectNumber)"''', shell=True, stderr=subprocess.STDOUT)).replace('b\'', '').replace('\\n\'', '')
     defaults = (BuilderUtils.LICENSE +
         f'# These values are descriptive only - do not change.\n'
         f'# Rerun AutoMLOps.generate() to change these values.\n'
