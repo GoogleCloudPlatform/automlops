@@ -17,7 +17,6 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-import subprocess
 from AutoMLOps import BuilderUtils
 
 LEFT_BRACKET = '{'
@@ -350,12 +349,12 @@ def _create_runner_script():
         str: Terraform runner script.
     """
     return (
-        f'''#!/bin/bash\n'''
+        '#!/bin/bash\n'
         + BuilderUtils.LICENSE +
-        f'''# Submit terraform run creating all resources\n'''
-        f'''terraform init\n'''
-        f'''terraform validate\n'''
-        f'''terraform apply -auto-approve\n'''
+        '# Submit terraform run creating all resources\n'
+        'terraform init\n'
+        'terraform validate\n'
+        'terraform apply -auto-approve\n'
     )
     
 
@@ -462,10 +461,10 @@ def _create_state_bucket_runner():
         str: Terraform runner script.
     """
     return (
-        f'''#!/bin/bash\n'''
+        '#!/bin/bash\n'
         + BuilderUtils.LICENSE +
-        f'''# Submit initial terraform run creating gcs bucket to hold state file\n'''
-        f'''terraform init\n'''
-        f'''terraform validate\n'''
-        f'''terraform apply -auto-approve\n'''
+        '# Submit initial terraform run creating gcs bucket to hold state file\n'
+        'terraform init\n'
+        'terraform validate\n'
+        'terraform apply -auto-approve\n'
     )

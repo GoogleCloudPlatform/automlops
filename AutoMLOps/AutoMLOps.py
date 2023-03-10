@@ -326,6 +326,7 @@ def _create_default_config(af_registry_location: str,
         f'  cloud_source_repository: {csr_name}\n'
         f'  cloud_source_repository_branch: {csr_branch_name}\n'
         f'  gs_bucket_name: {gs_bucket_name}\n'
+        f'  gs_bucket_location: {gs_bucket_location}\n'
         f'  pipeline_runner_service_account: {pipeline_runner_sa}\n'
         f'  project_id: {project_id}\n'
         f'  project_number: {project_number}\n'
