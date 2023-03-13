@@ -31,23 +31,43 @@ def formalize(top_lvl_name: str,
         top_lvl_name: Top directory name.
         defaults_file: Path to the default config variables yaml.
     """
+
+    # Creates directories to be filled
     BuilderUtils.make_dirs([top_lvl_name + 'cloud_run',
                             top_lvl_name + 'cloud_run/run_pipeline',
                             top_lvl_name + 'cloud_run/queueing_svc'])
-    create_dockerfile(top_lvl_name)
-    create_requirements(top_lvl_name)
-    create_mains(top_lvl_name, defaults_file)
+
+    # Writes Dockerfile
+    BuilderUtils.write_file(f'{top_lvl_name}cloud_run/run_pipeline/Dockerfile',
+                            _create_dockerfile(), 
+                            'w')
+
+    # Writes requirements.txt files
+    BuilderUtils.write_file(f'{top_lvl_name}cloud_run/run_pipeline/requirements.txt', 
+                            _create_cloudrun_reqs(), 
+                            'w')
+    BuilderUtils.write_file(f'{top_lvl_name}cloud_run/queueing_svc/requirements.txt',
+                            _create_queueing_svc_reqs(),
+                            'w')
+
+    # Writes main.py files
+    defaults = BuilderUtils.read_yaml_file(defaults_file)
+    BuilderUtils.write_file(f'{top_lvl_name}cloud_run/run_pipeline/main.py',
+                            _create_cloud_run_code(), 
+                            'w')
+    BuilderUtils.write_file(f'{top_lvl_name}cloud_run/queueing_svc/main.py', 
+                            _create_queueing_svc_code(defaults), 
+                            'w')
     # copy runtime parameters over to queueing_svc dir
     BuilderUtils.execute_process(f'''cp -r {top_lvl_name + BuilderUtils.PARAMETER_VALUES_PATH} {top_lvl_name + 'cloud_run/queueing_svc'}''', to_null=False)
 
-def create_dockerfile(top_lvl_name: str):
-    """Writes a Dockerfile to the cloud_run/run_pipeline directory.
+def _create_dockerfile():
+    """Creates dockerfile content.
 
-    Args:
-        top_lvl_name: Top directory name.
+    Returns:
+        str: Dockerfile content.
     """
-    cloudrun_base = top_lvl_name + 'cloud_run/run_pipeline'
-    dockerfile = (BuilderUtils.LICENSE +
+    return (BuilderUtils.LICENSE +
         'FROM python:3.9\n'
         '\n'
         '# Allow statements and log messages to immediately appear in the Knative logs\n'
@@ -69,19 +89,14 @@ def create_dockerfile(top_lvl_name: str):
         '# Run flask api server\n'
         'CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app\n'
     )
-    BuilderUtils.write_file(f'{cloudrun_base}/Dockerfile', dockerfile, 'w')
 
-def create_requirements(top_lvl_name: str):
-    """Writes a requirements.txt to the cloud_run/run_pipeline
-       directory, and a requirements.txt to the cloud_run/queueing_svc
-       directory.
+def _create_cloudrun_reqs():
+    """Creates list of requirements for the cloudrun.
 
-    Args:
-        top_lvl_name: Top directory name.
+    Returns:
+        str: Content for requirements.txt.
     """
-    cloudrun_base = top_lvl_name + 'cloud_run/run_pipeline'
-    queueing_svc_base = top_lvl_name + 'cloud_run/queueing_svc'
-    cloud_run_reqs = (
+    return (
         'kfp\n'
         'google-cloud-aiplatform\n'
         'google-cloud-pipeline-components\n'
@@ -89,36 +104,33 @@ def create_requirements(top_lvl_name: str):
         'gunicorn\n'
         'pyyaml\n'
     )
-    queueing_svc_reqs = (
+    
+def _create_queueing_svc_reqs():
+    """Creates list of requirements for the queueing svc.
+
+    Returns:
+        str: Content for requirements.txt.
+    """
+    return (
         'google-cloud\n'
         'google-cloud-tasks\n'
         'google-api-python-client\n'
         'google-cloud-run\n'
         'google-cloud-scheduler\n'
     )
-    BuilderUtils.write_file(f'{cloudrun_base}/requirements.txt', cloud_run_reqs, 'w')
-    BuilderUtils.write_file(f'{queueing_svc_base}/requirements.txt', queueing_svc_reqs, 'w')
 
-def create_mains(top_lvl_name: str,
-                 defaults_file: str):
-    """Writes a main.py to the cloud_run/run_pipeline
-       directory. This file contains code for running
+def _create_cloud_run_code():
+    """Creates cloud run code for running
        a flask service that will act as a pipeline
-       runner service. Also writes a main.py to
-       the cloud_run/queueing_svc directory. This file
-       contains code for submitting a job to the cloud
-       runner service, and creating a cloud scheduler job.
+       runner service.
 
-    Args:
-        top_lvl_name: Top directory name.
-        defaults_file: Path to the default config variables yaml.
+    Returns:
+        str: Code to be written to main.py.
     """
-    defaults = BuilderUtils.read_yaml_file(defaults_file)
-    cloudrun_base = top_lvl_name + 'cloud_run/run_pipeline'
-    queueing_svc_base = top_lvl_name + 'cloud_run/queueing_svc'
     left_bracket = '{'
     right_bracket = '}'
-    cloud_run_code = (BuilderUtils.LICENSE +
+    
+    return (BuilderUtils.LICENSE +
         f'''"""Cloud Run to run pipeline spec"""\n'''
         f'''import logging\n'''
         f'''import os\n'''
@@ -210,7 +222,17 @@ def create_mains(top_lvl_name: str,
         f'''if __name__ == '__main__':\n'''
         f'''    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))\n''')
 
-    queueing_svc_code = (BuilderUtils.LICENSE +
+def _create_queueing_svc_code(defaults):
+    """Creates queueing svc code for submitting a job to the cloud
+       runner service, and creating a cloud scheduler job.
+
+    Return:
+        str: Code to be written to main.py.
+    """
+    left_bracket = '{'
+    right_bracket = '}'
+    
+    return (BuilderUtils.LICENSE +
         f'''"""Submit pipeline job using Cloud Tasks and create Cloud Scheduler Job."""\n'''
         f'''import argparse\n'''
         f'''import json\n'''
@@ -387,5 +409,3 @@ def create_mains(top_lvl_name: str,
         f'''            schedule_location=SCHEDULE_LOCATION,\n'''
         f'''            schedule_name=SCHEDULE_NAME,\n'''
         f'''            schedule_pattern=SCHEDULE_PATTERN)\n''')
-    BuilderUtils.write_file(f'{cloudrun_base}/main.py', cloud_run_code, 'w')
-    BuilderUtils.write_file(f'{queueing_svc_base}/main.py', queueing_svc_code, 'w')
