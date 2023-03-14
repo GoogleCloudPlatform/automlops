@@ -80,11 +80,11 @@ def go(project_id: str,
        gs_bucket_name: str = None,
        pipeline_runner_sa: str = None,
        run_local: bool = True,
-       use_terraform: bool = False,
        schedule_location: str = 'us-central1',
        schedule_name: str = 'AutoMLOps-schedule',
        schedule_pattern: str = 'No Schedule Specified',
        use_kfp_spec: bool = False,
+       use_terraform: bool = False,
        vpc_connector: str = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts,
        then builds, compiles, and submits the PipelineJob.
@@ -107,11 +107,11 @@ def go(project_id: str,
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
         run_local: Flag that determines whether to use Cloud Run CI/CD.
-        use_terraform: Flag that determines whether to create resources using Terraform or a shell script.
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         use_kfp_spec: Flag that determines the format of the component yamls.
+        use_terraform: Flag that determines whether to create resources using Terraform or a shell script.
         vpc_connector: The name of the vpc connector to use.
     """
     generate(project_id, pipeline_params, af_registry_location,
@@ -119,8 +119,8 @@ def go(project_id: str,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
-             pipeline_runner_sa, run_local, use_terraform, schedule_location,
-             schedule_name, schedule_pattern, use_kfp_spec, vpc_connector)
+             pipeline_runner_sa, run_local, schedule_location, schedule_name, 
+             schedule_pattern, use_kfp_spec, use_terraform, vpc_connector)
     run(run_local, use_terraform)
 
 def generate(project_id: str,
@@ -140,11 +140,11 @@ def generate(project_id: str,
              gs_bucket_name: str = None,
              pipeline_runner_sa: str = None,
              run_local: bool = True,
-             use_terraform: bool = False,
              schedule_location: str = 'us-central1',
              schedule_name: str = 'AutoMLOps-schedule',
              schedule_pattern: str = 'No Schedule Specified',
              use_kfp_spec: bool = False,
+             use_terraform: bool = False,
              vpc_connector: str = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts.
 
@@ -194,7 +194,7 @@ def run(run_local: bool = True,
         BuilderUtils.execute_process('./'+ 'state_bucket_runner.sh', to_null=False)
         os.chdir('../environment/')
         BuilderUtils.execute_process('./'+ 'terraform_runner.sh', to_null=False)
-        os.chdir('../../')
+        os.chdir('../../../')
     else:
         BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
     if run_local:
