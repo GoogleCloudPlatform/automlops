@@ -119,7 +119,7 @@ def go(project_id: str,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
-             pipeline_runner_sa, run_local, schedule_location, schedule_name, 
+             pipeline_runner_sa, run_local, schedule_location, schedule_name,
              schedule_pattern, use_kfp_spec, use_terraform, vpc_connector)
     run(run_local, use_terraform)
 
