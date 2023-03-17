@@ -129,7 +129,7 @@ def _create_main(run_local: bool):
             f'  project                 = var.project_id\n'
             f'  name                    = var.cb_trigger_name\n'
             f'  location                = var.cb_trigger_location\n'
-            f'  service_account         = "${LEFT_BRACKET}var.cloudbuild_runner_sa{RIGHT_BRACKET}@${LEFT_BRACKET}var.project_id{RIGHT_BRACKET}.iam.gserviceaccount.com"\n'
+            f'  service_account         = google_service_account.cloudbuild_service_account.id\n'
             f'  depends_on              = [module.google_project_service, module.cloudbuild_sa_member_roles]\n'
             f'\n'
             f'  trigger_template {LEFT_BRACKET}\n'
