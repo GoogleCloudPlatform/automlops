@@ -19,7 +19,7 @@ with open('README.md', 'r', encoding='utf-8') as file:
 
 setup(
     name='google-cloud-automlops',
-    version='1.0.5',
+    version='1.1.0',
     description='AutoMLOps is a service that generates a production-style \
         MLOps pipeline from Jupyter Notebooks.',
     long_description=readme_contents,
@@ -29,11 +29,8 @@ setup(
     author_email='srastatter@google.com',
     license='Apache-2.0',
     packages=['AutoMLOps'],
-    install_requires=['autoflake==2.0.0',
-                      'docopt==0.6.2',
-                      'ipython==7.34.0',
+    install_requires=['docopt==0.6.2',
                       'pipreqs==0.4.11',
-                      'pyflakes==3.0.1',
                       'PyYAML==5.4.1',
                       'yarg==0.1.9'],
     classifiers=[

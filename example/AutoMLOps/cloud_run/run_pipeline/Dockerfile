@@ -12,7 +12,7 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-FROM python:3.9
+FROM python:3.9-slim
 
 # Allow statements and log messages to immediately appear in the Knative logs
 ENV PYTHONUNBUFFERED True

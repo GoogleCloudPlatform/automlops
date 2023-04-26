@@ -13,17 +13,17 @@
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
 name: create_dataset
-description: Loads data from BQ and writes a dataframe as a csv to GCS.
+description: Custom component that takes in a BQ table and writes it to GCS.
 inputs:
 - name: bq_table
+  description: The source biquery table.
   type: String
-  description: No description provided.
 - name: data_path
+  description: The gcs location to write the csv.
   type: String
-  description: GS location where the training data is written.
 - name: project_id
+  description: The project ID.
   type: String
-  description: Project_id.
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest

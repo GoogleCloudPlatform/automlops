@@ -14,23 +14,26 @@
 
 import argparse
 import json
+import kfp
+from kfp.v2 import dsl
 from kfp.v2.components import executor
-import json
-from google.cloud import aiplatform
+from kfp.v2.dsl import *
+from typing import *
 
 def deploy_model(
     model_directory: str,
     project_id: str,
-    region: str,
+    region: str
 ):
-    """Trains a decision tree on the training data.
+    """Custom component that trains a decision tree on the training data.
 
     Args:
-        model_directory: GS location of saved model.,
-        project_id: Project_id.,
-        region: Region.,
-    """    
-    # Component code goes below:
+        model_directory: GS location of saved model.
+        project_id: Project_id.
+        region: Region.
+    """
+    from google.cloud import aiplatform
+
     aiplatform.init(project=project_id, location=region)
     deployed_model = aiplatform.Model.upload(
         display_name="beans-model-pipeline",

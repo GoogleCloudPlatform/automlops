@@ -13,17 +13,17 @@
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
 name: deploy_model
-description: Trains a decision tree on the training data.
+description: Custom component that trains a decision tree on the training data.
 inputs:
 - name: model_directory
-  type: String
   description: GS location of saved model.
+  type: String
 - name: project_id
-  type: String
   description: Project_id.
-- name: region
   type: String
+- name: region
   description: Region.
+  type: String
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
