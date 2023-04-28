@@ -21,6 +21,7 @@ import inspect
 from typing import Callable, List, Optional, TypeVar, Union
 
 import docstring_parser
+
 from AutoMLOps import BuilderUtils
 
 T = TypeVar('T')
@@ -63,19 +64,19 @@ def create_task(component_spec: dict, task_filepath: str, use_kfp_spec: bool):
     Raises:
         Exception: If the imports tmpfile does not exist.
     """
-    # if use_kfp_spec:
-    #     custom_code = component_spec['implementation']['container']['command'][-1]
-    # else:
     custom_code = component_spec['implementation']['container']['command'][-1]
     default_imports = (BuilderUtils.LICENSE +
         'import argparse\n'
         'import json\n'
-        'import kfp\n'
+        'from kfp.v2.components import executor\n')
+    if not use_kfp_spec:
+        custom_imports = ('import kfp\n'
         'from kfp.v2 import dsl\n'
-        'from kfp.v2.components import executor\n'
         'from kfp.v2.dsl import *\n'
         'from typing import *\n'
         '\n')
+    else:
+        custom_imports = '' # included as part of the kfp spec
     main_func = (
         '\n'
         '''def main():\n'''
@@ -94,7 +95,7 @@ def create_task(component_spec: dict, task_filepath: str, use_kfp_spec: bool):
         '\n'
         '''if __name__ == '__main__':\n'''
         '''    main()\n''')
-    f_contents = default_imports + custom_code + main_func
+    f_contents = default_imports + custom_imports + custom_code + main_func
     BuilderUtils.write_file(task_filepath, f_contents, 'w+')
 
 def create_component(component_spec: dict,
@@ -177,6 +178,7 @@ def _get_packages_to_install_command(func: Optional[Callable] = None,
         packages_to_install = []
     concat_package_list = ' '.join(
         [repr(str(package)) for package in packages_to_install])
+    # pylint: disable=anomalous-backslash-in-string
     install_python_packages_script = (
     f'''if ! [ -x "$(command -v pip)" ]; then{newline}'''
     f'''    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip{newline}'''
@@ -202,6 +204,7 @@ def _get_function_parameters(func: Callable) -> dict:
         metadata['type'] = _maybe_strip_optional_from_annotation(
             param.annotation)
         parameter_holder.append(metadata)
+        # pylint: disable=protected-access
         if metadata['type'] == inspect._empty:
             raise TypeError(
                 f'''Missing type hint for parameter "{metadata['name']}". '''

@@ -155,7 +155,6 @@ def generate(project_id: str,
                            csr_name, gs_bucket_location, default_bucket_name,
                            default_pipeline_runner_sa, project_id, schedule_location,
                            schedule_name, schedule_pattern, vpc_connector)
-
     _create_scripts(run_local)
     _create_cloudbuild_config(run_local)
     # copy tmp pipeline file over to AutoMLOps dir
@@ -743,7 +742,7 @@ def _create_requirements():
         formatted_reqs = re.findall('\'([^\']*)\'', reqs)
         user_inp_reqs.extend(formatted_reqs)
     # Remove duplicates
-    set_of_requirements = set(pipreqs + user_inp_reqs + default_gcp_reqs)
+    set_of_requirements = set(user_inp_reqs) if user_inp_reqs else set(pipreqs + default_gcp_reqs)
     reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
     BuilderUtils.delete_file(reqs_filename)
     BuilderUtils.write_file(reqs_filename, reqs_str, 'w')
@@ -785,7 +784,7 @@ def component(func: Optional[Callable] = None,
             component,
             packages_to_install=packages_to_install)
     else:
-        ComponentBuilder.create_component_scaffold(
+        return ComponentBuilder.create_component_scaffold(
             func=func,
             packages_to_install=packages_to_install)
 
@@ -822,7 +821,7 @@ def pipeline(func: Optional[Callable] = None,
             name=name,
             description=description)
     else:
-        PipelineBuilder.create_pipeline_scaffold(
+        return PipelineBuilder.create_pipeline_scaffold(
             func=func,
             name=name,
             description=description)

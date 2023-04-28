@@ -30,6 +30,7 @@ setup(
     license='Apache-2.0',
     packages=['AutoMLOps'],
     install_requires=['docopt==0.6.2',
+                      'docstring-parser==0.15',
                       'pipreqs==0.4.11',
                       'PyYAML==5.4.1',
                       'yarg==0.1.9'],
