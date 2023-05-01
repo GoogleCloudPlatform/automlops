@@ -18,9 +18,11 @@
 # pylint: disable=line-too-long
 
 import json
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 
 from AutoMLOps import BuilderUtils
+
+DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
 
 def formalize(custom_training_job_specs: List[Dict],
               defaults_file: str,
@@ -85,7 +87,8 @@ def get_pipeline_imports(custom_training_job_specs: List[Dict], project_id: str)
         f'''{gcpc_imports if custom_training_job_specs else ''}'''
         f'''import kfp\n'''
         f'''from kfp.v2 import compiler, dsl\n'''
-        f'''from kfp.v2.dsl import pipeline, component, Artifact, Dataset, Input, Metrics, Model, Output, InputPath, OutputPath\n'''
+        f'''from kfp.v2.dsl import *\n'''
+        f'''from typing import *\n'''
         f'''import yaml\n'''
         f'\n'
         f'''def load_custom_component(component_name: str):\n'''
@@ -147,11 +150,6 @@ def get_pipeline_argparse() -> str:
         str: Python pipeline_argparse code.
     """
     return (
-        '''\n'''
-        '''    compiler.Compiler().compile(\n'''
-        '''        pipeline_func=pipeline,\n'''
-        '''        package_path=pipeline_job_spec_path)\n'''
-        '\n'
         '''if __name__ == '__main__':\n'''
         '''    parser = argparse.ArgumentParser()\n'''
         '''    parser.add_argument('--config', type=str,\n'''
@@ -237,82 +235,57 @@ def get_pipeline_runner() -> str:
         '''                 parameter_values_path=config['pipelines']['parameter_values_path'],\n'''
         '''                 pipeline_spec_path=config['pipelines']['pipeline_job_spec_path']) \n''')
 
-def create_pipeline_scaffold(name: str,
-                             params: list,
-                             pipeline: list,
-                             description: str = None):
+def create_pipeline_scaffold(func: Optional[Callable] = None,
+                             *,
+                             name: Optional[str] = None,
+                             description: Optional[str] = None):
     """Creates a temporary pipeline scaffold which will
        be used by the formalize function.
 
     Args:
-        name: Pipeline name.
-        params: Pipeline parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-        pipeline: Defines the components to use in the pipeline,
-            their order, and a mapping of component params to
-            pipeline params. A list of dictionaries, each dict
-            specifies a custom component and contains keys:
-                'component_name': name of the component
-                'param_mapping': a list of tuples mapping ->
-                    (component_param, pipeline_param)
-        description: Optional description of the pipeline.
+        func: The python function to create a pipeline from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        name: The name of the pipeline.
+        description: Short description of what the pipeline does.
     """
-    BuilderUtils.validate_name(name)
-    BuilderUtils.validate_params(params)
-    BuilderUtils.validate_pipeline_structure(pipeline)
+    pipeline_scaffold = (get_pipeline_decorator(name, description) +
+                         BuilderUtils.get_function_source_definition(func) +
+                         get_compile_step(func.__name__))
     BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) # if it doesn't already exist
-    pipeline_scaffold = get_pipeline_scaffold(name, params, pipeline, description)
     BuilderUtils.write_file(BuilderUtils.PIPELINE_TMPFILE, pipeline_scaffold, 'w')
 
-def get_pipeline_scaffold(name: str,
-                          params: list,
-                          pipeline: list,
-                          description: str):
-    """Generates the Kubeflow pipeline definition. Uses a
-       queue to define .after() ordering in the pipeline.
+def get_pipeline_decorator(name: Optional[str] = None,
+                           description: Optional[str] = None):
+    """Creates the kfp pipeline decorator.
 
     Args:
-        name: Pipeline name.
-        params: Pipeline parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-        pipeline: Defines the components to use in the pipeline,
-            their order, and a mapping of component params to
-            pipeline params. A list of dictionaries, each dict
-            specifies a custom component and contains keys:
-                'component_name': name of the component
-                'param_mapping': a list of tuples mapping ->
-                    (component_param, pipeline_param)
-        description: Optional description of the pipeline.
+        name: The name of the pipeline.
+        description: Short description of what the pipeline does.
+
+    Returns:
+        str: Python compile function call.
     """
-    newline = '\n'
-    queue = ['']
-    for idx, component in enumerate(pipeline):
-        if idx != len(pipeline)-1:
-            queue.append(f'''.after({component['component_name']}_task)''')
+    default_name = DEFAULT_PIPELINE_NAME if not name else name
+    name_str = f'''(\n    name='{default_name}',\n'''
+    desc_str = f'''    description='{description}',\n''' if description else ''
+    ending_str = ')\n'
+    return '@dsl.pipeline' + name_str + desc_str + ending_str
+
+def get_compile_step(func_name: str):
+    """Creates the compile function call.
+
+    Args:
+        func_name: The name of the pipeline function.
+
+    Returns:
+        str: Python compile function call.
+    """
     return (
         f'\n'
-        f'@dsl.pipeline(\n'
-        f'''    name='{name}',\n'''
-        f'''    description='{description}')\n'''
-        f'def pipeline(\n'
-        f'''{newline.join(f"    {param['name']}: {param['type'].__name__}," for param in params)}\n'''
-        f'):\n'
-        f'''    """{description}\n'''
-        f'\n'
-        f'    Args:\n'
-        f'''{newline.join(f"        {param['name']}: {param['description']}," for param in params)}\n'''
-        f'    """\n'
-        f"""{newline.join(
-        f'''    {component['component_name']}_task = {component['component_name']}({newline}'''
-        f'''    {f'{newline}    '.join(f"   {param[0]}={param[1]}," for param in component['param_mapping'])}{newline}'''
-        f'''    ){queue.pop(0)}{newline}'''
-        for component in pipeline
-        )}"""
+        f'compiler.Compiler().compile(\n'
+        f'    pipeline_func={func_name},\n'
+        f'    package_path=pipeline_job_spec_path)\n'
         f'\n'
     )

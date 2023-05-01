@@ -18,8 +18,13 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
+import inspect
 import os
 import subprocess
+
+import itertools
+import textwrap
+from typing import Callable
 import yaml
 
 TMPFILES_DIR = '.tmpfiles'
@@ -97,9 +102,9 @@ def read_file(filepath: str) -> str:
        Defaults to utf-8 encoding.
 
     Args:
-        filepath: Path to the yaml.
+        filepath: Path to the file.
     Returns:
-        dict: Contents of the yaml.
+        str: Contents of the file.
     Raises:
         Exception: If an error is encountered reading the file.
     """
@@ -218,88 +223,6 @@ def validate_schedule(schedule_pattern: str, run_local: str):
     if schedule_pattern != 'No Schedule Specified' and run_local:
         raise ValueError('run_local must be set to False to use Cloud Scheduler.')
 
-def validate_name(name: str):
-    """Validates that the inputted name parameter is of type str.
-
-    Args:
-        name: The name of a component or pipeline.
-    Raises:
-        Exception: If the name is not of type str.
-    """
-    if not isinstance(name, str):
-        raise TypeError('Pipeline and Component names must be of type string.')
-
-def validate_params(params: list):
-    """Verifies that the inputted params follow the correct
-       specification.
-
-    Args:
-        params: Pipeline parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-    Raises:
-        Exception: If incorrect params specification.
-    """
-    s = set()
-    for param in params:
-        try:
-            name = param['name']
-            if not isinstance(name, str):
-                raise TypeError('Parameter name must be of type string.')
-            param_type = param['type']
-            if not isinstance(param_type, type):
-                raise TypeError('Parameter type must be a valid python type.')
-        except KeyError as err:
-            raise ValueError(f'Parameter {param} does not contain '
-                             f'required keys. {err}') from err
-        if param['name'] in s:
-            raise ValueError(f'''Duplicate parameter {param['name']} found.''')
-        else:
-            s.add(param['name'])
-        if 'description' not in param.keys():
-            param['description'] = 'No description provided.'
-
-def validate_pipeline_structure(pipeline: list):
-    """Verifies that the pipeline follows the correct
-       specification.
-
-    Args:
-        pipeline: Defines the components to use in the pipeline,
-            their order, and a mapping of component params to
-            pipeline params. A list of dictionaries, each dict
-            specifies a custom component and contains keys:
-                'component_name': name of the component
-                'param_mapping': a list of tuples mapping ->
-                    (component_param, pipeline_param)
-    Raises:
-        Exception: If incorrect pipeline specification.
-    """
-    components_list = get_components_list(full_path=False)
-    for component in pipeline:
-        try:
-            component_name = component['component_name']
-            if component_name not in components_list:
-                raise ValueError(f'Component {component_name} not found - '
-                    f'No matching yaml definition in tmpfiles directory.')
-            param_mapping = component['param_mapping']
-        except KeyError as err:
-            raise ValueError(f'Component {component} does not contain '
-                f'required keys. {err}') from err
-        for param_tuple in param_mapping:
-            if not isinstance(param_tuple, tuple):
-                raise TypeError(f'Mapping contains a non-tuple '
-                                f'element {param_tuple}')
-            elif len(param_tuple) != 2:
-                raise TypeError(f'Mapping must contain only 2 elements, '
-                                f'tuple {param_tuple} is invalid.')
-            else:
-                for item in param_tuple:
-                    if not isinstance(item, str):
-                        raise TypeError(f'Mapping must be str-str, '
-                                        f'tuple {param_tuple} is invalid.')
-
 def update_params(params: list) -> list:
     """Converts the parameter types from Python types
        to Kubeflow types. Currently only supports
@@ -329,5 +252,30 @@ def update_params(params: list) -> list:
             param['type'] = python_kfp_types_mapper[param['type']]
         except KeyError as err:
             raise ValueError(f'Unsupported python type - we only support '
-                             f'primitive types at this time. {err}') from err
+                            f'primitive types at this time. {err}') from err
     return params
+
+def get_function_source_definition(func: Callable) -> str:
+    """Returns a formatted list of parameters.
+
+    Args:
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+    Returns:
+        str: The source code from the inputted function.
+    Raises:
+        Exception: If the preprocess operates failed.
+    """
+    source_code = inspect.getsource(func)
+    source_code = textwrap.dedent(source_code)
+    source_code_lines = source_code.split('\n')
+    source_code_lines = itertools.dropwhile(lambda x: not x.startswith('def'),
+                                            source_code_lines)
+    if not source_code_lines:
+        raise ValueError(
+            f'Failed to dedent and clean up the source of function "{func.__name__}". '
+            f'It is probably not properly indented.')
+
+    return '\n'.join(source_code_lines)

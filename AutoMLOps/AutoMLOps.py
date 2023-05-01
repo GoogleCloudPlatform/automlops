@@ -16,24 +16,23 @@
    from Jupyter Notebooks."""
 
 # pylint: disable=C0103
-# pylint: disable=unused-import
 # pylint: disable=line-too-long
 
+import functools
 import logging
 import os
 import re
+import sys
 import subprocess
-from typing import Dict, List
+from typing import Callable, Dict, List, Optional
 
 from AutoMLOps import BuilderUtils
 from AutoMLOps import ComponentBuilder
 from AutoMLOps import PipelineBuilder
 from AutoMLOps import CloudRunBuilder
-from AutoMLOps import JupyterUtilsMagic
 
+logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
 logger = logging.getLogger()
-log_level = os.environ.get('LOG_LEVEL', 'INFO')
-logger.setLevel(log_level)
 
 TOP_LVL_NAME = 'AutoMLOps/'
 DEFAULTS_FILE = TOP_LVL_NAME + 'configs/defaults.yaml'
@@ -45,8 +44,7 @@ RESOURCES_SH_FILE = TOP_LVL_NAME + 'scripts/create_resources.sh'
 SUBMIT_JOB_FILE = TOP_LVL_NAME + 'scripts/submit_to_runner_svc.sh'
 CLOUDBUILD_FILE = TOP_LVL_NAME + 'cloudbuild.yaml'
 PIPELINE_FILE = TOP_LVL_NAME + 'pipelines/pipeline.py'
-IMPORTS_FILE = '.imports.py'
-DEFAULT_IMAGE = 'python:3.9'
+DEFAULT_IMAGE = 'python:3.9-slim'
 COMPONENT_BASE = TOP_LVL_NAME + 'components/component_base'
 COMPONENT_BASE_SRC = TOP_LVL_NAME + 'components/component_base/src'
 OUTPUT_DIR = BuilderUtils.TMPFILES_DIR
@@ -64,26 +62,26 @@ DIRS = [
 
 def go(project_id: str,
        pipeline_params: Dict,
-       af_registry_location: str = 'us-central1',
-       af_registry_name: str = 'vertex-mlops-af',
-       cb_trigger_location: str = 'us-central1',
-       cb_trigger_name: str = 'automlops-trigger',
-       cloud_run_location: str = 'us-central1',
-       cloud_run_name: str = 'run-pipeline',
-       cloud_tasks_queue_location: str = 'us-central1',
-       cloud_tasks_queue_name: str = 'queueing-svc',
-       csr_branch_name: str = 'automlops',
-       csr_name: str = 'AutoMLOps-repo',
-       custom_training_job_specs: List[Dict] = None,
-       gs_bucket_location: str = 'us-central1',
-       gs_bucket_name: str = None,
-       pipeline_runner_sa: str = None,
-       run_local: bool = True,
-       schedule_location: str = 'us-central1',
-       schedule_name: str = 'AutoMLOps-schedule',
-       schedule_pattern: str = 'No Schedule Specified',
-       use_kfp_spec: bool = False,
-       vpc_connector: str = 'No VPC Specified'):
+       af_registry_location: Optional[str] = 'us-central1',
+       af_registry_name: Optional[str] = 'vertex-mlops-af',
+       cb_trigger_location: Optional[str] = 'us-central1',
+       cb_trigger_name: Optional[str] = 'automlops-trigger',
+       cloud_run_location: Optional[str] = 'us-central1',
+       cloud_run_name: Optional[str] = 'run-pipeline',
+       cloud_tasks_queue_location: Optional[str] = 'us-central1',
+       cloud_tasks_queue_name: Optional[str] = 'queueing-svc',
+       csr_branch_name: Optional[str] = 'automlops',
+       csr_name: Optional[str] = 'AutoMLOps-repo',
+       custom_training_job_specs: Optional[List[Dict]] = None,
+       gs_bucket_location: Optional[str] = 'us-central1',
+       gs_bucket_name: Optional[str] = None,
+       pipeline_runner_sa: Optional[str] = None,
+       run_local: Optional[bool] = True,
+       schedule_location: Optional[str] = 'us-central1',
+       schedule_name: Optional[str] = 'AutoMLOps-schedule',
+       schedule_pattern: Optional[str] = 'No Schedule Specified',
+       use_kfp_spec: Optional[bool] = False,
+       vpc_connector: Optional[str] = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts,
        then builds, compiles, and submits the PipelineJob.
 
@@ -123,26 +121,26 @@ def go(project_id: str,
 
 def generate(project_id: str,
              pipeline_params: Dict,
-             af_registry_location: str = 'us-central1',
-             af_registry_name: str = 'vertex-mlops-af',
-             cb_trigger_location: str = 'us-central1',
-             cb_trigger_name: str = 'automlops-trigger',
-             cloud_run_location: str = 'us-central1',
-             cloud_run_name: str = 'run-pipeline',
-             cloud_tasks_queue_location: str = 'us-central1',
-             cloud_tasks_queue_name: str = 'queueing-svc',
-             csr_branch_name: str = 'automlops',
-             csr_name: str = 'AutoMLOps-repo',
-             custom_training_job_specs: List[Dict] = None,
-             gs_bucket_location: str = 'us-central1',
-             gs_bucket_name: str = None,
-             pipeline_runner_sa: str = None,
-             run_local: bool = True,
-             schedule_location: str = 'us-central1',
-             schedule_name: str = 'AutoMLOps-schedule',
-             schedule_pattern: str = 'No Schedule Specified',
-             use_kfp_spec: bool = False,
-             vpc_connector: str = 'No VPC Specified'):
+             af_registry_location: Optional[str] = 'us-central1',
+             af_registry_name: Optional[str] = 'vertex-mlops-af',
+             cb_trigger_location: Optional[str] = 'us-central1',
+             cb_trigger_name: Optional[str] = 'automlops-trigger',
+             cloud_run_location: Optional[str] = 'us-central1',
+             cloud_run_name: Optional[str] = 'run-pipeline',
+             cloud_tasks_queue_location: Optional[str] = 'us-central1',
+             cloud_tasks_queue_name: Optional[str] = 'queueing-svc',
+             csr_branch_name: Optional[str] = 'automlops',
+             csr_name: Optional[str] = 'AutoMLOps-repo',
+             custom_training_job_specs: Optional[List[Dict]] = None,
+             gs_bucket_location: Optional[str] = 'us-central1',
+             gs_bucket_name: Optional[str] = None,
+             pipeline_runner_sa: Optional[str] = None,
+             run_local: Optional[bool] = True,
+             schedule_location: Optional[str] = 'us-central1',
+             schedule_name: Optional[str] = 'AutoMLOps-schedule',
+             schedule_pattern: Optional[str] = 'No Schedule Specified',
+             use_kfp_spec: Optional[bool] = False,
+             vpc_connector: Optional[str] = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts.
 
     Args: See go() function.
@@ -157,7 +155,6 @@ def generate(project_id: str,
                            csr_name, gs_bucket_location, default_bucket_name,
                            default_pipeline_runner_sa, project_id, schedule_location,
                            schedule_name, schedule_pattern, vpc_connector)
-
     _create_scripts(run_local)
     _create_cloudbuild_config(run_local)
     # copy tmp pipeline file over to AutoMLOps dir
@@ -167,9 +164,7 @@ def generate(project_id: str,
     for path in components_path_list:
         ComponentBuilder.formalize(path, TOP_LVL_NAME, DEFAULTS_FILE, use_kfp_spec)
     PipelineBuilder.formalize(custom_training_job_specs, DEFAULTS_FILE, pipeline_params, TOP_LVL_NAME)
-    if not use_kfp_spec:
-        _autoflake_srcfiles()
-    _create_requirements(use_kfp_spec)
+    _create_requirements()
     _create_dockerfile()
     if not run_local:
         CloudRunBuilder.formalize(TOP_LVL_NAME, DEFAULTS_FILE)
@@ -183,7 +178,11 @@ def run(run_local: bool):
     BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
     if run_local:
         os.chdir(TOP_LVL_NAME)
-        BuilderUtils.execute_process('./scripts/run_all.sh', to_null=False)
+        try:
+            subprocess.run(['./scripts/run_all.sh'], shell=True, check=True,
+                stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            logging.info(e)
         os.chdir('../')
     else:
         _push_to_csr()
@@ -588,7 +587,7 @@ def _create_cloudbuild_config(run_local: bool):
     cloudbuild_comp_config = (BuilderUtils.LICENSE +
         f'steps:\n'
         f'# ==============================================================================\n'
-        f'# BUILD & PUSH CUSTOM COMPONENT IMAGES\n'
+        f'# BUILD CUSTOM IMAGES\n'
         f'# ==============================================================================\n'
         f'\n'
         f'''  # build the component_base image\n'''
@@ -598,31 +597,31 @@ def _create_cloudbuild_config(run_local: bool):
         f'''    id: "build_component_base"\n'''
         f'''    waitFor: ["-"]\n'''
         f'\n'
-        f'''  # push the component_base image\n'''
-        f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-        f'''    args: ["push", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/components/component_base:latest"]\n'''
-        f'''    dir: "{TOP_LVL_NAME}components/component_base"\n'''
-        f'''    id: "push_component_base"\n'''
-        f'''    waitFor: ["build_component_base"]\n''')
-    cloudbuild_cloudrun_config = (
-        f'\n'
-        f'# ==============================================================================\n'
-        f'# BUILD & PUSH CLOUD RUN IMAGES\n'
-        f'# ==============================================================================\n'
-        f'\n'
         f'''  # build the run_pipeline image\n'''
         f'''  - name: 'gcr.io/cloud-builders/docker'\n'''
         f'''    args: [ "build", "-t", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]\n'''
         f'''    dir: "{TOP_LVL_NAME}"\n'''
         f'''    id: "build_pipeline_runner_svc"\n'''
-        f'''    waitFor: ['push_component_base']\n'''
+        f'''    waitFor: ['build_component_base']\n''')
+    cloudbuild_cloudrun_config = (
+        f'\n'
+        f'# ==============================================================================\n'
+        f'# PUSH & DEPLOY CUSTOM IMAGES\n'
+        f'# ==============================================================================\n'
+        f'\n'
+        f'''  # push the component_base image\n'''
+        f'''  - name: "gcr.io/cloud-builders/docker"\n'''
+        f'''    args: ["push", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/components/component_base:latest"]\n'''
+        f'''    dir: "{TOP_LVL_NAME}components/component_base"\n'''
+        f'''    id: "push_component_base"\n'''
+        f'''    waitFor: ["build_pipeline_runner_svc"]\n'''
         f'\n'
         f'''  # push the run_pipeline image\n'''
         f'''  - name: "gcr.io/cloud-builders/docker"\n'''
         f'''    args: ["push", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest"]\n'''
         f'''    dir: "{TOP_LVL_NAME}"\n'''
         f'''    id: "push_pipeline_runner_svc"\n'''
-        f'''    waitFor: ["build_pipeline_runner_svc"]\n'''
+        f'''    waitFor: ["push_component_base"]\n'''
         f'\n'
         f'''  # deploy the cloud run service\n'''
         f'''  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"\n'''
@@ -689,69 +688,64 @@ def _create_cloudbuild_config(run_local: bool):
             cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + cloudbuild_scheduler_config + custom_comp_image + cloudrun_image
     BuilderUtils.write_file(CLOUDBUILD_FILE, cb_file_contents, 'w+')
 
-def _autoflake_srcfiles():
-    """Removes unused imports from the python srcfiles. By default,
-       all imports listed in the imports cell will be written to
-       each srcfile. Autoflake removes the ones not being used."""
-    BuilderUtils.execute_process(f'python3 -m autoflake --in-place --remove-all-unused-imports {COMPONENT_BASE_SRC}/*.py', to_null=False)
-
-def _create_requirements(use_kfp_spec: bool):
+def _create_requirements():
     """Writes a requirements.txt to the component_base directory.
-       If not using kfp spec, infers pip requirements from the
-       python srcfiles using pipreqs. Some default gcp packages
-       are included, as well as packages that are often missing
+       Infers pip requirements from the python srcfiles using 
+       pipreqs. Takes user-inputted requirements, and addes some 
+       default gcp packages as well as packages that are often missing
        in setup.py files (e.g db_types, pyarrow, gcsfs, fsspec).
-
-    Args:
-        use_kfp_spec: Flag that determines the format of the component yamls.
     """
     reqs_filename = f'{COMPONENT_BASE}/requirements.txt'
-    if use_kfp_spec:
-        BuilderUtils.delete_file(reqs_filename)
-        components_path_list = BuilderUtils.get_components_list()
-        for component_path in components_path_list:
-            component_spec = BuilderUtils.read_yaml_file(component_path)
-            reqs = component_spec['implementation']['container']['command'][2]
-            formatted_reqs = re.findall('\'([^\']*)\'', reqs)
-            reqs_str = ''.join(r+'\n' for r in formatted_reqs)
-            BuilderUtils.write_file(reqs_filename, reqs_str, 'a+')
-    else:
-        gcp_reqs = (
-            'google-cloud-aiplatform\n'
-            'google-cloud-appengine-logging\n'
-            'google-cloud-audit-log\n'
-            'google-cloud-bigquery\n'
-            'google-cloud-bigquery-storage\n'
-            'google-cloud-bigtable\n'
-            'google-cloud-core\n'
-            'google-cloud-dataproc\n'
-            'google-cloud-datastore\n'
-            'google-cloud-dlp\n'
-            'google-cloud-firestore\n'
-            'google-cloud-kms\n'
-            'google-cloud-language\n'
-            'google-cloud-logging\n'
-            'google-cloud-monitoring\n'
-            'google-cloud-notebooks\n'
-            'google-cloud-pipeline-components\n'
-            'google-cloud-pubsub\n'
-            'google-cloud-pubsublite\n'
-            'google-cloud-recommendations-ai\n'
-            'google-cloud-resource-manager\n'
-            'google-cloud-scheduler\n'
-            'google-cloud-spanner\n'
-            'google-cloud-speech\n'
-            'google-cloud-storage\n'
-            'google-cloud-tasks\n'
-            'google-cloud-translate\n'
-            'google-cloud-videointelligence\n'
-            'google-cloud-vision\n'
-            'db_dtypes\n'
-            'pyarrow\n'
-            'gcsfs\n'
-            'fsspec\n')
-        BuilderUtils.execute_process(f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force', to_null=False)
-        BuilderUtils.write_file(reqs_filename, gcp_reqs, 'a')
+    default_gcp_reqs = [
+        'google-cloud-aiplatform',
+        'google-cloud-appengine-logging',
+        'google-cloud-audit-log',
+        'google-cloud-bigquery',
+        'google-cloud-bigquery-storage',
+        'google-cloud-bigtable',
+        'google-cloud-core',
+        'google-cloud-dataproc',
+        'google-cloud-datastore',
+        'google-cloud-dlp',
+        'google-cloud-firestore',
+        'google-cloud-kms',
+        'google-cloud-language',
+        'google-cloud-logging',
+        'google-cloud-monitoring',
+        'google-cloud-notebooks',
+        'google-cloud-pipeline-components',
+        'google-cloud-pubsub',
+        'google-cloud-pubsublite',
+        'google-cloud-recommendations-ai',
+        'google-cloud-resource-manager',
+        'google-cloud-scheduler',
+        'google-cloud-spanner',
+        'google-cloud-speech',
+        'google-cloud-storage',
+        'google-cloud-tasks',
+        'google-cloud-translate',
+        'google-cloud-videointelligence',
+        'google-cloud-vision',
+        'db_dtypes',
+        'pyarrow',
+        'gcsfs',
+        'fsspec']
+    # Infer reqs using pipreqs
+    BuilderUtils.execute_process(f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force', to_null=False)
+    pipreqs = BuilderUtils.read_file(reqs_filename).splitlines()
+    # Get user-inputted requirements from .tmpfiles dir
+    user_inp_reqs = []
+    components_path_list = BuilderUtils.get_components_list()
+    for component_path in components_path_list:
+        component_spec = BuilderUtils.read_yaml_file(component_path)
+        reqs = component_spec['implementation']['container']['command'][2]
+        formatted_reqs = re.findall('\'([^\']*)\'', reqs)
+        user_inp_reqs.extend(formatted_reqs)
+    # Remove duplicates
+    set_of_requirements = set(user_inp_reqs) if user_inp_reqs else set(pipreqs + default_gcp_reqs)
+    reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
+    BuilderUtils.delete_file(reqs_filename)
+    BuilderUtils.write_file(reqs_filename, reqs_str, 'w')
 
 def _create_dockerfile():
     """Writes a Dockerfile to the component_base directory."""
@@ -767,46 +761,67 @@ def _create_dockerfile():
         f'ENTRYPOINT ["/bin/bash"]\n')
     BuilderUtils.write_file(f'{COMPONENT_BASE}/Dockerfile', dockerfile, 'w')
 
-def makeComponent(name: str,
-                  params: list,
-                  description: str = None):
-    """Wrapper function that creates a tmp component scaffold
-       which will be used by the ComponentBuilder formalize function.
+def component(func: Optional[Callable] = None,
+              *,
+              packages_to_install: Optional[List[str]] = None):
+    """Decorator for Python-function based components in AutoMLOps.
 
+    Example usage:
+    from AutoMLOps import AutoMLOps
+    @AutoMLOps.component
+    def my_function_one(input: str, output: Output[Model]):
+      ...
     Args:
-        name: Component name.
-        params: Component parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-        description: Optional description of the component.
-    """
-    ComponentBuilder.create_component_scaffold(name,
-        params, description)
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        packages_to_install: A list of optional packages to install before
+            executing func. These will always be installed at component runtime.
+  """
+    if func is None:
+        return functools.partial(
+            component,
+            packages_to_install=packages_to_install)
+    else:
+        return ComponentBuilder.create_component_scaffold(
+            func=func,
+            packages_to_install=packages_to_install)
 
-def makePipeline(name: str,
-                 params: list,
-                 pipeline: list,
-                 description: str = None):
-    """Wrapper function that creates a tmp pipeline scaffold
-       which will be used by the PipelineBuilder formalize function.
+def pipeline(func: Optional[Callable] = None,
+             *,
+             name: Optional[str] = None,
+             description: Optional[str] = None):
+    """Decorator for Python-function based pipelines in AutoMLOps.
 
+    Example usage:
+    from AutoMLOps import AutoMLOps
+    @AutoMLOps.pipeline
+    def pipeline(bq_table: str,
+                output_model_directory: str,
+                project: str,
+                region: str,
+                ):
+
+        dataset_task = create_dataset(
+            bq_table=bq_table, 
+            project=project)
+      ...
     Args:
-        name: Pipeline name.
-        params: Pipeline parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-        pipeline: Defines the components to use in the pipeline,
-            their order, and a mapping of component params to
-            pipeline params. A list of dictionaries, each dict
-            specifies a custom component and contains keys:
-                'component_name': name of the component
-                'param_mapping': a list of tuples mapping ->
-                    (component_param_name, pipeline_param_name)
-        description: Optional description of the pipeline.
-    """
-    PipelineBuilder.create_pipeline_scaffold(name,
-        params, pipeline, description)
+        func: The python function to create a pipeline from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        name: The name of the pipeline.
+        description: Short description of what the pipeline does.
+  """
+    if func is None:
+        return functools.partial(
+            pipeline,
+            name=name,
+            description=description)
+    else:
+        return PipelineBuilder.create_pipeline_scaffold(
+            func=func,
+            name=name,
+            description=description)

@@ -1,6 +1,25 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2023-04-28
+
+### Added
+- New interface for defining AutoMLOps components and Pipelines. Removed the need to call Jupyter cell decorators and replaced them with Python function based decorators instead.
+- New feature updates allow for running AutoMLOps outside of Jupyter Notebooks.
+- Examples for running AutoMLOps outside of a notebook, as well as an example inferencing pipeline.
+- Faster build jobs
+ 
+### Changed
+
+- Updated readme and implementation guide.
+- Better logging
+- Better handling of requirements.txt (remove dups, infer from pipreqs, option to input explicit versions, sorted order)
+- Better versioning of models
+
+### Fixed
+ 
+- Bug that can change current working directory on failure with run_local=True.
+
 ## [1.0.5] - 2023-03-06
 
 Official release on PyPI.

@@ -6,8 +6,6 @@ AutoMLOps is a service that generates a production ready MLOps pipeline from Jup
 
 In order to use AutoMLOps, the following are required:
 
-- Jupyter (or Jupyter-compatible) notebook environment
-- [Notebooks API](https://console.cloud.google.com/marketplace/product/google/notebooks.googleapis.com) enabled
 - Python 3.7 - 3.10
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
 - [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
@@ -30,11 +28,9 @@ Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/):
 Or Install locally by cloning the repo and running `pip install .`
 
 # Dependencies
-- `autoflake==2.0.0`,
 - `docopt==0.6.2`,
-- `ipython==7.34.0`,
+- `docstring-parser==0.15`,
 - `pipreqs==0.4.11`,
-- `pyflakes==3.0.1`,
 - `PyYAML==5.4.1`,
 - `yarg==0.1.9`
 
@@ -151,10 +147,29 @@ Use the `vpc_connector` parameter to specify a vpc connector.
 vpc_connector = 'example-vpc'
 ```
 
+**Specify package versions:**
+
+Use the `packages_to_install` parameter of `@AutoMLOps.component` to explicitly specify packages and versions. 
+```
+@AutoMLOps.component(
+    packages_to_install=[
+        "google-cloud-bigquery==2.34.4", 
+        "pandas",
+        "pyarrow",
+        "db_dtypes"
+    ]
+)
+def create_dataset(
+    bq_table: str,
+    data_path: str,
+    project_id: str
+):
+...
+```
 
 # Layout
 
-Included in the repository is an [example notebook](./example/automlops_example_notebook.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='automlops-sandbox',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
+Included in the repository is an [example notebook](./examples/training/00_training_example.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='automlops-sandbox',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
 
 ```bash
 .
@@ -192,7 +207,7 @@ If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD env
 
 # Pipeline Components
 
-The [example notebook](example/automlops_example_notebook.ipynb) comes with 3 components as part of the pipeline. Additional sample code for commonly used services can be found below:
+The [example notebook](./examples/training/00_training_example.ipynb) comes with 3 components as part of the pipeline. Additional sample code for commonly used services can be found below:
 
 - [Feature Store](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/feature_store)
 - [BigQuery ML](https://github.com/GoogleCloudPlatform/vertex-ai-samples/tree/main/notebooks/official/bigquery_ml)

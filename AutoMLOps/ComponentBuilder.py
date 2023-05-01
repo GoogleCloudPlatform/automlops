@@ -17,7 +17,14 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
+import inspect
+from typing import Callable, List, Optional, TypeVar, Union
+
+import docstring_parser
+
 from AutoMLOps import BuilderUtils
+
+T = TypeVar('T')
 
 def formalize(component_path: str,
               top_lvl_name: str,
@@ -57,16 +64,19 @@ def create_task(component_spec: dict, task_filepath: str, use_kfp_spec: bool):
     Raises:
         Exception: If the imports tmpfile does not exist.
     """
-    if use_kfp_spec:
-        custom_imports = ''
-        custom_code = component_spec['implementation']['container']['command'][-1]
-    else:
-        custom_imports = BuilderUtils.read_file(BuilderUtils.IMPORTS_TMPFILE)
-        custom_code = component_spec['implementation']['container']['command']
+    custom_code = component_spec['implementation']['container']['command'][-1]
     default_imports = (BuilderUtils.LICENSE +
         'import argparse\n'
         'import json\n'
         'from kfp.v2.components import executor\n')
+    if not use_kfp_spec:
+        custom_imports = ('import kfp\n'
+        'from kfp.v2 import dsl\n'
+        'from kfp.v2.dsl import *\n'
+        'from typing import *\n'
+        '\n')
+    else:
+        custom_imports = '' # included as part of the kfp spec
     main_func = (
         '\n'
         '''def main():\n'''
@@ -115,85 +125,116 @@ def create_component(component_spec: dict,
     BuilderUtils.write_file(filename, BuilderUtils.LICENSE, 'w')
     BuilderUtils.write_yaml_file(filename, component_spec, 'a')
 
-def create_component_scaffold(name: str,
-                              params: list,
-                              description: str):
+def create_component_scaffold(func: Optional[Callable] = None,
+                              *,
+                              packages_to_install: Optional[List[str]] = None):
     """Creates a tmp component scaffold which will be used by
        the formalize function. Code is temporarily stored in
        component_spec['implementation']['container']['command'].
 
     Args:
-        name: Component name.
-        params: Component parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-        description: Optional description of the component.
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        packages_to_install: A list of optional packages to install before
+            executing func. These will always be installed at component runtime.
     """
-    BuilderUtils.validate_name(name)
-    BuilderUtils.validate_params(params)
-    func_def = get_func_definition(name, params, description)
-    params = BuilderUtils.update_params(params)
-    code = BuilderUtils.read_file(BuilderUtils.CELL_TMPFILE)
-    code = filter_and_indent_cell(code)
-    BuilderUtils.delete_file(BuilderUtils.CELL_TMPFILE)
+    # Todo:
+    # Figure out what to do with package_to_install
+    name = func.__name__
+    parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
+    description = parsed_docstring.short_description
     # make yaml
     component_spec = {}
     component_spec['name'] = name
     if description:
         component_spec['description'] = description
-    component_spec['inputs'] = params
+    component_spec['inputs'] = get_function_parameters(func)
     component_spec['implementation'] = {}
     component_spec['implementation']['container'] = {}
     component_spec['implementation']['container']['image'] = 'TBD'
-    component_spec['implementation']['container']['command'] = func_def + code
+    component_spec['implementation']['container']['command'] = get_packages_to_install_command(func, packages_to_install)
     component_spec['implementation']['container']['args'] = ['--executor_input',
         {'executorInput': None}, '--function_to_execute', name]
     filename = BuilderUtils.TMPFILES_DIR + f'/{name}.yaml'
+    BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) # if it doesn't already exist
     BuilderUtils.write_yaml_file(filename, component_spec, 'w')
 
-def get_func_definition(name: str,
-                        params: list,
-                        description: str):
-    """Generates a python function definition to be used in
-       the {component_name}.py file (this file will contain
-       Jupyter cell code).
+def get_packages_to_install_command(func: Optional[Callable] = None,
+                                    packages_to_install: Optional[List[str]] = None):
+    """Returns a list of formatted list of commands, including code for tmp storage.
 
     Args:
-        name: Component name.
-        params: Component parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-        description: Optional description of the component.
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        packages_to_install: A list of optional packages to install before
+            executing func. These will always be installed at component runtime.
     """
     newline = '\n'
-    return (
-        f'\n'
-        f'def {name}(\n'
-        f'''{newline.join(f"    {param['name']}: {param['type'].__name__}," for param in params)}\n'''
-        f'):\n'
-        f'    """{description}\n'
-        f'\n'
-        f'    Args:\n'
-        f'''{newline.join(f"        {param['name']}: {param['description']}," for param in params)}\n'''
-        f'    """'
-    )
+    if not packages_to_install:
+        packages_to_install = []
+    concat_package_list = ' '.join(
+        [repr(str(package)) for package in packages_to_install])
+    # pylint: disable=anomalous-backslash-in-string
+    install_python_packages_script = (
+    f'''if ! [ -x "$(command -v pip)" ]; then{newline}'''
+    f'''    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip{newline}'''
+    f'''fi{newline}'''
+    f'''PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \{newline}'''
+    f'''    --no-warn-script-location {concat_package_list} && "$0" "$@"{newline}'''
+    f'''{newline}''')
+    src_code = BuilderUtils.get_function_source_definition(func)
+    return ['sh', '-c', install_python_packages_script, src_code]
 
-def filter_and_indent_cell(code: str) -> str:
-    """Remove unwanted makeComponent function call
-       and indent cell code.
+def get_function_parameters(func: Callable) -> dict:
+    """Returns a formatted list of parameters.
 
     Args:
-        code: String contains the contents of the
-            Jupyter cell.
-    Return:
-        str: Indented cell code with removed func call.
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+    Returns:
+        list: Params list with types converted to kubeflow spec.
+    Raises:
+        Exception: If parameter type hints are not provided.
     """
-    code = code.replace(code[code.find('AutoMLOps.makeComponent('):code.find(')')+1], '')
-    indented_code = ''
-    for line in code.splitlines():
-        indented_code += '    ' + line + '\n'
-    return indented_code
+    signature = inspect.signature(func)
+    parameters = list(signature.parameters.values())
+    parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
+    doc_dict = {p.arg_name: p.description for p in parsed_docstring.params}
+
+    parameter_holder = []
+    for param in parameters:
+        metadata = {}
+        metadata['name'] = param.name
+        metadata['description'] = doc_dict.get(param.name)
+        metadata['type'] = maybe_strip_optional_from_annotation(
+            param.annotation)
+        parameter_holder.append(metadata)
+        # pylint: disable=protected-access
+        if metadata['type'] == inspect._empty:
+            raise TypeError(
+                f'''Missing type hint for parameter "{metadata['name']}". '''
+                f'''Please specify the type for this parameter.''')
+    return BuilderUtils.update_params(parameter_holder)
+
+def maybe_strip_optional_from_annotation(annotation: T) -> T:
+    """Strips 'Optional' from 'Optional[<type>]' if applicable.
+    For example::
+      Optional[str] -> str
+      str -> str
+      List[int] -> List[int]
+    Args:
+      annotation: The original type annotation which may or may not has
+        `Optional`.
+    Returns:
+      The type inside Optional[] if Optional exists, otherwise the original type.
+    """
+    if getattr(annotation, '__origin__',
+               None) is Union and annotation.__args__[1] is type(None):
+        return annotation.__args__[0]
+    return annotation

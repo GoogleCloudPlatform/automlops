@@ -48,7 +48,7 @@ def create_dockerfile(top_lvl_name: str):
     """
     cloudrun_base = top_lvl_name + 'cloud_run/run_pipeline'
     dockerfile = (BuilderUtils.LICENSE +
-        'FROM python:3.9\n'
+        'FROM python:3.9-slim\n'
         '\n'
         '# Allow statements and log messages to immediately appear in the Knative logs\n'
         'ENV PYTHONUNBUFFERED True\n'
