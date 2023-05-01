@@ -7,7 +7,7 @@
     "instances_format": "bigquery",
     "predictions_format": "bigquery",
     "model_resource_name": "",
-    "endpoint_resource_name": "projects/45373616427/locations/us-central1/endpoints/8019903783695810560",
+    "endpoint_resource_name": "projects/45373616427/locations/us-central1/endpoints/2255296260661575680",
     "machine_type": "n1-standard-8",
     "accelerator_count": 0,
     "accelerator_type": "ACCELERATOR_TYPE_UNSPECIFIED",
