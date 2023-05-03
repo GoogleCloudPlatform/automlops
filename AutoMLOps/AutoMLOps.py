@@ -30,6 +30,7 @@ from AutoMLOps import BuilderUtils
 from AutoMLOps import ComponentBuilder
 from AutoMLOps import PipelineBuilder
 from AutoMLOps import CloudRunBuilder
+from AutoMLOps import ScriptsBuilder
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
 logger = logging.getLogger()
@@ -145,27 +146,54 @@ def generate(project_id: str,
 
     Args: See go() function.
     """
+    # Validate cloud schedule pattern as a correctly formatted cron job
     BuilderUtils.validate_schedule(schedule_pattern, run_local)
+
+    # Set defaults if none were given for bucket name and pipeline runner sa
     default_bucket_name = f'{project_id}-bucket' if gs_bucket_name is None else gs_bucket_name
     default_pipeline_runner_sa = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com' if pipeline_runner_sa is None else pipeline_runner_sa
+
+    # Make necessary directories
     BuilderUtils.make_dirs(DIRS)
-    _create_default_config(af_registry_location, af_registry_name, cb_trigger_location,
-                           cb_trigger_name, cloud_run_location, cloud_run_name,
-                           cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
-                           csr_name, gs_bucket_location, default_bucket_name,
-                           default_pipeline_runner_sa, project_id, schedule_location,
-                           schedule_name, schedule_pattern, vpc_connector)
-    _create_scripts(run_local)
-    _create_cloudbuild_config(run_local)
-    # copy tmp pipeline file over to AutoMLOps dir
+
+    # Initialize AutoMLOps scripts builder
+    automlops_scripts = ScriptsBuilder.AutoMLOps(
+        af_registry_location, af_registry_name, cb_trigger_location,
+        cb_trigger_name, cloud_run_location, cloud_run_name,
+        cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
+        csr_name, gs_bucket_location, default_bucket_name, DEFAULT_IMAGE,
+        default_pipeline_runner_sa, project_id, run_local, schedule_location,
+        schedule_name, schedule_pattern, TOP_LVL_NAME, vpc_connector)
+
+    # Write defaults.yaml
+    BuilderUtils.write_file(DEFAULTS_FILE, automlops_scripts.defaults, 'w+')
+
+    # Write scripts for building pipeline, building components, running pipeline, and running all files
+    BuilderUtils.write_and_chmod(PIPELINE_SPEC_SH_FILE, automlops_scripts.build_pipeline_spec)
+    BuilderUtils.write_and_chmod(BUILD_COMPONENTS_SH_FILE, automlops_scripts.build_components)
+    BuilderUtils.write_and_chmod(RUN_PIPELINE_SH_FILE, automlops_scripts.run_pipeline)
+    BuilderUtils.write_and_chmod(RUN_ALL_SH_FILE, automlops_scripts.run_all)
+
+    # Write scripts to create resources and cloud build config
+    BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, automlops_scripts.create_resources_script)
+    BuilderUtils.write_file(CLOUDBUILD_FILE, automlops_scripts.create_cloudbuild_config, 'w+')
+
+    # Copy tmp pipeline file over to AutoMLOps directory
     BuilderUtils.execute_process(f'cp {BuilderUtils.PIPELINE_TMPFILE} {PIPELINE_FILE}', to_null=False)
+
     # Create components and pipelines
     components_path_list = BuilderUtils.get_components_list()
     for path in components_path_list:
         ComponentBuilder.formalize(path, TOP_LVL_NAME, DEFAULTS_FILE, use_kfp_spec)
     PipelineBuilder.formalize(custom_training_job_specs, DEFAULTS_FILE, pipeline_params, TOP_LVL_NAME)
+
+    # Write requirements file
     _create_requirements()
-    _create_dockerfile()
+
+    # Write dockerfile to the component base directory
+    BuilderUtils.write_file(f'{COMPONENT_BASE}/Dockerfile', automlops_scripts.dockerfile, 'w')
+
+    # If this is being run in the cloud, formalize the cloud run process
     if not run_local:
         CloudRunBuilder.formalize(TOP_LVL_NAME, DEFAULTS_FILE)
 
@@ -244,450 +272,6 @@ def _push_to_csr():
     logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
     logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
 
-def _create_default_config(af_registry_location: str,
-                           af_registry_name: str,
-                           cb_trigger_location: str,
-                           cb_trigger_name: str,
-                           cloud_run_location: str,
-                           cloud_run_name: str,
-                           cloud_tasks_queue_location: str,
-                           cloud_tasks_queue_name: str,
-                           csr_branch_name: str,
-                           csr_name: str,
-                           gs_bucket_location: str,
-                           gs_bucket_name: str,
-                           pipeline_runner_sa: str,
-                           project_id: str,
-                           schedule_location: str,
-                           schedule_name: str,
-                           schedule_pattern: str,
-                           vpc_connector: str):
-    """Writes default variables to defaults.yaml. This defaults
-       file is used by subsequent functions and by the pipeline
-       files themselves.
-
-    Args:
-        af_registry_location: Region of the Artifact Registry.
-        af_registry_name: Artifact Registry name where components are stored.
-        cb_trigger_location: The location of the cloudbuild trigger.
-        cb_trigger_name: The name of the cloudbuild trigger.
-        cloud_run_location: The location of the cloud runner service.
-        cloud_run_name: The name of the cloud runner service.
-        cloud_tasks_queue_location: The location of the cloud tasks queue.
-        cloud_tasks_queue_name: The name of the cloud tasks queue.
-        csr_branch_name: The name of the csr branch to push to to trigger cb job.
-        csr_name: The name of the cloud source repo to use.
-        gs_bucket_location: Region of the GS bucket.
-        gs_bucket_name: GS bucket name where pipeline run metadata is stored.
-        pipeline_runner_sa: Service Account to runner PipelineJobs.
-        project_id: The project ID.
-        schedule_location: The location of the scheduler resource.
-        schedule_name: The name of the scheduler resource.
-        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
-        vpc_connector: The name of the vpc connector to use.
-    """
-    defaults = (BuilderUtils.LICENSE +
-        f'# These values are descriptive only - do not change.\n'
-        f'# Rerun AutoMLOps.generate() to change these values.\n'
-        f'gcp:\n'
-        f'  af_registry_location: {af_registry_location}\n'
-        f'  af_registry_name: {af_registry_name}\n'
-        f'  cb_trigger_location: {cb_trigger_location}\n'
-        f'  cb_trigger_name: {cb_trigger_name}\n'
-        f'  cloud_run_location: {cloud_run_location}\n'
-        f'  cloud_run_name: {cloud_run_name}\n'
-        f'  cloud_tasks_queue_location: {cloud_tasks_queue_location}\n'
-        f'  cloud_tasks_queue_name: {cloud_tasks_queue_name}\n'
-        f'  cloud_schedule_location: {schedule_location}\n'
-        f'  cloud_schedule_name: {schedule_name}\n'
-        f'  cloud_schedule_pattern: {schedule_pattern}\n'
-        f'  cloud_source_repository: {csr_name}\n'
-        f'  cloud_source_repository_branch: {csr_branch_name}\n'
-        f'  gs_bucket_name: {gs_bucket_name}\n'
-        f'  pipeline_runner_service_account: {pipeline_runner_sa}\n'
-        f'  project_id: {project_id}\n'
-        f'  vpc_connector: {vpc_connector}\n'
-        f'\n'
-        f'pipelines:\n'
-        f'  parameter_values_path: {BuilderUtils.PARAMETER_VALUES_PATH}\n'
-        f'  pipeline_component_directory: components\n'
-        f'  pipeline_job_spec_path: {BuilderUtils.PIPELINE_JOB_SPEC_PATH}\n'
-        f'  pipeline_region: {gs_bucket_location}\n'
-        f'  pipeline_storage_path: gs://{gs_bucket_name}/pipeline_root\n')
-    BuilderUtils.write_file(DEFAULTS_FILE, defaults, 'w+')
-
-def _create_scripts(run_local: bool):
-    """Writes various shell scripts used for pipeline and component
-       construction, as well as pipeline execution.
-
-    Args:
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
-    """
-    build_pipeline_spec = (
-        '#!/bin/bash\n' + BuilderUtils.LICENSE +
-        '# Builds the pipeline specs\n'
-        f'# This script should run from the {TOP_LVL_NAME} directory\n'
-        '# Change directory in case this is not the script root.\n'
-        '\n'
-        'CONFIG_FILE=configs/defaults.yaml\n'
-        '\n'
-        'python3 -m pipelines.pipeline --config $CONFIG_FILE\n')
-    build_components = (
-        '#!/bin/bash\n' + BuilderUtils.LICENSE +
-        '# Submits a Cloud Build job that builds and deploys the components\n'
-        f'# This script should run from the {TOP_LVL_NAME} directory\n'
-        '# Change directory in case this is not the script root.\n'
-        '\n'
-        'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600\n')
-    run_pipeline = (
-        '#!/bin/bash\n' + BuilderUtils.LICENSE +
-        '# Submits the PipelineJob to Vertex AI\n'
-        f'# This script should run from the {TOP_LVL_NAME} directory\n'
-        '# Change directory in case this is not the script root.\n'
-        '\n'
-        'CONFIG_FILE=configs/defaults.yaml\n'
-        '\n'
-        'python3 -m pipelines.pipeline_runner --config $CONFIG_FILE\n')
-    run_all = (
-        '#!/bin/bash\n' + BuilderUtils.LICENSE +
-        '# Builds components, pipeline specs, and submits the PipelineJob.\n'
-        f'# This script should run from the {TOP_LVL_NAME} directory\n'
-        '# Change directory in case this is not the script root.\n'
-        '\n'
-        '''GREEN='\033[0;32m'\n'''
-        '''NC='\033[0m'\n'''
-        '\n'
-        'echo -e "${GREEN} BUILDING COMPONENTS ${NC}"\n'
-        'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600\n'
-        '\n'
-        'echo -e "${GREEN} BUILDING PIPELINE SPEC ${NC}"\n'
-        './scripts/build_pipeline_spec.sh\n'
-        '\n'
-        'echo -e "${GREEN} RUNNING PIPELINE JOB ${NC}"\n'
-        './scripts/run_pipeline.sh\n')
-    BuilderUtils.write_and_chmod(PIPELINE_SPEC_SH_FILE, build_pipeline_spec)
-    BuilderUtils.write_and_chmod(BUILD_COMPONENTS_SH_FILE, build_components)
-    BuilderUtils.write_and_chmod(RUN_PIPELINE_SH_FILE, run_pipeline)
-    BuilderUtils.write_and_chmod(RUN_ALL_SH_FILE, run_all)
-    _create_resources_scripts(run_local)
-
-def _create_resources_scripts(run_local: bool):
-    """Writes create_resources.sh and create_scheduler.sh, which creates a specified
-       artifact registry and gs bucket if they do not already exist. Also creates
-       a service account to run Vertex AI Pipelines. Requires a defaults.yaml
-       config to pull config vars from.
-
-    Args:
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
-    """
-    defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
-    left_bracket = '{'
-    right_bracket = '}'
-    newline = '\n'
-    # pylint: disable=anomalous-backslash-in-string
-    create_resources_script = (
-        '#!/bin/bash\n' + BuilderUtils.LICENSE +
-        f'# This script will create an artifact registry and gs bucket if they do not already exist.\n'
-        f'\n'
-        f'''GREEN='\033[0;32m'\n'''
-        f'''NC='\033[0m'\n'''
-        f'''AF_REGISTRY_NAME={defaults['gcp']['af_registry_name']}\n'''
-        f'''AF_REGISTRY_LOCATION={defaults['gcp']['af_registry_location']}\n'''
-        f'''PROJECT_ID={defaults['gcp']['project_id']}\n'''
-        f'''PROJECT_NUMBER=`gcloud projects describe {defaults['gcp']['project_id']} --format 'value(projectNumber)'`\n'''
-        f'''BUCKET_NAME={defaults['gcp']['gs_bucket_name']}\n'''
-        f'''BUCKET_LOCATION={defaults['pipelines']['pipeline_region']}\n'''
-        f'''SERVICE_ACCOUNT_NAME={defaults['gcp']['pipeline_runner_service_account'].split('@')[0]}\n'''
-        f'''SERVICE_ACCOUNT_FULL={defaults['gcp']['pipeline_runner_service_account']}\n'''
-        f'''CLOUD_SOURCE_REPO={defaults['gcp']['cloud_source_repository']}\n'''
-        f'''CLOUD_SOURCE_REPO_BRANCH={defaults['gcp']['cloud_source_repository_branch']}\n'''
-        f'''CB_TRIGGER_LOCATION={defaults['gcp']['cb_trigger_location']}\n'''
-        f'''CB_TRIGGER_NAME={defaults['gcp']['cb_trigger_name']}\n'''
-        f'''CLOUD_TASKS_QUEUE_LOCATION={defaults['gcp']['cloud_tasks_queue_location']}\n'''
-        f'''CLOUD_TASKS_QUEUE_NAME={defaults['gcp']['cloud_tasks_queue_name']}\n'''
-        f'\n'
-        f'echo -e "$GREEN Updating required API services in project $PROJECT_ID $NC"\n'
-        f'gcloud services enable cloudresourcemanager.googleapis.com \{newline}'
-        f'  aiplatform.googleapis.com \{newline}'
-        f'  artifactregistry.googleapis.com \{newline}'
-        f'  cloudbuild.googleapis.com \{newline}'
-        f'  cloudscheduler.googleapis.com \{newline}'
-        f'  cloudtasks.googleapis.com \{newline}'
-        f'  compute.googleapis.com \{newline}'
-        f'  iam.googleapis.com \{newline}'
-        f'  iamcredentials.googleapis.com \{newline}'
-        f'  ml.googleapis.com \{newline}'
-        f'  run.googleapis.com \{newline}'
-        f'  storage.googleapis.com \{newline}'
-        f'  sourcerepo.googleapis.com\n'
-        f'\n'
-        f'echo -e "$GREEN Checking for Artifact Registry: $AF_REGISTRY_NAME in project $PROJECT_ID $NC"\n'
-        f'if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$AF_REGISTRY_LOCATION | grep -E "(^|[[:blank:]])$AF_REGISTRY_NAME($|[[:blank:]])"); then\n'
-        f'\n'
-        f'  echo "Creating Artifact Registry: ${left_bracket}AF_REGISTRY_NAME{right_bracket} in project $PROJECT_ID"\n'
-        f'  gcloud artifacts repositories create "$AF_REGISTRY_NAME" \{newline}'
-        f'    --repository-format=docker \{newline}'
-        f'    --location=$AF_REGISTRY_LOCATION \{newline}'
-        f'    --project="$PROJECT_ID" \{newline}'
-        f'    --description="Artifact Registry ${left_bracket}AF_REGISTRY_NAME{right_bracket} in ${left_bracket}AF_REGISTRY_LOCATION{right_bracket}." \n'
-        f'\n'
-        f'else\n'
-        f'\n'
-        f'  echo "Artifact Registry: ${left_bracket}AF_REGISTRY_NAME{right_bracket} already exists in project $PROJECT_ID"\n'
-        f'\n'
-        f'fi\n'
-        f'\n'
-        f'\n'
-        f'echo -e "$GREEN Checking for GS Bucket: $BUCKET_NAME in project $PROJECT_ID $NC"\n'
-        f'if !(gsutil ls -b gs://$BUCKET_NAME | grep --fixed-strings "$BUCKET_NAME"); then\n'
-        f'\n'
-        f'  echo "Creating GS Bucket: ${left_bracket}BUCKET_NAME{right_bracket} in project $PROJECT_ID"\n'
-        f'  gsutil mb -l ${left_bracket}BUCKET_LOCATION{right_bracket} gs://$BUCKET_NAME\n'
-        f'\n'
-        f'else\n'
-        f'\n'
-        f'  echo "GS Bucket: ${left_bracket}BUCKET_NAME{right_bracket} already exists in project $PROJECT_ID"\n'
-        f'\n'
-        f'fi\n'
-        f'\n'
-        f'echo -e "$GREEN Checking for Service Account: $SERVICE_ACCOUNT_NAME in project $PROJECT_ID $NC"\n'
-        f'if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep -E "(^|[[:blank:]])$SERVICE_ACCOUNT_FULL($|[[:blank:]])"); then\n'
-        f'\n'
-        f'  echo "Creating Service Account: ${left_bracket}SERVICE_ACCOUNT_NAME{right_bracket} in project $PROJECT_ID"\n'
-        f'  gcloud iam service-accounts create $SERVICE_ACCOUNT_NAME \{newline}'
-        f'      --description="For submitting PipelineJobs" \{newline}'
-        f'      --display-name="Pipeline Runner Service Account"\n'
-        f'else\n'
-        f'\n'
-        f'  echo "Service Account: ${left_bracket}SERVICE_ACCOUNT_NAME{right_bracket} already exists in project $PROJECT_ID"\n'
-        f'\n'
-        f'fi\n'
-        f'\n'
-        f'echo -e "$GREEN Updating required IAM roles in project $PROJECT_ID $NC"\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/aiplatform.user" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/artifactregistry.reader" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/bigquery.user" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'   --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'   --role="roles/bigquery.dataEditor" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/iam.serviceAccountUser" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/storage.admin" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$SERVICE_ACCOUNT_FULL" \{newline}'
-        f'    --role="roles/run.admin" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
-        f'    --role="roles/run.admin" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
-        f'    --role="roles/iam.serviceAccountUser" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
-        f'    --role="roles/cloudtasks.enqueuer" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'gcloud projects add-iam-policy-binding $PROJECT_ID \{newline}'
-        f'    --member="serviceAccount:$PROJECT_NUMBER@cloudbuild.gserviceaccount.com" \{newline}'
-        f'    --role="roles/cloudscheduler.admin" \{newline}'
-        f'    --no-user-output-enabled\n'
-        f'\n'
-        f'echo -e "$GREEN Checking for Cloud Source Repository: $CLOUD_SOURCE_REPO in project $PROJECT_ID $NC"\n'
-        f'if ! (gcloud source repos list --project="$PROJECT_ID" | grep -E "(^|[[:blank:]])$CLOUD_SOURCE_REPO($|[[:blank:]])"); then\n'
-        f'\n'
-        f'  echo "Creating Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket} in project $PROJECT_ID"\n'
-        f'  gcloud source repos create $CLOUD_SOURCE_REPO\n'
-        f'\n'
-        f'else\n'
-        f'\n'
-        f'  echo "Cloud Source Repository: ${left_bracket}CLOUD_SOURCE_REPO{right_bracket} already exists in project $PROJECT_ID"\n'
-        f'\n'
-        f'fi\n')
-    if not run_local:
-        create_resources_script += (
-            f'\n'
-            f'# Create cloud tasks queue\n'
-            f'echo -e "$GREEN Checking for Cloud Tasks Queue: $CLOUD_TASKS_QUEUE_NAME in project $PROJECT_ID $NC"\n'
-            f'if ! (gcloud tasks queues list --location $CLOUD_TASKS_QUEUE_LOCATION | grep -E "(^|[[:blank:]])$CLOUD_TASKS_QUEUE_NAME($|[[:blank:]])"); then\n'
-            f'\n'
-            f'  echo "Creating Cloud Tasks Queue: ${left_bracket}CLOUD_TASKS_QUEUE_NAME{right_bracket} in project $PROJECT_ID"\n'
-            f'  gcloud tasks queues create $CLOUD_TASKS_QUEUE_NAME \{newline}'
-            f'  --location=$CLOUD_TASKS_QUEUE_LOCATION\n'
-            f'\n'
-            f'else\n'
-            f'\n'
-            f'  echo "Cloud Tasks Queue: ${left_bracket}CLOUD_TASKS_QUEUE_NAME{right_bracket} already exists in project $PROJECT_ID"\n'
-            f'\n'
-            f'fi\n'
-            f'\n'
-            f'# Create cloud build trigger\n'
-            f'echo -e "$GREEN Checking for Cloudbuild Trigger: $CB_TRIGGER_NAME in project $PROJECT_ID $NC"\n'
-            f'if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$CB_TRIGGER_LOCATION" | grep -E "(^|[[:blank:]])name: $CB_TRIGGER_NAME($|[[:blank:]])"); then\n'
-            f'\n'
-            f'  echo "Creating Cloudbuild Trigger on branch $CLOUD_SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
-            f'  gcloud beta builds triggers create cloud-source-repositories \{newline}'
-            f'  --region=$CB_TRIGGER_LOCATION \{newline}'
-            f'  --name=$CB_TRIGGER_NAME \{newline}'
-            f'  --repo=$CLOUD_SOURCE_REPO \{newline}'
-            f'  --branch-pattern="$CLOUD_SOURCE_REPO_BRANCH" \{newline}'
-            f'  --build-config={TOP_LVL_NAME}cloudbuild.yaml\n'
-            f'\n'
-            f'else\n'
-            f'\n'
-            f'  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${left_bracket}CLOUD_SOURCE_REPO{right_bracket}"\n'
-            f'\n'
-            f'fi\n')
-    BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, create_resources_script)
-
-def _create_cloudbuild_config(run_local: bool):
-    """Writes a cloudbuild.yaml to the base directory.
-       Requires a defaults.yaml config to pull config vars from.
-
-    Args:
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
-    """
-    defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
-    vpc_connector = defaults['gcp']['vpc_connector']
-    vpc_connector_tail = ''
-    if vpc_connector != 'No VPC Specified':
-        vpc_connector_tail = (
-            f'\n'
-            f'           "--ingress", "internal",\n'
-            f'           "--vpc-connector", "{vpc_connector}",\n'
-            f'           "--vpc-egress", "all-traffic"')
-    vpc_connector_tail += ']\n'
-
-    cloudbuild_comp_config = (BuilderUtils.LICENSE +
-        f'steps:\n'
-        f'# ==============================================================================\n'
-        f'# BUILD CUSTOM IMAGES\n'
-        f'# ==============================================================================\n'
-        f'\n'
-        f'''  # build the component_base image\n'''
-        f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-        f'''    args: [ "build", "-t", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/components/component_base:latest", "." ]\n'''
-        f'''    dir: "{TOP_LVL_NAME}components/component_base"\n'''
-        f'''    id: "build_component_base"\n'''
-        f'''    waitFor: ["-"]\n'''
-        f'\n'
-        f'''  # build the run_pipeline image\n'''
-        f'''  - name: 'gcr.io/cloud-builders/docker'\n'''
-        f'''    args: [ "build", "-t", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]\n'''
-        f'''    dir: "{TOP_LVL_NAME}"\n'''
-        f'''    id: "build_pipeline_runner_svc"\n'''
-        f'''    waitFor: ['build_component_base']\n''')
-    cloudbuild_cloudrun_config = (
-        f'\n'
-        f'# ==============================================================================\n'
-        f'# PUSH & DEPLOY CUSTOM IMAGES\n'
-        f'# ==============================================================================\n'
-        f'\n'
-        f'''  # push the component_base image\n'''
-        f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-        f'''    args: ["push", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/components/component_base:latest"]\n'''
-        f'''    dir: "{TOP_LVL_NAME}components/component_base"\n'''
-        f'''    id: "push_component_base"\n'''
-        f'''    waitFor: ["build_pipeline_runner_svc"]\n'''
-        f'\n'
-        f'''  # push the run_pipeline image\n'''
-        f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-        f'''    args: ["push", "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest"]\n'''
-        f'''    dir: "{TOP_LVL_NAME}"\n'''
-        f'''    id: "push_pipeline_runner_svc"\n'''
-        f'''    waitFor: ["push_component_base"]\n'''
-        f'\n'
-        f'''  # deploy the cloud run service\n'''
-        f'''  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"\n'''
-        f'''    entrypoint: gcloud\n'''
-        f'''    args: ["run",\n'''
-        f'''           "deploy",\n'''
-        f'''           "{defaults['gcp']['cloud_run_name']}",\n'''
-        f'''           "--image",\n'''
-        f'''           "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest",\n'''
-        f'''           "--region",\n'''
-        f'''           "{defaults['gcp']['cloud_run_location']}",\n'''
-        f'''           "--service-account",\n'''
-        f'''           "{defaults['gcp']['pipeline_runner_service_account']}",{vpc_connector_tail}'''
-        f'''    id: "deploy_pipeline_runner_svc"\n'''
-        f'''    waitFor: ["push_pipeline_runner_svc"]\n'''
-        f'\n'
-        f'''  # Copy runtime parameters\n'''
-        f'''  - name: 'gcr.io/cloud-builders/gcloud'\n'''
-        f'''    entrypoint: bash\n'''
-        f'''    args:\n'''
-        f'''      - '-e'\n'''
-        f'''      - '-c'\n'''
-        f'''      - |\n'''
-        f'''        cp -r {TOP_LVL_NAME}cloud_run/queueing_svc .\n'''
-        f'''    id: "setup_queueing_svc"\n'''
-        f'''    waitFor: ["deploy_pipeline_runner_svc"]\n'''
-        f'\n'
-        f'''  # Install dependencies\n'''
-        f'''  - name: python\n'''
-        f'''    entrypoint: pip\n'''
-        f'''    args: ["install", "-r", "queueing_svc/requirements.txt", "--user"]\n'''
-        f'''    id: "install_queueing_svc_deps"\n'''
-        f'''    waitFor: ["setup_queueing_svc"]\n'''
-        f'\n'
-        f'''  # Submit to queue\n'''
-        f'''  - name: python\n'''
-        f'''    entrypoint: python\n'''
-        f'''    args: ["queueing_svc/main.py", "--setting", "queue_job"]\n'''
-        f'''    id: "submit_job_to_queue"\n'''
-        f'''    waitFor: ["install_queueing_svc_deps"]\n''')
-    cloudbuild_scheduler_config = (
-        '\n'
-        '''  # Create Scheduler Job\n'''
-        '''  - name: python\n'''
-        '''    entrypoint: python\n'''
-        '''    args: ["queueing_svc/main.py", "--setting", "schedule_job"]\n'''
-        '''    id: "schedule_job"\n'''
-        '''    waitFor: ["submit_job_to_queue"]\n''')
-    custom_comp_image = (
-        f'\n'
-        f'images:\n'
-        f'''  # custom component images\n'''
-        f'''  - "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/components/component_base:latest"\n''')
-    cloudrun_image = (
-        f'''  # Cloud Run image\n'''
-        f'''  - "{defaults['gcp']['af_registry_location']}-docker.pkg.dev/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_name']}/run_pipeline:latest"\n''')
-
-    if run_local:
-        cb_file_contents = cloudbuild_comp_config + custom_comp_image
-    else:
-        if defaults['gcp']['cloud_schedule_pattern'] == 'No Schedule Specified':
-            cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + custom_comp_image + cloudrun_image
-        else:
-            cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + cloudbuild_scheduler_config + custom_comp_image + cloudrun_image
-    BuilderUtils.write_file(CLOUDBUILD_FILE, cb_file_contents, 'w+')
-
 def _create_requirements():
     """Writes a requirements.txt to the component_base directory.
        Infers pip requirements from the python srcfiles using 
@@ -742,24 +326,10 @@ def _create_requirements():
         formatted_reqs = re.findall('\'([^\']*)\'', reqs)
         user_inp_reqs.extend(formatted_reqs)
     # Remove duplicates
-    set_of_requirements = set(user_inp_reqs) if user_inp_reqs else set(pipreqs + default_gcp_reqs)
+    set_of_requirements = set(pipreqs + user_inp_reqs + default_gcp_reqs)
     reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
     BuilderUtils.delete_file(reqs_filename)
     BuilderUtils.write_file(reqs_filename, reqs_str, 'w')
-
-def _create_dockerfile():
-    """Writes a Dockerfile to the component_base directory."""
-    # pylint: disable=anomalous-backslash-in-string
-    dockerfile = (BuilderUtils.LICENSE +
-        f'FROM {DEFAULT_IMAGE}\n'
-        f'RUN python -m pip install --upgrade pip\n'
-        f'COPY requirements.txt .\n'
-        f'RUN python -m pip install -r \ \n'
-        f'    requirements.txt --quiet --no-cache-dir \ \n'
-        f'    && rm -f requirements.txt\n'
-        f'COPY ./src /pipelines/component/src\n'
-        f'ENTRYPOINT ["/bin/bash"]\n')
-    BuilderUtils.write_file(f'{COMPONENT_BASE}/Dockerfile', dockerfile, 'w')
 
 def component(func: Optional[Callable] = None,
               *,
@@ -784,7 +354,7 @@ def component(func: Optional[Callable] = None,
             component,
             packages_to_install=packages_to_install)
     else:
-        return ComponentBuilder.create_component_scaffold(
+        ComponentBuilder.create_component_scaffold(
             func=func,
             packages_to_install=packages_to_install)
 
@@ -821,7 +391,7 @@ def pipeline(func: Optional[Callable] = None,
             name=name,
             description=description)
     else:
-        return PipelineBuilder.create_pipeline_scaffold(
+        PipelineBuilder.create_pipeline_scaffold(
             func=func,
             name=name,
             description=description)

@@ -31,7 +31,6 @@ google-cloud-translate
 google-cloud-videointelligence
 google-cloud-vision
 kfp
-kfp_pipeline_spec
 pandas
 protobuf
 pyarrow

@@ -23,7 +23,7 @@ inputs:
   type: String
 implementation:
   container:
-    image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
+    image: us-central1-docker.pkg.dev/sandbox-allegranoto/vertex-mlops-af/components/component_base:latest
     command:
     - python3
     - /pipelines/component/src/train_model.py

@@ -1,71 +1,152 @@
 from AutoMLOps import BuilderUtils
 
+from typing import Callable, Dict, List, Optional
+
 LEFT_BRACKET = '{'
 RIGHT_BRACKET = '}'
 NEWLINE = '\n'
 
 class AutoMLOps():
-    
-    def __init__(self, defaults_file, top_folder, run_local):
-        
-        defaults = BuilderUtils.read_yaml_file(defaults_file)
-        self.top_folder = top_folder
-        self.run_local = run_local
-        
-        self.af_registry_name = defaults['gcp']['af_registry_name']
-        self.af_registry_location = defaults['gcp']['af_registry_location']
-        self.project_id = defaults['gcp']['project_id']
-        self.gs_bucket_name = defaults['gcp']['gs_bucket_name']
-        self.bucket_location = defaults['gcp']['gs_bucket_location']
-        self.pipeline_region = defaults['pipelines']['pipeline_region']
-        self.pipeline_runner_service_account = defaults['gcp']['pipeline_runner_service_account']
-        self.cloud_source_repository = defaults['gcp']['cloud_source_repository']
-        self.cloud_source_repository_branch = defaults['gcp']['cloud_source_repository_branch']
-        self.cb_trigger_location = defaults['gcp']['cb_trigger_location']
-        self.cb_trigger_name = defaults['gcp']['cb_trigger_name']
-        self.cloud_tasks_queue_location = defaults['gcp']['cloud_tasks_queue_location']
-        self.cloud_tasks_queue_name = defaults['gcp']['cloud_tasks_queue_name']
-        self.vpc_connector = defaults['gcp']['vpc_connector']
-        self.cloud_run_name = defaults['gcp']['cloud_run_name']
-        self.cloud_run_location = defaults['gcp']['cloud_run_location']
-        self.cloud_schedule_pattern = defaults['gcp']['cloud_schedule_pattern']
+
+    def __init__(self,
+                 af_registry_location: str,
+                 af_registry_name: str,
+                 cb_trigger_location: str,
+                 cb_trigger_name: str,
+                 cloud_run_location: str,
+                 cloud_run_name: str,
+                 cloud_tasks_queue_location: str,
+                 cloud_tasks_queue_name: str,
+                 csr_branch_name: str,
+                 csr_name: str,
+                 gs_bucket_location: str,
+                 gs_bucket_name: str,
+                 image: str,
+                 pipeline_runner_sa: str,
+                 project_id: str,
+                 run_local: str,
+                 schedule_location: str,
+                 schedule_name: str,
+                 schedule_pattern: str,
+                 top_folder: str,
+                 vpc_connector: str):
+        """Instantiate AutoMLOps scripts object with all necessary attributes.
+
+        Args:
+            af_registry_location: Region of the Artifact Registry.
+            af_registry_name: Artifact Registry name where components are stored.
+            cb_trigger_location: The location of the cloudbuild trigger.
+            cb_trigger_name: The name of the cloudbuild trigger.
+            cloud_run_location: The location of the cloud runner service.
+            cloud_run_name: The name of the cloud runner service.
+            cloud_tasks_queue_location: The location of the cloud tasks queue.
+            cloud_tasks_queue_name: The name of the cloud tasks queue.
+            csr_branch_name: The name of the csr branch to push to to trigger cb job.
+            csr_name: The name of the cloud source repo to use.
+            gs_bucket_location: Region of the GS bucket.
+            gs_bucket_name: GS bucket name where pipeline run metadata is stored.
+            pipeline_runner_sa: Service Account to runner PipelineJobs.
+            project_id: The project ID.
+            run_local (_type_): _description_
+            schedule_location: The location of the scheduler resource.
+            schedule_name: The name of the scheduler resource.
+            schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
+            top_folder (_type_): _description_
+            vpc_connector: The name of the vpc connector to use.
+        """
+
+        # Set passed variables as hidden attributes
+        self.__top_folder = top_folder
+        self.__run_local = run_local
+
+        # Parse defaults file for hidden class attributes
+        self.__af_registry_name = af_registry_name
+        self.__af_registry_location = af_registry_location
+        self.__project_id = project_id
+        self.__gs_bucket_name = gs_bucket_name
+        self.__gs_bucket_location = gs_bucket_location
+        self.__pipeline_region = gs_bucket_location
+        self.__pipeline_runner_service_account = pipeline_runner_sa
+        self.__cloud_source_repository = csr_name
+        self.__cloud_source_repository_branch = csr_branch_name
+        self.__cb_trigger_location = cb_trigger_location
+        self.__cb_trigger_name = cb_trigger_name
+        self.__cloud_tasks_queue_location = cloud_tasks_queue_location
+        self.__cloud_tasks_queue_name = cloud_tasks_queue_name
+        self.__vpc_connector = vpc_connector
+        self.__cloud_run_name = cloud_run_name
+        self.__cloud_run_location = cloud_run_location
+        self.__cloud_schedule_location = schedule_location
+        self.__cloud_schedule_name = schedule_name
+        self.__cloud_schedule_pattern = schedule_pattern
+        self.__image = image
+
+        # Set generated scripts as public attributes
+        self.build_pipeline_spec = self._build_pipeline_spec()
+        self.build_components = self._build_components()
+        self.run_pipeline = self._run_pipeline()
+        self.run_all = self._run_all()
+        self.create_resources_script = self._create_resources_script()
+        self.create_cloudbuild_config = self._create_cloudbuild_config()
+        self.dockerfile = self._create_dockerfile()
+        self.defaults = self._create_default_config()
         
     def _build_pipeline_spec(self):
+        """Builds content of a shell script to build the pipeline specs.
+
+        Returns:
+            str: Text of script to build pipeline specs.
+        """
         return (
             '#!/bin/bash\n' + BuilderUtils.LICENSE +
             '# Builds the pipeline specs\n'
-            f'# This script should run from the {self.top_folder} directory\n'
+            f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             'CONFIG_FILE=configs/defaults.yaml\n'
             '\n'
             'python3 -m pipelines.pipeline --config $CONFIG_FILE\n')
-        
+
     def _build_components(self):
+        """Builds content of a shell script to build components.
+
+        Returns:
+            str: Text of script to build components.
+        """
         return (
             '#!/bin/bash\n' + BuilderUtils.LICENSE +
             '# Submits a Cloud Build job that builds and deploys the components\n'
-            f'# This script should run from the {self.top_folder} directory\n'
+            f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600\n')
-        
+
     def _run_pipeline(self):
+        """Builds content of a shell script to run the pipeline.
+
+        Returns:
+            str: Text of script to run pipeline.
+        """
         return (
             '#!/bin/bash\n' + BuilderUtils.LICENSE +
             '# Submits the PipelineJob to Vertex AI\n'
-            f'# This script should run from the {self.top_folder} directory\n'
+            f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             'CONFIG_FILE=configs/defaults.yaml\n'
             '\n'
             'python3 -m pipelines.pipeline_runner --config $CONFIG_FILE\n')
-    
+
     def _run_all(self):
+        """Builds content of a shell script to run all other shell scripts.
+
+        Returns:
+            str: Text of script to run all other scripts.
+        """
         return (
             '#!/bin/bash\n' + BuilderUtils.LICENSE +
             '# Builds components, pipeline specs, and submits the PipelineJob.\n'
-            f'# This script should run from the {self.top_folder} directory\n'
+            f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             '''GREEN='\033[0;32m'\n'''
@@ -79,28 +160,35 @@ class AutoMLOps():
             '\n'
             'echo -e "${GREEN} RUNNING PIPELINE JOB ${NC}"\n'
             './scripts/run_pipeline.sh\n')
-        
+
     def _create_resources_script(self):
+        """Builds content of create_resources.sh, which creates a specified
+        artifact registry and gs bucket if they do not already exist. Also creates
+        a service account to run Vertex AI Pipelines.
+
+        Returns:
+            str: Text to be written to create_resources.sh
+        """
         create_resources_script = (
             '#!/bin/bash\n' + BuilderUtils.LICENSE +
             f'# This script will create an artifact registry and gs bucket if they do not already exist.\n'
             f'\n'
             f'''GREEN='\033[0;32m'\n'''
             f'''NC='\033[0m'\n'''
-            f'''AF_REGISTRY_NAME={self.af_registry_name}\n'''
-            f'''AF_REGISTRY_LOCATION={self.af_registry_location}\n'''
-            f'''PROJECT_ID={self.project_id}\n'''
-            f'''PROJECT_NUMBER=`gcloud projects describe {self.project_id} --format 'value(projectNumber)'`\n'''
-            f'''BUCKET_NAME={self.gs_bucket_name}\n'''
-            f'''BUCKET_LOCATION={self.pipeline_region}\n'''
-            f'''SERVICE_ACCOUNT_NAME={self.pipeline_runner_service_account.split('@')[0]}\n'''
-            f'''SERVICE_ACCOUNT_FULL={self.pipeline_runner_service_account}\n'''
-            f'''CLOUD_SOURCE_REPO={self.cloud_source_repository}\n'''
-            f'''CLOUD_SOURCE_REPO_BRANCH={self.cloud_source_repository_branch}\n'''
-            f'''CB_TRIGGER_LOCATION={self.cb_trigger_location}\n'''
-            f'''CB_TRIGGER_NAME={self.cb_trigger_name}\n'''
-            f'''CLOUD_TASKS_QUEUE_LOCATION={self.cloud_tasks_queue_location}\n'''
-            f'''CLOUD_TASKS_QUEUE_NAME={self.cloud_tasks_queue_name}\n'''
+            f'''AF_REGISTRY_NAME={self.__af_registry_name}\n'''
+            f'''AF_REGISTRY_LOCATION={self.__af_registry_location}\n'''
+            f'''PROJECT_ID={self.__project_id}\n'''
+            f'''PROJECT_NUMBER=`gcloud projects describe {self.__project_id} --format 'value(projectNumber)'`\n'''
+            f'''BUCKET_NAME={self.__gs_bucket_name}\n'''
+            f'''BUCKET_LOCATION={self.__pipeline_region}\n'''
+            f'''SERVICE_ACCOUNT_NAME={self.__pipeline_runner_service_account.split('@')[0]}\n'''
+            f'''SERVICE_ACCOUNT_FULL={self.__pipeline_runner_service_account}\n'''
+            f'''CLOUD_SOURCE_REPO={self.__cloud_source_repository}\n'''
+            f'''CLOUD_SOURCE_REPO_BRANCH={self.__cloud_source_repository_branch}\n'''
+            f'''CB_TRIGGER_LOCATION={self.__cb_trigger_location}\n'''
+            f'''CB_TRIGGER_NAME={self.__cb_trigger_name}\n'''
+            f'''CLOUD_TASKS_QUEUE_LOCATION={self.__cloud_tasks_queue_location}\n'''
+            f'''CLOUD_TASKS_QUEUE_NAME={self.__cloud_tasks_queue_name}\n'''
             f'\n'
             f'echo -e "$GREEN Updating required API services in project $PROJECT_ID $NC"\n'
             f'gcloud services enable cloudresourcemanager.googleapis.com \{NEWLINE}'
@@ -226,7 +314,8 @@ class AutoMLOps():
             f'  echo "Cloud Source Repository: ${LEFT_BRACKET}CLOUD_SOURCE_REPO{RIGHT_BRACKET} already exists in project $PROJECT_ID"\n'
             f'\n'
             f'fi\n')
-        if not self.run_local:
+
+        if not self.__run_local:
             create_resources_script += (
                 f'\n'
                 f'# Create cloud tasks queue\n'
@@ -253,76 +342,84 @@ class AutoMLOps():
                 f'  --name=$CB_TRIGGER_NAME \{NEWLINE}'
                 f'  --repo=$CLOUD_SOURCE_REPO \{NEWLINE}'
                 f'  --branch-pattern="$CLOUD_SOURCE_REPO_BRANCH" \{NEWLINE}'
-                f'  --build-config={self.top_folder}cloudbuild.yaml\n'
+                f'  --build-config={self.__top_folder}cloudbuild.yaml\n'
                 f'\n'
                 f'else\n'
                 f'\n'
                 f'  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${LEFT_BRACKET}CLOUD_SOURCE_REPO{RIGHT_BRACKET}"\n'
                 f'\n'
-                f'fi\n') 
+                f'fi\n')
+
         return create_resources_script
-    
+
     def _create_cloudbuild_config(self): 
+        """Builds the content of cloudbuild.yaml.
+
+        Args:
+            str: Text content of cloudbuild.yaml.
+        """
         vpc_connector_tail = ''
-        if self.vpc_connector != 'No VPC Specified':
+        if self.__vpc_connector != 'No VPC Specified':
             vpc_connector_tail = (
                 f'\n'
                 f'           "--ingress", "internal",\n'
-                f'           "--vpc-connector", "{self.vpc_connector}",\n'
+                f'           "--vpc-connector", "{self.__vpc_connector}",\n'
                 f'           "--vpc-egress", "all-traffic"')
         vpc_connector_tail += ']\n'
 
-        cloudbuild_comp_config = (BuilderUtils.LICENSE +
+        cloudbuild_comp_config = (
+            BuilderUtils.LICENSE +
             f'steps:\n'
             f'# ==============================================================================\n'
-            f'# BUILD & PUSH CUSTOM COMPONENT IMAGES\n'
+            f'# BUILD CUSTOM IMAGES\n'
             f'# ==============================================================================\n'
             f'\n'
             f'''  # build the component_base image\n'''
             f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-            f'''    args: [ "build", "-t", "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/components/component_base:latest", "." ]\n'''
-            f'''    dir: "{self.top_folder}components/component_base"\n'''
+            f'''    args: [ "build", "-t", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest", "." ]\n'''
+            f'''    dir: "{self.__top_folder}components/component_base"\n'''
             f'''    id: "build_component_base"\n'''
             f'''    waitFor: ["-"]\n'''
             f'\n'
-            f'''  # push the component_base image\n'''
-            f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-            f'''    args: ["push", "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/components/component_base:latest"]\n'''
-            f'''    dir: "{self.top_folder}components/component_base"\n'''
-            f'''    id: "push_component_base"\n'''
-            f'''    waitFor: ["build_component_base"]\n''')
+            f'''  # build the run_pipeline image\n'''
+            f'''  - name: 'gcr.io/cloud-builders/docker'\n'''
+            f'''    args: [ "build", "-t", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]\n'''
+            f'''    dir: "{self.__top_folder}"\n'''
+            f'''    id: "build_pipeline_runner_svc"\n'''
+            f'''    waitFor: ['build_component_base']\n''')
+
         cloudbuild_cloudrun_config = (
             f'\n'
             f'# ==============================================================================\n'
-            f'# BUILD & PUSH CLOUD RUN IMAGES\n'
+            f'# PUSH & DEPLOY CUSTOM IMAGES\n'
             f'# ==============================================================================\n'
             f'\n'
-            f'''  # build the run_pipeline image\n'''
-            f'''  - name: 'gcr.io/cloud-builders/docker'\n'''
-            f'''    args: [ "build", "-t", "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]\n'''
-            f'''    dir: "{self.top_folder}"\n'''
-            f'''    id: "build_pipeline_runner_svc"\n'''
-            f'''    waitFor: ['push_component_base']\n'''
+            f'''  # push the component_base image\n'''
+            f'''  - name: "gcr.io/cloud-builders/docker"\n'''
+            f'''    args: ["push", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest"]\n'''
+            f'''    dir: "{self.__top_folder}components/component_base"\n'''
+            f'''    id: "push_component_base"\n'''
+            f'''    waitFor: ["build_pipeline_runner_svc"]\n'''
             f'\n'
             f'''  # push the run_pipeline image\n'''
             f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-            f'''    args: ["push", "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/run_pipeline:latest"]\n'''
-            f'''    dir: "{self.top_folder}"\n'''
+            f'''    args: ["push", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest"]\n'''
+            f'''    dir: "{self.__top_folder}"\n'''
             f'''    id: "push_pipeline_runner_svc"\n'''
-            f'''    waitFor: ["build_pipeline_runner_svc"]\n'''
+            f'''    waitFor: ["push_component_base"]\n'''
             f'\n'
             f'''  # deploy the cloud run service\n'''
             f'''  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"\n'''
             f'''    entrypoint: gcloud\n'''
             f'''    args: ["run",\n'''
             f'''           "deploy",\n'''
-            f'''           "{self.cloud_run_name}",\n'''
+            f'''           "{self.__cloud_run_name}",\n'''
             f'''           "--image",\n'''
-            f'''           "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/run_pipeline:latest",\n'''
+            f'''           "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest",\n'''
             f'''           "--region",\n'''
-            f'''           "{self.cloud_run_location}",\n'''
+            f'''           "{self.__cloud_run_location}",\n'''
             f'''           "--service-account",\n'''
-            f'''           "{self.pipeline_runner_service_account}",{vpc_connector_tail}'''
+            f'''           "{self.__pipeline_runner_service_account}",{vpc_connector_tail}'''
             f'''    id: "deploy_pipeline_runner_svc"\n'''
             f'''    waitFor: ["push_pipeline_runner_svc"]\n'''
             f'\n'
@@ -333,7 +430,7 @@ class AutoMLOps():
             f'''      - '-e'\n'''
             f'''      - '-c'\n'''
             f'''      - |\n'''
-            f'''        cp -r {self.top_folder}cloud_run/queueing_svc .\n'''
+            f'''        cp -r {self.__top_folder}cloud_run/queueing_svc .\n'''
             f'''    id: "setup_queueing_svc"\n'''
             f'''    waitFor: ["deploy_pipeline_runner_svc"]\n'''
             f'\n'
@@ -350,6 +447,7 @@ class AutoMLOps():
             f'''    args: ["queueing_svc/main.py", "--setting", "queue_job"]\n'''
             f'''    id: "submit_job_to_queue"\n'''
             f'''    waitFor: ["install_queueing_svc_deps"]\n''')
+
         cloudbuild_scheduler_config = (
             '\n'
             '''  # Create Scheduler Job\n'''
@@ -358,23 +456,84 @@ class AutoMLOps():
             '''    args: ["queueing_svc/main.py", "--setting", "schedule_job"]\n'''
             '''    id: "schedule_job"\n'''
             '''    waitFor: ["submit_job_to_queue"]\n''')
+
         custom_comp_image = (
             f'\n'
             f'images:\n'
             f'''  # custom component images\n'''
-            f'''  - "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/components/component_base:latest"\n''')
+            f'''  - "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest"\n''')
+
         cloudrun_image = (
             f'''  # Cloud Run image\n'''
-            f'''  - "{self.af_registry_location}-docker.pkg.dev/{self.project_id}/{self.af_registry_name}/run_pipeline:latest"\n''')
+            f'''  - "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest"\n''')
 
-        if self.run_local:
+        if self.__run_local:
             cb_file_contents = cloudbuild_comp_config + custom_comp_image
         else:
-            if self.cloud_schedule_pattern == 'No Schedule Specified':
+            if self.__cloud_schedule_pattern == 'No Schedule Specified':
                 cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + custom_comp_image + cloudrun_image
             else:
                 cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + cloudbuild_scheduler_config + custom_comp_image + cloudrun_image
+
         return cb_file_contents
+
+    def _create_dockerfile(self):
+        """Creates the content of a Dockerfile to be written to the component_base directory.
+
+        Args:
+            default_image: Default image used for this process.
+
+        Returns:
+            str: Text content of dockerfile.
+        """
+        return (
+            BuilderUtils.LICENSE +
+            f'FROM {self.__image}\n'
+            f'RUN python -m pip install --upgrade pip\n'
+            f'COPY requirements.txt .\n'
+            f'RUN python -m pip install -r \ \n'
+            f'    requirements.txt --quiet --no-cache-dir \ \n'
+            f'    && rm -f requirements.txt\n'
+            f'COPY ./src /pipelines/component/src\n'
+            f'ENTRYPOINT ["/bin/bash"]\n')
+        
+    def _create_default_config(self):
+        """Creates default defaults.yaml file contents. This defaults
+        file is used by subsequent functions and by the pipeline
+        files themselves.
+
+        Returns:
+            str: Defaults yaml file content
+        """
+        return (
+            BuilderUtils.LICENSE +
+            f'# These values are descriptive only - do not change.\n'
+            f'# Rerun AutoMLOps.generate() to change these values.\n'
+            f'gcp:\n'
+            f'  af_registry_location: {self.__af_registry_location}\n'
+            f'  af_registry_name: {self.__af_registry_name}\n'
+            f'  cb_trigger_location: {self.__cb_trigger_location}\n'
+            f'  cb_trigger_name: {self.__cb_trigger_name}\n'
+            f'  cloud_run_location: {self.__cloud_run_location}\n'
+            f'  cloud_run_name: {self.__cloud_run_name}\n'
+            f'  cloud_tasks_queue_location: {self.__cloud_tasks_queue_location}\n'
+            f'  cloud_tasks_queue_name: {self.__cloud_tasks_queue_name}\n'
+            f'  cloud_schedule_location: {self.__cloud_schedule_location}\n'
+            f'  cloud_schedule_name: {self.__cloud_schedule_name}\n'
+            f'  cloud_schedule_pattern: {self.__cloud_schedule_pattern}\n'
+            f'  cloud_source_repository: {self.__cloud_source_repository}\n'
+            f'  cloud_source_repository_branch: {self.__cloud_source_repository_branch}\n'
+            f'  gs_bucket_name: {self.__gs_bucket_name}\n'
+            f'  pipeline_runner_service_account: {self.__pipeline_runner_service_account}\n'
+            f'  project_id: {self.__project_id}\n'
+            f'  vpc_connector: {self.__vpc_connector}\n'
+            f'\n'
+            f'pipelines:\n'
+            f'  parameter_values_path: {BuilderUtils.PARAMETER_VALUES_PATH}\n'
+            f'  pipeline_component_directory: components\n'
+            f'  pipeline_job_spec_path: {BuilderUtils.PIPELINE_JOB_SPEC_PATH}\n'
+            f'  pipeline_region: {self.__gs_bucket_location}\n'
+            f'  pipeline_storage_path: gs://{self.__gs_bucket_name}/pipeline_root\n')
 
 class CloudRun():
     def __init__(self, defaults_file):
@@ -383,26 +542,26 @@ class CloudRun():
         Args:
             defaults_file (_type_): _description_
         """
-        self.left_bracket = '{'
-        self.right_bracket = '}'
-        
+
+        # Parse defaults file for hidden class attributes
         defaults = BuilderUtils.read_yaml_file(defaults_file)
-        self.project_id = defaults['gcp']['project_id']
-        self.pipeline_runner_service_account = defaults['gcp']['pipeline_runner_service_account']
-        self.cloud_tasks_queue_location = defaults['gcp']['cloud_tasks_queue_location']
-        self.cloud_tasks_queue_name = defaults['gcp']['cloud_tasks_queue_name']
-        self.cloud_run_name = defaults['gcp']['cloud_run_name']
-        self.cloud_run_location = defaults['gcp']['cloud_run_location']
-        self.cloud_schedule_pattern = defaults['gcp']['cloud_schedule_pattern']
-        self.cloud_schedule_location = defaults['gcp']['cloud_schedule_location']
-        self.cloud_schedule_name = defaults['gcp']['cloud_schedule_name']
-        
+        self.__project_id = defaults['gcp']['project_id']
+        self.__pipeline_runner_service_account = defaults['gcp']['pipeline_runner_service_account']
+        self.__cloud_tasks_queue_location = defaults['gcp']['cloud_tasks_queue_location']
+        self.__cloud_tasks_queue_name = defaults['gcp']['cloud_tasks_queue_name']
+        self.__cloud_run_name = defaults['gcp']['cloud_run_name']
+        self.__cloud_run_location = defaults['gcp']['cloud_run_location']
+        self.__cloud_schedule_pattern = defaults['gcp']['cloud_schedule_pattern']
+        self.__cloud_schedule_location = defaults['gcp']['cloud_schedule_location']
+        self.__cloud_schedule_name = defaults['gcp']['cloud_schedule_name']
+
+        # Set generated scripts as public attributes
         self.dockerfile = self._create_dockerfile()
         self.cloudrun_base_reqs = self._create_cloudrun_base_reqs()
         self.queueing_svc_reqs = self._create_queuing_svc_reqs()
         self.cloudrun_base = self._create_cloudrun_base()
         self.queueing_svc = self._create_queueing_svc()
-        
+
     def _create_dockerfile(self):
         """Returns text for a Dockerfile that will be added to the cloudrun/run_pipeline directory.
 
@@ -411,7 +570,7 @@ class CloudRun():
         """
         return (
             BuilderUtils.LICENSE +
-            'FROM python:3.9\n'
+            'FROM python:3.9-slim\n'
             '\n'
             '# Allow statements and log messages to immediately appear in the Knative logs\n'
             'ENV PYTHONUNBUFFERED True\n'
@@ -432,12 +591,12 @@ class CloudRun():
             '# Run flask api server\n'
             'CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app\n'
         )
-    
+
     def _create_cloudrun_base_reqs(self):
         """Returns the text of a cloudrun base requirements file to be written to the cloud_run/run_pipeline directory.
 
         Returns:
-            str: Package requirements for cloudrun base
+            str: Package requirements for cloudrun base.
         """
         return (
             'kfp\n'
@@ -447,7 +606,7 @@ class CloudRun():
             'gunicorn\n'
             'pyyaml\n'
         )
-    
+
     def _create_queuing_svc_reqs(self):
         """Returns the text of a queueing svc requirements file to be written to the cloud_run/queueing_svc directory.
 
@@ -461,10 +620,10 @@ class CloudRun():
             'google-cloud-run\n'
             'google-cloud-scheduler\n'
         )
-    
+
     def _create_cloudrun_base(self):
         """Creates content for a main.py to be written to the cloud_run/run_pipeline
-        directory. This file contains code for running a flask service that will act as 
+        directory. This file contains code for running a flask service that will act as
         a pipeline runner service.
 
         Returns:
@@ -563,9 +722,9 @@ class CloudRun():
             f'''if __name__ == '__main__':\n'''
             f'''    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))\n'''
         )
-        
+
     def _create_queueing_svc(self):
-        """Creates content for a main.py to be written to the cloud_run/queueing_svc 
+        """Creates content for a main.py to be written to the cloud_run/queueing_svc
         directory. This file contains code for submitting a job to the cloud runner
         service, and creating a cloud scheduler job.
 
@@ -582,16 +741,16 @@ class CloudRun():
             f'''from google.cloud import scheduler_v1\n'''
             f'''from google.cloud import tasks_v2\n'''
             f'\n'
-            f'''CLOUD_RUN_LOCATION = '{self.cloud_run_location}'\n'''
-            f'''CLOUD_RUN_NAME = '{self.cloud_run_name}'\n'''
-            f'''CLOUD_TASKS_QUEUE_LOCATION = '{self.cloud_tasks_queue_location}'\n'''
-            f'''CLOUD_TASKS_QUEUE_NAME = '{self.cloud_tasks_queue_name}'\n'''
+            f'''CLOUD_RUN_LOCATION = '{self.__cloud_run_location}'\n'''
+            f'''CLOUD_RUN_NAME = '{self.__cloud_run_name}'\n'''
+            f'''CLOUD_TASKS_QUEUE_LOCATION = '{self.__cloud_tasks_queue_location}'\n'''
+            f'''CLOUD_TASKS_QUEUE_NAME = '{self.__cloud_tasks_queue_name}'\n'''
             f'''PARAMETER_VALUES_PATH = 'queueing_svc/pipeline_parameter_values.json'\n'''
-            f'''PIPELINE_RUNNER_SA = '{self.pipeline_runner_service_account}'\n'''
-            f'''PROJECT_ID = '{self.project_id}'\n'''
-            f'''SCHEDULE_LOCATION = '{self.cloud_schedule_location}'\n'''
-            f'''SCHEDULE_PATTERN = '{self.cloud_schedule_pattern}'\n'''
-            f'''SCHEDULE_NAME = '{self.cloud_schedule_name}'\n'''
+            f'''PIPELINE_RUNNER_SA = '{self.__pipeline_runner_service_account}'\n'''
+            f'''PROJECT_ID = '{self.__project_id}'\n'''
+            f'''SCHEDULE_LOCATION = '{self.__cloud_schedule_location}'\n'''
+            f'''SCHEDULE_PATTERN = '{self.__cloud_schedule_pattern}'\n'''
+            f'''SCHEDULE_NAME = '{self.__cloud_schedule_name}'\n'''
             f'\n'
             f'''def get_runner_svc_uri(\n'''
             f'''    cloud_run_location: str,\n'''
@@ -750,7 +909,224 @@ class CloudRun():
             f'''            schedule_location=SCHEDULE_LOCATION,\n'''
             f'''            schedule_name=SCHEDULE_NAME,\n'''
             f'''            schedule_pattern=SCHEDULE_PATTERN)\n''')
+
+class Component():
+    def __init__(self, component_spec, defaults_file):
+        self.__component_spec = component_spec
+        
+        # Parse defaults file for hidden class attributes
+        defaults = BuilderUtils.read_yaml_file(defaults_file)
+        self.__af_registry_location = defaults['gcp']['af_registry_location']
+        self.__project_id = defaults['gcp']['project_id']
+        self.__af_registry_name = defaults['gcp']['af_registry_name']
+        
+        self.task = self._create_task()
+        self.compspec_image = self._create_compspec_image()
+        
+    def _create_task(self):
+        """Creates the content of the cell python code to be written to a file with required imports.
+
+        Returns:
+            str: Contents of component base source code.
+        """
+        custom_code = self.__component_spec['implementation']['container']['command'][-1]
+        default_imports = (
+            BuilderUtils.LICENSE +
+            'import argparse\n'
+            'import json\n'
+            'import kfp\n'
+            'from kfp.v2 import dsl\n'
+            'from kfp.v2.components import executor\n'
+            'from kfp.v2.dsl import *\n'
+            'from typing import *\n'
+            '\n')
+        main_func = (
+            '\n'
+            '''def main():\n'''
+            '''    """Main executor."""\n'''
+            '''    parser = argparse.ArgumentParser()\n'''
+            '''    parser.add_argument('--executor_input', type=str)\n'''
+            '''    parser.add_argument('--function_to_execute', type=str)\n'''
+            '\n'
+            '''    args, _ = parser.parse_known_args()\n'''
+            '''    executor_input = json.loads(args.executor_input)\n'''
+            '''    function_to_execute = globals()[args.function_to_execute]\n'''
+            '\n'
+            '''    executor.Executor(\n'''
+            '''        executor_input=executor_input,\n'''
+            '''        function_to_execute=function_to_execute).execute()\n'''
+            '\n'
+            '''if __name__ == '__main__':\n'''
+            '''    main()\n''')
+        return default_imports + custom_code + main_func
     
+    def _create_compspec_image(self):
+        """Write the correct image for the component spec.
+
+        Returns:
+            str: Component spec image.
+        """
+        return (
+            f'''{self.__af_registry_location}-docker.pkg.dev/'''
+            f'''{self.__project_id}/'''
+            f'''{self.__af_registry_name}/'''
+            f'''components/component_base:latest''')
+        
+class Pipeline():
+    def __init__(self, custom_training_job_specs, defaults_file):
+        """_summary_
+
+        Args:
+            custom_training_job_specs (List[Dict]): custom_training_job_specs: Specifies the specs to run the training job with.
+            defaults_file (_type_): _description_
+        """
+        self.__custom_training_job_specs = custom_training_job_specs
+        
+        defaults = BuilderUtils.read_yaml_file(defaults_file)
+        self.__project_id = defaults['gcp']['project_id']
+
+        self.pipeline_imports = self._get_pipeline_imports()
+        self.pipeline_argparse = self._get_pipeline_argparse()
+        self.pipeline_runner = self._get_pipeline_runner()
+    
+    def _get_pipeline_imports(self):
+        """Generates python code that imports modules and loads all custom components.
+
+        Returns:
+            str: Python pipeline_imports code.
+        """
+        components_list = BuilderUtils.get_components_list(full_path=False)
+        gcpc_imports = (
+            'from functools import partial\n'
+            'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
+        quote = '\''
+        newline_tab = '\n    '
+
+        # If there is a custom training job specified, write those to feed to pipeline imports
+        if not self.__custom_training_job_specs:
+            custom_specs = ''
+        else:
+            custom_specs = (
+                f'''    {newline_tab.join(f'{spec["component_spec"]}_custom_training_job_specs = {BuilderUtils.format_spec_dict(spec)}' for spec in self.__custom_training_job_specscustom_training_job_specs)}'''
+                f'\n'
+                f'''    {newline_tab.join(f'{spec["component_spec"]}_job_op = create_custom_training_job_op_from_component(**{spec["component_spec"]}_custom_training_job_specs)' for spec in self.__custom_training_job_specs)}'''
+                f'\n'
+                f'''    {newline_tab.join(f'{spec["component_spec"]} = partial({spec["component_spec"]}_job_op, project={quote}{self.__project_id}{quote})' for spec in self.__custom_training_job_specs)}'''        
+                f'\n')
+
+        # Return standard code and customized specs
+        return (
+            f'''import argparse\n'''
+            f'''import os\n'''
+            f'''{gcpc_imports if self.__custom_training_job_specs else ''}'''
+            f'''import kfp\n'''
+            f'''from kfp.v2 import compiler, dsl\n'''
+            f'''from kfp.v2.dsl import *\n'''
+            f'''from typing import *\n'''
+            f'''import yaml\n'''
+            f'\n'
+            f'''def load_custom_component(component_name: str):\n'''
+            f'''    component_path = os.path.join('components',\n'''
+            f'''                                component_name,\n'''
+            f'''                              'component.yaml')\n'''
+            f'''    return kfp.components.load_component_from_file(component_path)\n'''
+            f'\n'
+            f'''def create_training_pipeline(pipeline_job_spec_path: str):\n'''
+            f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in components_list)}\n'''
+            f'\n'
+            f'''{custom_specs}''')
+        
+    def _get_pipeline_argparse(self):
+        """Generates python code that loads default pipeline parameters from the defaults config_file.
+
+        Returns:
+            str: Python pipeline_argparse code.
+        """
+        return (
+            '''if __name__ == '__main__':\n'''
+            '''    parser = argparse.ArgumentParser()\n'''
+            '''    parser.add_argument('--config', type=str,\n'''
+            '''                       help='The config file for setting default values.')\n'''
+            '\n'
+            '''    args = parser.parse_args()\n'''
+            '\n'
+            '''    with open(args.config, 'r', encoding='utf-8') as config_file:\n'''
+            '''        config = yaml.load(config_file, Loader=yaml.FullLoader)\n'''
+            '\n'
+            '''    pipeline = create_training_pipeline(\n'''
+            '''        pipeline_job_spec_path=config['pipelines']['pipeline_job_spec_path'])\n''')
+
+    def _get_pipeline_runner(self):
+        """Generates python code that sends a PipelineJob to Vertex AI.
+
+        Returns:
+            str: Python pipeline_runner code.
+        """
+        return (BuilderUtils.LICENSE +
+            '''import argparse\n'''
+            '''import json\n'''
+            '''import logging\n'''
+            '''import os\n'''
+            '''import yaml\n'''
+            '\n'
+            '''from google.cloud import aiplatform\n'''
+            '\n'
+            '''logger = logging.getLogger()\n'''
+            '''log_level = os.environ.get('LOG_LEVEL', 'INFO')\n'''
+            '''logger.setLevel(log_level)\n'''
+            '\n'
+            '''def run_pipeline(\n'''
+            '''    project_id: str,\n'''
+            '''    pipeline_root: str,\n'''
+            '''    pipeline_runner_sa: str,\n'''
+            '''    parameter_values_path: str,\n'''
+            '''    pipeline_spec_path: str,\n'''
+            '''    display_name: str = 'mlops-pipeline-run',\n'''
+            '''    enable_caching: bool = False):\n'''
+            '''    """Executes a pipeline run.\n'''
+            '\n'
+            '''    Args:\n'''
+            '''        project_id: The project_id.\n'''
+            '''        pipeline_root: GCS location of the pipeline runs metadata.\n'''
+            '''        pipeline_runner_sa: Service Account to runner PipelineJobs.\n'''
+            '''        parameter_values_path: Location of parameter values JSON.\n'''
+            '''        pipeline_spec_path: Location of the pipeline spec JSON.\n'''
+            '''        display_name: Name to call the pipeline.\n'''
+            '''        enable_caching: Should caching be enabled (Boolean)\n'''
+            '''    """\n'''
+            '''    with open(parameter_values_path, 'r') as file:\n'''
+            '''        try:\n'''
+            '''            pipeline_params = json.load(file)\n'''
+            '''        except ValueError as exc:\n'''
+            '''            print(exc)\n'''
+            '''    logging.debug('Pipeline Parms Configured:')\n'''
+            '''    logging.debug(pipeline_params)\n'''
+            '\n'
+            '''    aiplatform.init(project=project_id)\n'''
+            '''    job = aiplatform.PipelineJob(\n'''
+            '''        display_name = display_name,\n'''
+            '''        template_path = pipeline_spec_path,\n'''
+            '''        pipeline_root = pipeline_root,\n'''
+            '''        parameter_values = pipeline_params,\n'''
+            '''        enable_caching = enable_caching)\n'''
+            '''    logging.debug('AI Platform job built. Submitting...')\n'''
+            '''    job.submit(service_account=pipeline_runner_sa)\n'''
+            '''    logging.debug('Job sent!')\n'''
+            '\n'
+            '''if __name__ == '__main__':\n'''
+            '''    parser = argparse.ArgumentParser()\n'''
+            '''    parser.add_argument('--config', type=str,\n'''
+            '''                        help='The config file for setting default values.')\n'''
+            '''    args = parser.parse_args()\n'''
+            '\n'
+            '''    with open(args.config, 'r', encoding='utf-8') as config_file:\n'''
+            '''        config = yaml.load(config_file, Loader=yaml.FullLoader)\n'''
+            '\n'
+            '''    run_pipeline(project_id=config['gcp']['project_id'],\n'''
+            '''                 pipeline_root=config['pipelines']['pipeline_storage_path'],\n'''
+            '''                 pipeline_runner_sa=config['gcp']['pipeline_runner_service_account'],\n'''
+            '''                 parameter_values_path=config['pipelines']['parameter_values_path'],\n'''
+            '''                 pipeline_spec_path=config['pipelines']['pipeline_job_spec_path']) \n''')
 
 if __name__ == "__main__":
     print('Test')

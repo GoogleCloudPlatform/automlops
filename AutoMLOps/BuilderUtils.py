@@ -268,3 +268,24 @@ def get_function_source_definition(func: Callable) -> str:
             f'It is probably not properly indented.')
 
     return '\n'.join(source_code_lines)
+
+def format_spec_dict(job_spec: dict) -> str:
+    """Takes in a job spec dictionary and removes the quotes around the component op name. 
+    e.g. 'component_spec': 'train_model' becomes 'component_spec': train_model.
+    This is necessary to in order for the op to be callable within the Python code.
+
+    Args:
+        job_spec: Dictionary with job spec info.
+
+    Returns:
+        str: Python formatted dictionary code.
+    """
+    quote = '\''
+    left_bracket = '{'
+    right_bracket = '}'
+    newline = '\n'
+
+    return (
+        f'''{left_bracket}\n'''
+        f'''    {f'{newline}    '.join(f"   {quote}{k}{quote}: {quote if k != 'component_spec' else ''}{v}{quote if k != 'component_spec' else ''}," for k, v in job_spec.items())}{newline}'''
+        f'''    {right_bracket}\n''')

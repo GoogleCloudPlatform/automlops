@@ -21,8 +21,8 @@ import inspect
 from typing import Callable, List, Optional, TypeVar, Union
 
 import docstring_parser
-
 from AutoMLOps import BuilderUtils
+from AutoMLOps import ScriptsBuilder
 
 T = TypeVar('T')
 
@@ -42,85 +42,34 @@ def formalize(component_path: str,
         defaults_file: Path to the default config variables yaml.
         use_kfp_spec: Flag that determines the format of the component yamls.
     """
+    # Read in component specs
     component_spec = BuilderUtils.read_yaml_file(component_path)
+
+    # If using kfp, remove spaces in name and convert to lowercase
     if use_kfp_spec:
         component_spec['name'] = component_spec['name'].replace(' ', '_').lower()
+
+    # Set and create directory for component, and set directory for task
     component_dir = top_lvl_name + 'components/' + component_spec['name']
-    task_filepath = (top_lvl_name + 'components/component_base/src/' +
-                     component_spec['name'] + '.py')
+    task_filepath = (top_lvl_name 
+                     + 'components/component_base/src/' 
+                     + component_spec['name'] 
+                     + '.py')
     BuilderUtils.make_dirs([component_dir])
-    create_task(component_spec, task_filepath, use_kfp_spec)
-    create_component(component_spec, component_dir, defaults_file)
 
-def create_task(component_spec: dict, task_filepath: str, use_kfp_spec: bool):
-    """Writes cell python code to a file with required imports.
+    # Initialize component scripts builder
+    component_scripts = ScriptsBuilder.Component(component_spec, defaults_file)
 
-    Args:
-        component_spec: Component definition dictionary.
-            Contains cell code which is temporarily stored in
-            component_spec['implementation']['container']['command']
-        task_filepath: Path to the file to be written.
-        use_kfp_spec: Flag that determines the format of the component yamls.
-    Raises:
-        Exception: If the imports tmpfile does not exist.
-    """
-    custom_code = component_spec['implementation']['container']['command'][-1]
-    default_imports = (BuilderUtils.LICENSE +
-        'import argparse\n'
-        'import json\n'
-        'from kfp.v2.components import executor\n')
-    if not use_kfp_spec:
-        custom_imports = ('import kfp\n'
-        'from kfp.v2 import dsl\n'
-        'from kfp.v2.dsl import *\n'
-        'from typing import *\n'
-        '\n')
-    else:
-        custom_imports = '' # included as part of the kfp spec
-    main_func = (
-        '\n'
-        '''def main():\n'''
-        '''    """Main executor."""\n'''
-        '''    parser = argparse.ArgumentParser()\n'''
-        '''    parser.add_argument('--executor_input', type=str)\n'''
-        '''    parser.add_argument('--function_to_execute', type=str)\n'''
-        '\n'
-        '''    args, _ = parser.parse_known_args()\n'''
-        '''    executor_input = json.loads(args.executor_input)\n'''
-        '''    function_to_execute = globals()[args.function_to_execute]\n'''
-        '\n'
-        '''    executor.Executor(\n'''
-        '''        executor_input=executor_input,\n'''
-        '''        function_to_execute=function_to_execute).execute()\n'''
-        '\n'
-        '''if __name__ == '__main__':\n'''
-        '''    main()\n''')
-    f_contents = default_imports + custom_imports + custom_code + main_func
-    BuilderUtils.write_file(task_filepath, f_contents, 'w+')
+    # Write task script to component base
+    BuilderUtils.write_file(task_filepath, component_scripts.task, 'w+')
 
-def create_component(component_spec: dict,
-                     component_dir: str,
-                     defaults_file: str):
-    """Updates the component_spec to include the correct image
-       and startup command, then writes the component.yaml.
-       Requires a defaults.yaml config to pull config vars from.
-
-    Args:
-        component_spec: Component definition dictionary.
-        component_dir: Path of the component directory.
-        defaults_file: Path to the default config variables yaml.
-    Raises:
-        Exception: If an error is encountered writing the file.
-    """
-    defaults = BuilderUtils.read_yaml_file(defaults_file)
-    component_spec['implementation']['container']['image'] = (
-        f'''{defaults['gcp']['af_registry_location']}-docker.pkg.dev/'''
-        f'''{defaults['gcp']['project_id']}/'''
-        f'''{defaults['gcp']['af_registry_name']}/'''
-        f'''components/component_base:latest''')
+    # Update component_spec to include correct image and startup command
+    component_spec['implementation']['container']['image'] = component_scripts.compspec_image
     component_spec['implementation']['container']['command'] = [
         'python3',
         f'''/pipelines/component/src/{component_spec['name']+'.py'}''']
+
+    # Write license and component spec to the appropriate component.yaml file
     filename = component_dir + '/component.yaml'
     BuilderUtils.write_file(filename, BuilderUtils.LICENSE, 'w')
     BuilderUtils.write_yaml_file(filename, component_spec, 'a')
@@ -178,7 +127,6 @@ def _get_packages_to_install_command(func: Optional[Callable] = None,
         packages_to_install = []
     concat_package_list = ' '.join(
         [repr(str(package)) for package in packages_to_install])
-    # pylint: disable=anomalous-backslash-in-string
     install_python_packages_script = (
     f'''if ! [ -x "$(command -v pip)" ]; then{newline}'''
     f'''    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip{newline}'''
@@ -204,7 +152,6 @@ def _get_function_parameters(func: Callable) -> dict:
         metadata['type'] = _maybe_strip_optional_from_annotation(
             param.annotation)
         parameter_holder.append(metadata)
-        # pylint: disable=protected-access
         if metadata['type'] == inspect._empty:
             raise TypeError(
                 f'''Missing type hint for parameter "{metadata['name']}". '''
