@@ -203,17 +203,21 @@ def run(run_local: bool):
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
+    # Build resources
     BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
+
+    # Build, compile, and submit pipeline job
     if run_local:
         os.chdir(TOP_LVL_NAME)
         try:
-            subprocess.run(['./scripts/run_all.sh'], shell=True, check=True,
-                stderr=subprocess.STDOUT)
+            subprocess.run(['./scripts/run_all.sh'], shell=True, check=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             logging.info(e)
         os.chdir('../')
     else:
         _push_to_csr()
+
+    # Log generated resources
     _resources_generation_manifest(run_local)
 
 def _resources_generation_manifest(run_local: bool):
@@ -224,13 +228,13 @@ def _resources_generation_manifest(run_local: bool):
     """
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
     logging.info('\n'
-          '#################################################################\n'
-          '#                                                               #\n'
-          '#                       RESOURCES MANIFEST                      #\n'
-          '#---------------------------------------------------------------#\n'
-          '#     Generated resources can be found at the following urls    #\n'
-          '#                                                               #\n'
-          '#################################################################\n')
+        '#################################################################\n'
+        '#                                                               #\n'
+        '#                       RESOURCES MANIFEST                      #\n'
+        '#---------------------------------------------------------------#\n'
+        '#     Generated resources can be found at the following urls    #\n'
+        '#                                                               #\n'
+        '#################################################################\n')
     # pylint: disable=logging-fstring-interpolation
     logging.info(f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
     logging.info(f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
@@ -251,12 +255,19 @@ def _push_to_csr():
        then pushes to the specified branch and triggers the cloudbuild job.
     """
     defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
+
     if not os.path.exists('.git'):
+
+        # Initialize git and configure credentials
         BuilderUtils.execute_process('git init', to_null=False)
         BuilderUtils.execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+
+        # Add repo and branch
         BuilderUtils.execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
         BuilderUtils.execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
         has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+
+        # WHAT IS THIS
         if not has_remote_branch:
             # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
             BuilderUtils.execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
@@ -264,6 +275,7 @@ def _push_to_csr():
             BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
             BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
 
+    # Add, commit, and push changes to CSR
     BuilderUtils.execute_process(f'touch {TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
     BuilderUtils.execute_process('git add .', to_null=False)
     BuilderUtils.execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
@@ -314,9 +326,11 @@ def _create_requirements():
         'pyarrow',
         'gcsfs',
         'fsspec']
+
     # Infer reqs using pipreqs
     BuilderUtils.execute_process(f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force', to_null=False)
     pipreqs = BuilderUtils.read_file(reqs_filename).splitlines()
+
     # Get user-inputted requirements from .tmpfiles dir
     user_inp_reqs = []
     components_path_list = BuilderUtils.get_components_list()
@@ -325,9 +339,12 @@ def _create_requirements():
         reqs = component_spec['implementation']['container']['command'][2]
         formatted_reqs = re.findall('\'([^\']*)\'', reqs)
         user_inp_reqs.extend(formatted_reqs)
-    # Remove duplicates
+
+    # Remove duplicate packages
     set_of_requirements = set(pipreqs + user_inp_reqs + default_gcp_reqs)
     reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
+
+    # Delete any previous versions (???) and write requirements file
     BuilderUtils.delete_file(reqs_filename)
     BuilderUtils.write_file(reqs_filename, reqs_str, 'w')
 

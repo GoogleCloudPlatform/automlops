@@ -1,6 +1,24 @@
-from AutoMLOps import BuilderUtils
+# Copyright 2023 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Builds file content."""
+
+# pylint: disable=C0103
+# pylint: disable=line-too-long
 
 from typing import Callable, Dict, List, Optional
+from AutoMLOps import BuilderUtils
 
 LEFT_BRACKET = '{'
 RIGHT_BRACKET = '}'
@@ -90,7 +108,7 @@ class AutoMLOps():
         self.create_cloudbuild_config = self._create_cloudbuild_config()
         self.dockerfile = self._create_dockerfile()
         self.defaults = self._create_default_config()
-        
+
     def _build_pipeline_spec(self):
         """Builds content of a shell script to build the pipeline specs.
 
@@ -496,7 +514,7 @@ class AutoMLOps():
             f'    && rm -f requirements.txt\n'
             f'COPY ./src /pipelines/component/src\n'
             f'ENTRYPOINT ["/bin/bash"]\n')
-        
+
     def _create_default_config(self):
         """Creates default defaults.yaml file contents. This defaults
         file is used by subsequent functions and by the pipeline
@@ -537,10 +555,10 @@ class AutoMLOps():
 
 class CloudRun():
     def __init__(self, defaults_file):
-        """_summary_
+        """Instantiate Cloud Run scripts object with all necessary attributes.
 
         Args:
-            defaults_file (_type_): _description_
+            defaults_file (str): Path to the default config variables yaml.
         """
 
         # Parse defaults file for hidden class attributes
@@ -912,6 +930,13 @@ class CloudRun():
 
 class Component():
     def __init__(self, component_spec, defaults_file):
+        """Instantiate Component scripts object with all necessary attributes.
+
+        Args:
+            component_spec (dict): Dictionary of component specs including details
+                of component image, startup command, and args.
+            defaults_file (str): Path to the default config variables yaml.
+        """
         self.__component_spec = component_spec
         
         # Parse defaults file for hidden class attributes
@@ -919,10 +944,11 @@ class Component():
         self.__af_registry_location = defaults['gcp']['af_registry_location']
         self.__project_id = defaults['gcp']['project_id']
         self.__af_registry_name = defaults['gcp']['af_registry_name']
-        
+
+        # Get generated scripts as public attributes
         self.task = self._create_task()
         self.compspec_image = self._create_compspec_image()
-        
+
     def _create_task(self):
         """Creates the content of the cell python code to be written to a file with required imports.
 
@@ -959,7 +985,7 @@ class Component():
             '''if __name__ == '__main__':\n'''
             '''    main()\n''')
         return default_imports + custom_code + main_func
-    
+
     def _create_compspec_image(self):
         """Write the correct image for the component spec.
 
@@ -971,14 +997,14 @@ class Component():
             f'''{self.__project_id}/'''
             f'''{self.__af_registry_name}/'''
             f'''components/component_base:latest''')
-        
+
 class Pipeline():
     def __init__(self, custom_training_job_specs, defaults_file):
-        """_summary_
+        """Instantiate Pipeline scripts object with all necessary attributes.
 
         Args:
-            custom_training_job_specs (List[Dict]): custom_training_job_specs: Specifies the specs to run the training job with.
-            defaults_file (_type_): _description_
+            custom_training_job_specs (List[Dict]): Specifies the specs to run the training job with.
+            defaults_file (str): Path to the default config variables yaml.
         """
         self.__custom_training_job_specs = custom_training_job_specs
         
@@ -988,7 +1014,7 @@ class Pipeline():
         self.pipeline_imports = self._get_pipeline_imports()
         self.pipeline_argparse = self._get_pipeline_argparse()
         self.pipeline_runner = self._get_pipeline_runner()
-    
+
     def _get_pipeline_imports(self):
         """Generates python code that imports modules and loads all custom components.
 
@@ -1035,7 +1061,7 @@ class Pipeline():
             f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in components_list)}\n'''
             f'\n'
             f'''{custom_specs}''')
-        
+
     def _get_pipeline_argparse(self):
         """Generates python code that loads default pipeline parameters from the defaults config_file.
 
@@ -1127,6 +1153,3 @@ class Pipeline():
             '''                 pipeline_runner_sa=config['gcp']['pipeline_runner_service_account'],\n'''
             '''                 parameter_values_path=config['pipelines']['parameter_values_path'],\n'''
             '''                 pipeline_spec_path=config['pipelines']['pipeline_job_spec_path']) \n''')
-
-if __name__ == "__main__":
-    print('Test')

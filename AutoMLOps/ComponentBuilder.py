@@ -89,12 +89,12 @@ def create_component_scaffold(func: Optional[Callable] = None,
         packages_to_install: A list of optional packages to install before
             executing func. These will always be installed at component runtime.
     """
-    # Todo:
-    # Figure out what to do with package_to_install
+    # Extract name, docstring, and component description
     name = func.__name__
     parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
     description = parsed_docstring.short_description
-    # make yaml
+    
+    # Instantiate component yaml attributes
     component_spec = {}
     component_spec['name'] = name
     if description:
@@ -105,9 +105,13 @@ def create_component_scaffold(func: Optional[Callable] = None,
     component_spec['implementation']['container']['image'] = 'TBD'
     component_spec['implementation']['container']['command'] = _get_packages_to_install_command(func, packages_to_install)
     component_spec['implementation']['container']['args'] = ['--executor_input',
-        {'executorInput': None}, '--function_to_execute', name]
+                                                             {'executorInput': None},
+                                                             '--function_to_execute', 
+                                                             name]
+
+    # Write component yaml
     filename = BuilderUtils.TMPFILES_DIR + f'/{name}.yaml'
-    BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) # if it doesn't already exist
+    BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) 
     BuilderUtils.write_yaml_file(filename, component_spec, 'w')
 
 def _get_packages_to_install_command(func: Optional[Callable] = None,
@@ -125,32 +129,32 @@ def _get_packages_to_install_command(func: Optional[Callable] = None,
     newline = '\n'
     if not packages_to_install:
         packages_to_install = []
-    concat_package_list = ' '.join(
-        [repr(str(package)) for package in packages_to_install])
+    concat_package_list = ' '.join([repr(str(package)) for package in packages_to_install])
     install_python_packages_script = (
-    f'''if ! [ -x "$(command -v pip)" ]; then{newline}'''
-    f'''    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip{newline}'''
-    f'''fi{newline}'''
-    f'''PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \{newline}'''
-    f'''    --no-warn-script-location {concat_package_list} && "$0" "$@"{newline}'''
-    f'''{newline}''')
+        f'''if ! [ -x "$(command -v pip)" ]; then{newline}'''
+        f'''    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip{newline}'''
+        f'''fi{newline}'''
+        f'''PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \{newline}'''
+        f'''    --no-warn-script-location {concat_package_list} && "$0" "$@"{newline}'''
+        f'''{newline}''')
     src_code = BuilderUtils.get_function_source_definition(func)
     return ['sh', '-c', install_python_packages_script, src_code]
 
 def _get_function_parameters(func: Callable) -> dict:
     """Needed"""
+    # Extract component details from signature and docstring
     signature = inspect.signature(func)
     parameters = list(signature.parameters.values())
     parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
     doc_dict = {p.arg_name: p.description for p in parsed_docstring.params}
 
+    # Extract parameter metadata
     parameter_holder = []
     for param in parameters:
         metadata = {}
         metadata['name'] = param.name
         metadata['description'] = doc_dict.get(param.name)
-        metadata['type'] = _maybe_strip_optional_from_annotation(
-            param.annotation)
+        metadata['type'] = _maybe_strip_optional_from_annotation(param.annotation)
         parameter_holder.append(metadata)
         if metadata['type'] == inspect._empty:
             raise TypeError(
@@ -161,16 +165,15 @@ def _get_function_parameters(func: Callable) -> dict:
 def _maybe_strip_optional_from_annotation(annotation: T) -> T:
     """Strips 'Optional' from 'Optional[<type>]' if applicable.
     For example::
-      Optional[str] -> str
-      str -> str
-      List[int] -> List[int]
+        Optional[str] -> str
+        str -> str
+        List[int] -> List[int]
     Args:
-      annotation: The original type annotation which may or may not has
-        `Optional`.
+        annotation: The original type annotation which may or may not has `Optional`.
     Returns:
-      The type inside Optional[] if Optional exists, otherwise the original type.
+        The type inside Optional[] if Optional exists, otherwise the original type.
     """
-    if getattr(annotation, '__origin__',
-               None) is Union and annotation.__args__[1] is type(None):
+    if getattr(annotation, '__origin__', None) is Union and annotation.__args__[1] is type(None):
         return annotation.__args__[0]
-    return annotation
+    else:
+        return annotation

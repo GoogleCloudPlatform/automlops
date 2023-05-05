@@ -205,9 +205,11 @@ def execute_process(command: str, to_null: bool):
     """
     stdout = subprocess.DEVNULL if to_null else None
     try:
-        subprocess.run([command], shell=True, check=True,
-            stdout=stdout,
-            stderr=subprocess.STDOUT)
+        subprocess.run([command], 
+                       shell=True, 
+                       check=True,
+                       stdout=stdout,
+                       stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
         raise RuntimeError(f'Error executing process. {err}') from err
 
@@ -252,7 +254,7 @@ def update_params(params: list) -> list:
             param['type'] = python_kfp_types_mapper[param['type']]
         except KeyError as err:
             raise ValueError(f'Unsupported python type - we only support '
-                            f'primitive types at this time. {err}') from err
+                             f'primitive types at this time. {err}') from err
     return params
 
 def get_function_source_definition(func: Callable) -> str:
