@@ -99,11 +99,11 @@ def create_component_scaffold(func: Optional[Callable] = None,
     component_spec['name'] = name
     if description:
         component_spec['description'] = description
-    component_spec['inputs'] = _get_function_parameters(func)
+    component_spec['inputs'] = get_function_parameters(func)
     component_spec['implementation'] = {}
     component_spec['implementation']['container'] = {}
     component_spec['implementation']['container']['image'] = 'TBD'
-    component_spec['implementation']['container']['command'] = _get_packages_to_install_command(func, packages_to_install)
+    component_spec['implementation']['container']['command'] = get_packages_to_install_command(func, packages_to_install)
     component_spec['implementation']['container']['args'] = ['--executor_input',
                                                              {'executorInput': None},
                                                              '--function_to_execute', 
@@ -114,8 +114,8 @@ def create_component_scaffold(func: Optional[Callable] = None,
     BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) 
     BuilderUtils.write_yaml_file(filename, component_spec, 'w')
 
-def _get_packages_to_install_command(func: Optional[Callable] = None,
-                                     packages_to_install: Optional[List[str]] = None):
+def get_packages_to_install_command(func: Optional[Callable] = None,
+                                    packages_to_install: Optional[List[str]] = None):
     """Returns a list of formatted list of commands, including code for tmp storage.
 
     Args:
@@ -140,9 +140,19 @@ def _get_packages_to_install_command(func: Optional[Callable] = None,
     src_code = BuilderUtils.get_function_source_definition(func)
     return ['sh', '-c', install_python_packages_script, src_code]
 
-def _get_function_parameters(func: Callable) -> dict:
-    """Needed"""
-    # Extract component details from signature and docstring
+def get_function_parameters(func: Callable) -> dict:
+    """Returns a formatted list of parameters.
+
+    Args:
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+    Returns:
+        list: Params list with types converted to kubeflow spec.
+    Raises:
+        Exception: If parameter type hints are not provided.
+    """
     signature = inspect.signature(func)
     parameters = list(signature.parameters.values())
     parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
@@ -154,7 +164,8 @@ def _get_function_parameters(func: Callable) -> dict:
         metadata = {}
         metadata['name'] = param.name
         metadata['description'] = doc_dict.get(param.name)
-        metadata['type'] = _maybe_strip_optional_from_annotation(param.annotation)
+        metadata['type'] = maybe_strip_optional_from_annotation(
+            param.annotation)
         parameter_holder.append(metadata)
         if metadata['type'] == inspect._empty:
             raise TypeError(
@@ -162,7 +173,7 @@ def _get_function_parameters(func: Callable) -> dict:
                 f'''Please specify the type for this parameter.''')
     return BuilderUtils.update_params(parameter_holder)
 
-def _maybe_strip_optional_from_annotation(annotation: T) -> T:
+def maybe_strip_optional_from_annotation(annotation: T) -> T:
     """Strips 'Optional' from 'Optional[<type>]' if applicable.
     For example::
         Optional[str] -> str

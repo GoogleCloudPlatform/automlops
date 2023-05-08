@@ -258,7 +258,18 @@ def update_params(params: list) -> list:
     return params
 
 def get_function_source_definition(func: Callable) -> str:
-    """Needed"""
+    """Returns a formatted list of parameters.
+
+    Args:
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+    Returns:
+        str: The source code from the inputted function.
+    Raises:
+        Exception: If the preprocess operates failed.
+    """
     source_code = inspect.getsource(func)
     source_code = textwrap.dedent(source_code)
     source_code_lines = source_code.split('\n')

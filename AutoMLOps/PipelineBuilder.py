@@ -98,3 +98,37 @@ def create_pipeline_scaffold(func: Optional[Callable] = None,
     )
     BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) # if it doesn't already exist
     BuilderUtils.write_file(BuilderUtils.PIPELINE_TMPFILE, pipeline_scaffold, 'w')
+
+def get_pipeline_decorator(name: Optional[str] = None,
+                           description: Optional[str] = None):
+    """Creates the kfp pipeline decorator.
+
+    Args:
+        name: The name of the pipeline.
+        description: Short description of what the pipeline does.
+
+    Returns:
+        str: Python compile function call.
+    """
+    default_name = DEFAULT_PIPELINE_NAME if not name else name
+    name_str = f'''(\n    name='{default_name}',\n'''
+    desc_str = f'''    description='{description}',\n''' if description else ''
+    ending_str = ')\n'
+    return '@dsl.pipeline' + name_str + desc_str + ending_str
+
+def get_compile_step(func_name: str):
+    """Creates the compile function call.
+
+    Args:
+        func_name: The name of the pipeline function.
+
+    Returns:
+        str: Python compile function call.
+    """
+    return (
+        f'\n'
+        f'compiler.Compiler().compile(\n'
+        f'    pipeline_func={func_name},\n'
+        f'    package_path=pipeline_job_spec_path)\n'
+        f'\n'
+    )
