@@ -26,7 +26,8 @@ import sys
 import subprocess
 from typing import Callable, Dict, List, Optional
 
-from AutoMLOps import BuilderUtils
+from AutoMLOps.Utils import BuilderUtils
+from AutoMLOps.Utils.Constants import *
 from AutoMLOps import ComponentBuilder
 from AutoMLOps import PipelineBuilder
 from AutoMLOps import CloudRunBuilder
@@ -34,32 +35,6 @@ from AutoMLOps import ScriptsBuilder
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
 logger = logging.getLogger()
-
-TOP_LVL_NAME = 'AutoMLOps/'
-DEFAULTS_FILE = TOP_LVL_NAME + 'configs/defaults.yaml'
-PIPELINE_SPEC_SH_FILE = TOP_LVL_NAME + 'scripts/build_pipeline_spec.sh'
-BUILD_COMPONENTS_SH_FILE = TOP_LVL_NAME + 'scripts/build_components.sh'
-RUN_PIPELINE_SH_FILE = TOP_LVL_NAME + 'scripts/run_pipeline.sh'
-RUN_ALL_SH_FILE = TOP_LVL_NAME + 'scripts/run_all.sh'
-RESOURCES_SH_FILE = TOP_LVL_NAME + 'scripts/create_resources.sh'
-SUBMIT_JOB_FILE = TOP_LVL_NAME + 'scripts/submit_to_runner_svc.sh'
-CLOUDBUILD_FILE = TOP_LVL_NAME + 'cloudbuild.yaml'
-PIPELINE_FILE = TOP_LVL_NAME + 'pipelines/pipeline.py'
-DEFAULT_IMAGE = 'python:3.9-slim'
-COMPONENT_BASE = TOP_LVL_NAME + 'components/component_base'
-COMPONENT_BASE_SRC = TOP_LVL_NAME + 'components/component_base/src'
-OUTPUT_DIR = BuilderUtils.TMPFILES_DIR
-DIRS = [
-    TOP_LVL_NAME,
-    TOP_LVL_NAME + 'components',
-    TOP_LVL_NAME + 'components/component_base',
-    TOP_LVL_NAME + 'components/component_base/src',
-    TOP_LVL_NAME + 'configs',
-    TOP_LVL_NAME + 'images',
-    TOP_LVL_NAME + 'pipelines',
-    TOP_LVL_NAME + 'pipelines/runtime_parameters',
-    TOP_LVL_NAME + 'scripts',
-    TOP_LVL_NAME + 'scripts/pipeline_spec']
 
 def go(project_id: str,
        pipeline_params: Dict,

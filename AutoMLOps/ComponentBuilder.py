@@ -21,8 +21,8 @@ import inspect
 from typing import Callable, List, Optional, TypeVar, Union
 
 import docstring_parser
-from AutoMLOps import BuilderUtils
-from AutoMLOps import ScriptsBuilder
+from AutoMLOps.Utils import BuilderUtils
+from AutoMLOps.Builder.KFPBuilder import KFPComponent
 
 T = TypeVar('T')
 
@@ -58,13 +58,13 @@ def formalize(component_path: str,
     BuilderUtils.make_dirs([component_dir])
 
     # Initialize component scripts builder
-    component_scripts = ScriptsBuilder.Component(component_spec, defaults_file)
+    kfp_comp = KFPComponent(component_spec, defaults_file)
 
     # Write task script to component base
-    BuilderUtils.write_file(task_filepath, component_scripts.task, 'w+')
+    BuilderUtils.write_file(task_filepath, kfp_comp.task, 'w+')
 
     # Update component_spec to include correct image and startup command
-    component_spec['implementation']['container']['image'] = component_scripts.compspec_image
+    component_spec['implementation']['container']['image'] = kfp_comp.compspec_image
     component_spec['implementation']['container']['command'] = [
         'python3',
         f'''/pipelines/component/src/{component_spec['name']+'.py'}''']

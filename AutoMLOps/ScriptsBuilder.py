@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Builds file content."""
+"""Builds script files' contents."""
 
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
 from typing import Callable, Dict, List, Optional
-from AutoMLOps import BuilderUtils
-
-LEFT_BRACKET = '{'
-RIGHT_BRACKET = '}'
-NEWLINE = '\n'
+from AutoMLOps.Utils import BuilderUtils
+from AutoMLOps.Utils.Constants import LEFT_BRACKET, RIGHT_BRACKET, NEWLINE, LICENSE, PARAMETER_VALUES_PATH, PIPELINE_JOB_SPEC_PATH
 
 class AutoMLOps():
 
@@ -116,7 +113,7 @@ class AutoMLOps():
             str: Text of script to build pipeline specs.
         """
         return (
-            '#!/bin/bash\n' + BuilderUtils.LICENSE +
+            '#!/bin/bash\n' + LICENSE +
             '# Builds the pipeline specs\n'
             f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
@@ -132,7 +129,7 @@ class AutoMLOps():
             str: Text of script to build components.
         """
         return (
-            '#!/bin/bash\n' + BuilderUtils.LICENSE +
+            '#!/bin/bash\n' + LICENSE +
             '# Submits a Cloud Build job that builds and deploys the components\n'
             f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
@@ -146,7 +143,7 @@ class AutoMLOps():
             str: Text of script to run pipeline.
         """
         return (
-            '#!/bin/bash\n' + BuilderUtils.LICENSE +
+            '#!/bin/bash\n' + LICENSE +
             '# Submits the PipelineJob to Vertex AI\n'
             f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
@@ -162,7 +159,7 @@ class AutoMLOps():
             str: Text of script to run all other scripts.
         """
         return (
-            '#!/bin/bash\n' + BuilderUtils.LICENSE +
+            '#!/bin/bash\n' + LICENSE +
             '# Builds components, pipeline specs, and submits the PipelineJob.\n'
             f'# This script should run from the {self.__top_folder} directory\n'
             '# Change directory in case this is not the script root.\n'
@@ -188,7 +185,7 @@ class AutoMLOps():
             str: Text to be written to create_resources.sh
         """
         create_resources_script = (
-            '#!/bin/bash\n' + BuilderUtils.LICENSE +
+            '#!/bin/bash\n' + LICENSE +
             f'# This script will create an artifact registry and gs bucket if they do not already exist.\n'
             f'\n'
             f'''GREEN='\033[0;32m'\n'''
@@ -386,7 +383,7 @@ class AutoMLOps():
         vpc_connector_tail += ']\n'
 
         cloudbuild_comp_config = (
-            BuilderUtils.LICENSE +
+            LICENSE +
             f'steps:\n'
             f'# ==============================================================================\n'
             f'# BUILD CUSTOM IMAGES\n'
@@ -505,7 +502,7 @@ class AutoMLOps():
             str: Text content of dockerfile.
         """
         return (
-            BuilderUtils.LICENSE +
+            LICENSE +
             f'FROM {self.__image}\n'
             f'RUN python -m pip install --upgrade pip\n'
             f'COPY requirements.txt .\n'
@@ -524,7 +521,7 @@ class AutoMLOps():
             str: Defaults yaml file content
         """
         return (
-            BuilderUtils.LICENSE +
+            LICENSE +
             f'# These values are descriptive only - do not change.\n'
             f'# Rerun AutoMLOps.generate() to change these values.\n'
             f'gcp:\n'
@@ -547,9 +544,9 @@ class AutoMLOps():
             f'  vpc_connector: {self.__vpc_connector}\n'
             f'\n'
             f'pipelines:\n'
-            f'  parameter_values_path: {BuilderUtils.PARAMETER_VALUES_PATH}\n'
+            f'  parameter_values_path: {PARAMETER_VALUES_PATH}\n'
             f'  pipeline_component_directory: components\n'
-            f'  pipeline_job_spec_path: {BuilderUtils.PIPELINE_JOB_SPEC_PATH}\n'
+            f'  pipeline_job_spec_path: {PIPELINE_JOB_SPEC_PATH}\n'
             f'  pipeline_region: {self.__gs_bucket_location}\n'
             f'  pipeline_storage_path: gs://{self.__gs_bucket_name}/pipeline_root\n')
 
@@ -587,7 +584,7 @@ class CloudRun():
             str: Dockerfile text.
         """
         return (
-            BuilderUtils.LICENSE +
+            LICENSE +
             'FROM python:3.9-slim\n'
             '\n'
             '# Allow statements and log messages to immediately appear in the Knative logs\n'
@@ -648,7 +645,7 @@ class CloudRun():
             str: Content of cloudrun main.py.
         """
         return (
-            BuilderUtils.LICENSE +
+            LICENSE +
             f'''"""Cloud Run to run pipeline spec"""\n'''
             f'''import logging\n'''
             f'''import os\n'''
@@ -750,7 +747,7 @@ class CloudRun():
             str: Content of queueing svc main.py.
         """
         return (
-            BuilderUtils.LICENSE +
+            LICENSE +
             f'''"""Submit pipeline job using Cloud Tasks and create Cloud Scheduler Job."""\n'''
             f'''import argparse\n'''
             f'''import json\n'''
@@ -927,229 +924,3 @@ class CloudRun():
             f'''            schedule_location=SCHEDULE_LOCATION,\n'''
             f'''            schedule_name=SCHEDULE_NAME,\n'''
             f'''            schedule_pattern=SCHEDULE_PATTERN)\n''')
-
-class Component():
-    def __init__(self, component_spec, defaults_file):
-        """Instantiate Component scripts object with all necessary attributes.
-
-        Args:
-            component_spec (dict): Dictionary of component specs including details
-                of component image, startup command, and args.
-            defaults_file (str): Path to the default config variables yaml.
-        """
-        self.__component_spec = component_spec
-        
-        # Parse defaults file for hidden class attributes
-        defaults = BuilderUtils.read_yaml_file(defaults_file)
-        self.__af_registry_location = defaults['gcp']['af_registry_location']
-        self.__project_id = defaults['gcp']['project_id']
-        self.__af_registry_name = defaults['gcp']['af_registry_name']
-
-        # Get generated scripts as public attributes
-        self.task = self._create_task()
-        self.compspec_image = self._create_compspec_image()
-
-    def _create_task(self):
-        """Creates the content of the cell python code to be written to a file with required imports.
-
-        Returns:
-            str: Contents of component base source code.
-        """
-        custom_code = self.__component_spec['implementation']['container']['command'][-1]
-        default_imports = (
-            BuilderUtils.LICENSE +
-            'import argparse\n'
-            'import json\n'
-            'import kfp\n'
-            'from kfp.v2 import dsl\n'
-            'from kfp.v2.components import executor\n'
-            'from kfp.v2.dsl import *\n'
-            'from typing import *\n'
-            '\n')
-        main_func = (
-            '\n'
-            '''def main():\n'''
-            '''    """Main executor."""\n'''
-            '''    parser = argparse.ArgumentParser()\n'''
-            '''    parser.add_argument('--executor_input', type=str)\n'''
-            '''    parser.add_argument('--function_to_execute', type=str)\n'''
-            '\n'
-            '''    args, _ = parser.parse_known_args()\n'''
-            '''    executor_input = json.loads(args.executor_input)\n'''
-            '''    function_to_execute = globals()[args.function_to_execute]\n'''
-            '\n'
-            '''    executor.Executor(\n'''
-            '''        executor_input=executor_input,\n'''
-            '''        function_to_execute=function_to_execute).execute()\n'''
-            '\n'
-            '''if __name__ == '__main__':\n'''
-            '''    main()\n''')
-        return default_imports + custom_code + main_func
-
-    def _create_compspec_image(self):
-        """Write the correct image for the component spec.
-
-        Returns:
-            str: Component spec image.
-        """
-        return (
-            f'''{self.__af_registry_location}-docker.pkg.dev/'''
-            f'''{self.__project_id}/'''
-            f'''{self.__af_registry_name}/'''
-            f'''components/component_base:latest''')
-
-class Pipeline():
-    def __init__(self, custom_training_job_specs, defaults_file):
-        """Instantiate Pipeline scripts object with all necessary attributes.
-
-        Args:
-            custom_training_job_specs (List[Dict]): Specifies the specs to run the training job with.
-            defaults_file (str): Path to the default config variables yaml.
-        """
-        self.__custom_training_job_specs = custom_training_job_specs
-        
-        defaults = BuilderUtils.read_yaml_file(defaults_file)
-        self.__project_id = defaults['gcp']['project_id']
-
-        self.pipeline_imports = self._get_pipeline_imports()
-        self.pipeline_argparse = self._get_pipeline_argparse()
-        self.pipeline_runner = self._get_pipeline_runner()
-
-    def _get_pipeline_imports(self):
-        """Generates python code that imports modules and loads all custom components.
-
-        Returns:
-            str: Python pipeline_imports code.
-        """
-        components_list = BuilderUtils.get_components_list(full_path=False)
-        gcpc_imports = (
-            'from functools import partial\n'
-            'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
-        quote = '\''
-        newline_tab = '\n    '
-
-        # If there is a custom training job specified, write those to feed to pipeline imports
-        if not self.__custom_training_job_specs:
-            custom_specs = ''
-        else:
-            custom_specs = (
-                f'''    {newline_tab.join(f'{spec["component_spec"]}_custom_training_job_specs = {BuilderUtils.format_spec_dict(spec)}' for spec in self.__custom_training_job_specscustom_training_job_specs)}'''
-                f'\n'
-                f'''    {newline_tab.join(f'{spec["component_spec"]}_job_op = create_custom_training_job_op_from_component(**{spec["component_spec"]}_custom_training_job_specs)' for spec in self.__custom_training_job_specs)}'''
-                f'\n'
-                f'''    {newline_tab.join(f'{spec["component_spec"]} = partial({spec["component_spec"]}_job_op, project={quote}{self.__project_id}{quote})' for spec in self.__custom_training_job_specs)}'''        
-                f'\n')
-
-        # Return standard code and customized specs
-        return (
-            f'''import argparse\n'''
-            f'''import os\n'''
-            f'''{gcpc_imports if self.__custom_training_job_specs else ''}'''
-            f'''import kfp\n'''
-            f'''from kfp.v2 import compiler, dsl\n'''
-            f'''from kfp.v2.dsl import *\n'''
-            f'''from typing import *\n'''
-            f'''import yaml\n'''
-            f'\n'
-            f'''def load_custom_component(component_name: str):\n'''
-            f'''    component_path = os.path.join('components',\n'''
-            f'''                                component_name,\n'''
-            f'''                              'component.yaml')\n'''
-            f'''    return kfp.components.load_component_from_file(component_path)\n'''
-            f'\n'
-            f'''def create_training_pipeline(pipeline_job_spec_path: str):\n'''
-            f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in components_list)}\n'''
-            f'\n'
-            f'''{custom_specs}''')
-
-    def _get_pipeline_argparse(self):
-        """Generates python code that loads default pipeline parameters from the defaults config_file.
-
-        Returns:
-            str: Python pipeline_argparse code.
-        """
-        return (
-            '''if __name__ == '__main__':\n'''
-            '''    parser = argparse.ArgumentParser()\n'''
-            '''    parser.add_argument('--config', type=str,\n'''
-            '''                       help='The config file for setting default values.')\n'''
-            '\n'
-            '''    args = parser.parse_args()\n'''
-            '\n'
-            '''    with open(args.config, 'r', encoding='utf-8') as config_file:\n'''
-            '''        config = yaml.load(config_file, Loader=yaml.FullLoader)\n'''
-            '\n'
-            '''    pipeline = create_training_pipeline(\n'''
-            '''        pipeline_job_spec_path=config['pipelines']['pipeline_job_spec_path'])\n''')
-
-    def _get_pipeline_runner(self):
-        """Generates python code that sends a PipelineJob to Vertex AI.
-
-        Returns:
-            str: Python pipeline_runner code.
-        """
-        return (BuilderUtils.LICENSE +
-            '''import argparse\n'''
-            '''import json\n'''
-            '''import logging\n'''
-            '''import os\n'''
-            '''import yaml\n'''
-            '\n'
-            '''from google.cloud import aiplatform\n'''
-            '\n'
-            '''logger = logging.getLogger()\n'''
-            '''log_level = os.environ.get('LOG_LEVEL', 'INFO')\n'''
-            '''logger.setLevel(log_level)\n'''
-            '\n'
-            '''def run_pipeline(\n'''
-            '''    project_id: str,\n'''
-            '''    pipeline_root: str,\n'''
-            '''    pipeline_runner_sa: str,\n'''
-            '''    parameter_values_path: str,\n'''
-            '''    pipeline_spec_path: str,\n'''
-            '''    display_name: str = 'mlops-pipeline-run',\n'''
-            '''    enable_caching: bool = False):\n'''
-            '''    """Executes a pipeline run.\n'''
-            '\n'
-            '''    Args:\n'''
-            '''        project_id: The project_id.\n'''
-            '''        pipeline_root: GCS location of the pipeline runs metadata.\n'''
-            '''        pipeline_runner_sa: Service Account to runner PipelineJobs.\n'''
-            '''        parameter_values_path: Location of parameter values JSON.\n'''
-            '''        pipeline_spec_path: Location of the pipeline spec JSON.\n'''
-            '''        display_name: Name to call the pipeline.\n'''
-            '''        enable_caching: Should caching be enabled (Boolean)\n'''
-            '''    """\n'''
-            '''    with open(parameter_values_path, 'r') as file:\n'''
-            '''        try:\n'''
-            '''            pipeline_params = json.load(file)\n'''
-            '''        except ValueError as exc:\n'''
-            '''            print(exc)\n'''
-            '''    logging.debug('Pipeline Parms Configured:')\n'''
-            '''    logging.debug(pipeline_params)\n'''
-            '\n'
-            '''    aiplatform.init(project=project_id)\n'''
-            '''    job = aiplatform.PipelineJob(\n'''
-            '''        display_name = display_name,\n'''
-            '''        template_path = pipeline_spec_path,\n'''
-            '''        pipeline_root = pipeline_root,\n'''
-            '''        parameter_values = pipeline_params,\n'''
-            '''        enable_caching = enable_caching)\n'''
-            '''    logging.debug('AI Platform job built. Submitting...')\n'''
-            '''    job.submit(service_account=pipeline_runner_sa)\n'''
-            '''    logging.debug('Job sent!')\n'''
-            '\n'
-            '''if __name__ == '__main__':\n'''
-            '''    parser = argparse.ArgumentParser()\n'''
-            '''    parser.add_argument('--config', type=str,\n'''
-            '''                        help='The config file for setting default values.')\n'''
-            '''    args = parser.parse_args()\n'''
-            '\n'
-            '''    with open(args.config, 'r', encoding='utf-8') as config_file:\n'''
-            '''        config = yaml.load(config_file, Loader=yaml.FullLoader)\n'''
-            '\n'
-            '''    run_pipeline(project_id=config['gcp']['project_id'],\n'''
-            '''                 pipeline_root=config['pipelines']['pipeline_storage_path'],\n'''
-            '''                 pipeline_runner_sa=config['gcp']['pipeline_runner_service_account'],\n'''
-            '''                 parameter_values_path=config['pipelines']['parameter_values_path'],\n'''
-            '''                 pipeline_spec_path=config['pipelines']['pipeline_job_spec_path']) \n''')

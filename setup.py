@@ -28,7 +28,7 @@ setup(
     author='Sean Rastatter',
     author_email='srastatter@google.com',
     license='Apache-2.0',
-    packages=['AutoMLOps'],
+    packages=['AutoMLOps', 'AutoMLOps.Utils', 'AutoMLOps.Builder'],
     install_requires=['docopt==0.6.2',
                       'docstring-parser==0.15',
                       'pipreqs==0.4.11',

@@ -27,27 +27,7 @@ import textwrap
 from typing import Callable
 import yaml
 
-TMPFILES_DIR = '.tmpfiles'
-IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
-CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'
-PIPELINE_TMPFILE = f'{TMPFILES_DIR}/pipeline_scaffold.py'
-PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
-PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
-LICENSE = (
-    '# Licensed under the Apache License, Version 2.0 (the "License");\n'
-    '# you may not use this file except in compliance with the License.\n'
-    '# You may obtain a copy of the License at\n'
-    '#\n'
-    '#     http://www.apache.org/licenses/LICENSE-2.0\n'
-    '#\n'
-    '# Unless required by applicable law or agreed to in writing, software\n'
-    '# distributed under the License is distributed on an "AS IS" BASIS,\n'
-    '# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n'
-    '# See the License for the specific language governing permissions and\n'
-    '# limitations under the License.\n'
-    '#\n'
-    '# DISCLAIMER: This code is generated as part of the AutoMLOps output.\n'
-    '\n')
+from AutoMLOps.Utils.Constants import *
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.

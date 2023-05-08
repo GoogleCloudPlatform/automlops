@@ -20,10 +20,9 @@
 import json
 from typing import Callable, Dict, List, Optional
 
-from AutoMLOps import BuilderUtils
-from AutoMLOps import ScriptsBuilder
-
-DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
+from AutoMLOps.Utils import BuilderUtils
+from AutoMLOps.Builder.KFPBuilder import KFPPipeline
+from AutoMLOps.Utils.Constants import *
 
 def formalize(custom_training_job_specs: List[Dict],
               defaults_file: str,
@@ -45,25 +44,25 @@ def formalize(custom_training_job_specs: List[Dict],
     # Set paths
     pipeline_file = top_lvl_name + 'pipelines/pipeline.py'
     pipeline_runner_file = top_lvl_name + 'pipelines/pipeline_runner.py'
-    pipeline_params_file = top_lvl_name + BuilderUtils.PARAMETER_VALUES_PATH
+    pipeline_params_file = top_lvl_name + PARAMETER_VALUES_PATH
 
     # Initializes pipeline scripts builder
-    pipeline_scripts = ScriptsBuilder.Pipeline(custom_training_job_specs, defaults_file)
+    kfp_pipeline = KFPPipeline(custom_training_job_specs, defaults_file)
     try:
         with open(pipeline_file, 'r+', encoding='utf-8') as file:
             pipeline_scaffold = file.read()
             file.seek(0, 0)
-            file.write(BuilderUtils.LICENSE)
-            file.write(pipeline_scripts.pipeline_imports)
+            file.write(LICENSE)
+            file.write(kfp_pipeline.pipeline_imports)
             for line in pipeline_scaffold.splitlines():
                 file.write('    ' + line + '\n')
-            file.write(pipeline_scripts.pipeline_argparse)
+            file.write(kfp_pipeline.pipeline_argparse)
         file.close()
     except OSError as err:
         raise OSError(f'Error interacting with file. {err}') from err
 
     # Construct pipeline_runner.py
-    BuilderUtils.write_file(pipeline_runner_file, pipeline_scripts.pipeline_runner, 'w+')
+    BuilderUtils.write_file(pipeline_runner_file, kfp_pipeline.pipeline_runner, 'w+')
 
     # Construct pipeline_parameter_values.json
     serialized_params = json.dumps(pipeline_parameter_values, indent=4)
@@ -96,8 +95,8 @@ def create_pipeline_scaffold(func: Optional[Callable] = None,
         f'''    package_path=pipeline_job_spec_path)\n'''
         f'''\n'''
     )
-    BuilderUtils.make_dirs([BuilderUtils.TMPFILES_DIR]) # if it doesn't already exist
-    BuilderUtils.write_file(BuilderUtils.PIPELINE_TMPFILE, pipeline_scaffold, 'w')
+    BuilderUtils.make_dirs([TMPFILES_DIR]) # if it doesn't already exist
+    BuilderUtils.write_file(PIPELINE_TMPFILE, pipeline_scaffold, 'w')
 
 def get_pipeline_decorator(name: Optional[str] = None,
                            description: Optional[str] = None):

@@ -17,7 +17,7 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-from AutoMLOps import BuilderUtils
+from AutoMLOps.Utils import BuilderUtils
 from AutoMLOps import ScriptsBuilder
 
 def formalize(top_lvl_name: str,
