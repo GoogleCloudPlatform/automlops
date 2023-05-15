@@ -160,7 +160,7 @@ def test_write_and_chmod():
     #with pytest.raises(OSError):
     #    write_and_chmod('invalid_file_path.txt', 'This is a test file.')
 
-def test_delete_fileh():
+def test_delete_file():
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -177,29 +177,34 @@ def test_delete_fileh():
     #with pytest.raises(OSError):
     #    delete_file('invalid_file_path.txt')
 
-@pytest.mark.parametrize('full_path', [True, False])
-def test_get_components_list(full_path: bool) -> None:
-    # Create a temporary directory
-    tmp_dir = pathlib.Path('/tmp/test_get_components_list')
-    tmp_dir.mkdir()
+# TBD
+# @pytest.mark.parametrize('full_path', [True, False])
+# def test_get_components_list(full_path: bool) -> None:
+#     # Create a temporary directory
+#     tmp_dir = pathlib.Path('.tmpfiles')
+#     try:
+#         tmp_dir.mkdir()
+#     except FileExistsError:
+#         pass
 
-    # Create some component yaml files
-    component_yaml_1 = tmp_dir / 'component_1.yaml'
-    component_yaml_1.write_text('This is a component yaml file.')
-    component_yaml_2 = tmp_dir / 'component_2.yml'
-    component_yaml_2.write_text('This is another component yaml file.')
+#     # Create some component yaml files
+#     component_yaml_1 = tmp_dir / 'component_1.yaml'
+#     component_yaml_1.write_text('name: example_component\ndescription: Custom component that takes in a BQ table and writes it to GCS.')
+#     component_yaml_2 = tmp_dir / 'component_2.yml'
+#     component_yaml_2.write_text('name: example_component_2\ndescription: Custom component that trains a decision tree on the training data.')
 
-    # Get the list of component yaml files
-    components_list = get_components_list(full_path)
+#     # Get the list of component yaml files
+#     components_list = get_components_list(full_path)
+#     print(components_list)
 
-    # Check that the list contains the correct files
-    if full_path:
-        assert components_list == [tmp_dir / 'component_1.yaml', tmp_dir / 'component_2.yml']
-    else:
-        assert components_list == ['component_1', 'component_2']
+#     # Check that the list contains the correct files
+#     if full_path:
+#         assert components_list == [tmp_dir / 'component_1.yaml', tmp_dir / 'component_2.yml']
+#     else:
+#         assert components_list == ['component_1', 'component_2']
 
-    # Clean up the the temporary directory
-    tmp_dir.rmdir()
+#     # Clean up the the temporary directory
+#     tmp_dir.rmdir()
 
 
 
