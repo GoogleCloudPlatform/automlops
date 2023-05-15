@@ -24,7 +24,6 @@ import yaml
 
 from AutoMLOps.utils.utils import (
     delete_file,
-    get_components_list,
     make_dirs,
     read_file,
     read_yaml_file,
