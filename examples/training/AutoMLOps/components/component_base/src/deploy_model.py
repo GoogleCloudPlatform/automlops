@@ -14,9 +14,9 @@
 
 import argparse
 import json
-from kfp.v2.components import executor
 import kfp
 from kfp.v2 import dsl
+from kfp.v2.components import executor
 from kfp.v2.dsl import *
 from typing import *
 

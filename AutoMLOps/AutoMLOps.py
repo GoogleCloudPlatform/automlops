@@ -17,21 +17,31 @@
 
 # pylint: disable=C0103
 # pylint: disable=line-too-long
+# pylint: disable=unused-import
 
 import functools
 import logging
 import os
-import re
 import sys
 import subprocess
 from typing import Callable, Dict, List, Optional
 
-from AutoMLOps.Utils import BuilderUtils
-from AutoMLOps.Utils.Constants import *
-from AutoMLOps import ComponentBuilder
-from AutoMLOps import PipelineBuilder
-from AutoMLOps import CloudRunBuilder
-from AutoMLOps import ScriptsBuilder
+from AutoMLOps.utils.constants import (
+    BASE_DIR,
+    GENERATED_DEFAULTS_FILE,
+    GENERATED_DIRS,
+    GENERATED_RESOURCES_SH_FILE,
+    OUTPUT_DIR
+)
+from AutoMLOps.utils.utils import (
+    execute_process,
+    make_dirs,
+    read_yaml_file,
+    validate_schedule,
+)
+from AutoMLOps.frameworks.kfp import builder as KfpBuilder
+from AutoMLOps.frameworks.kfp import scaffold as KfpScaffold
+from AutoMLOps.deployments.cloudbuild import builder as CloudBuildBuilder
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
 logger = logging.getLogger()
@@ -121,56 +131,31 @@ def generate(project_id: str,
 
     Args: See go() function.
     """
-    # Validate cloud schedule pattern as a correctly formatted cron job
-    BuilderUtils.validate_schedule(schedule_pattern, run_local)
+    # Validate that run_local=False if schedule_pattern parameter is set
+    validate_schedule(schedule_pattern, run_local)
 
     # Set defaults if none were given for bucket name and pipeline runner sa
     default_bucket_name = f'{project_id}-bucket' if gs_bucket_name is None else gs_bucket_name
     default_pipeline_runner_sa = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com' if pipeline_runner_sa is None else pipeline_runner_sa
 
     # Make necessary directories
-    BuilderUtils.make_dirs(DIRS)
+    make_dirs(GENERATED_DIRS)
 
-    # Initialize AutoMLOps scripts builder
-    automlops_scripts = ScriptsBuilder.AutoMLOps(
-        af_registry_location, af_registry_name, cb_trigger_location,
-        cb_trigger_name, cloud_run_location, cloud_run_name,
-        cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
-        csr_name, gs_bucket_location, default_bucket_name, DEFAULT_IMAGE,
-        default_pipeline_runner_sa, project_id, run_local, schedule_location,
-        schedule_name, schedule_pattern, TOP_LVL_NAME, vpc_connector)
+    # Switch statement to go here for different frameworks and deployments:
 
-    # Write defaults.yaml
-    BuilderUtils.write_file(DEFAULTS_FILE, automlops_scripts.defaults, 'w+')
+    # Build files required to run a Kubeflow Pipeline
+    KfpBuilder.build(project_id, pipeline_params, af_registry_location,
+        af_registry_name, cb_trigger_location, cb_trigger_name,
+        cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
+        cloud_tasks_queue_name, csr_branch_name, csr_name,
+        custom_training_job_specs, gs_bucket_location, default_bucket_name,
+        default_pipeline_runner_sa, run_local, schedule_location,
+        schedule_name, schedule_pattern, use_kfp_spec,
+        vpc_connector)
 
-    # Write scripts for building pipeline, building components, running pipeline, and running all files
-    BuilderUtils.write_and_chmod(PIPELINE_SPEC_SH_FILE, automlops_scripts.build_pipeline_spec)
-    BuilderUtils.write_and_chmod(BUILD_COMPONENTS_SH_FILE, automlops_scripts.build_components)
-    BuilderUtils.write_and_chmod(RUN_PIPELINE_SH_FILE, automlops_scripts.run_pipeline)
-    BuilderUtils.write_and_chmod(RUN_ALL_SH_FILE, automlops_scripts.run_all)
-
-    # Write scripts to create resources and cloud build config
-    BuilderUtils.write_and_chmod(RESOURCES_SH_FILE, automlops_scripts.create_resources_script)
-    BuilderUtils.write_file(CLOUDBUILD_FILE, automlops_scripts.create_cloudbuild_config, 'w+')
-
-    # Copy tmp pipeline file over to AutoMLOps directory
-    BuilderUtils.execute_process(f'cp {BuilderUtils.PIPELINE_TMPFILE} {PIPELINE_FILE}', to_null=False)
-
-    # Create components and pipelines
-    components_path_list = BuilderUtils.get_components_list()
-    for path in components_path_list:
-        ComponentBuilder.formalize(path, TOP_LVL_NAME, DEFAULTS_FILE, use_kfp_spec)
-    PipelineBuilder.formalize(custom_training_job_specs, DEFAULTS_FILE, pipeline_params, TOP_LVL_NAME)
-
-    # Write requirements file
-    _create_requirements()
-
-    # Write dockerfile to the component base directory
-    BuilderUtils.write_file(f'{COMPONENT_BASE}/Dockerfile', automlops_scripts.dockerfile, 'w')
-
-    # If this is being run in the cloud, formalize the cloud run process
-    if not run_local:
-        CloudRunBuilder.formalize(TOP_LVL_NAME, DEFAULTS_FILE)
+    CloudBuildBuilder.build(af_registry_location, af_registry_name, cloud_run_location,
+        cloud_run_name, default_pipeline_runner_sa, project_id,
+        run_local, schedule_pattern, vpc_connector)
 
 def run(run_local: bool):
     """Builds, compiles, and submits the PipelineJob.
@@ -179,11 +164,11 @@ def run(run_local: bool):
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
     # Build resources
-    BuilderUtils.execute_process('./'+RESOURCES_SH_FILE, to_null=False)
+    execute_process('./' + GENERATED_RESOURCES_SH_FILE, to_null=False)
 
     # Build, compile, and submit pipeline job
     if run_local:
-        os.chdir(TOP_LVL_NAME)
+        os.chdir(BASE_DIR)
         try:
             subprocess.run(['./scripts/run_all.sh'], shell=True, check=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
@@ -201,7 +186,7 @@ def _resources_generation_manifest(run_local: bool):
     Args:
         run_local: Flag that determines whether to use Cloud Run CI/CD.
     """
-    defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     logging.info('\n'
         '#################################################################\n'
         '#                                                               #\n'
@@ -229,99 +214,35 @@ def _push_to_csr():
     """Initializes a git repo if one doesn't already exist,
        then pushes to the specified branch and triggers the cloudbuild job.
     """
-    defaults = BuilderUtils.read_yaml_file(DEFAULTS_FILE)
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
 
     if not os.path.exists('.git'):
 
         # Initialize git and configure credentials
-        BuilderUtils.execute_process('git init', to_null=False)
-        BuilderUtils.execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+        execute_process('git init', to_null=False)
+        execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
 
         # Add repo and branch
-        BuilderUtils.execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
-        BuilderUtils.execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
+        execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
+        execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
         has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
         # WHAT IS THIS
         if not has_remote_branch:
             # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
-            BuilderUtils.execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
-            BuilderUtils.execute_process('git add .gitkeep', to_null=False)
-            BuilderUtils.execute_process('''git commit -m 'init' ''', to_null=False)
-            BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+            execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
+            execute_process('git add .gitkeep', to_null=False)
+            execute_process('''git commit -m 'init' ''', to_null=False)
+            execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
 
     # Add, commit, and push changes to CSR
-    BuilderUtils.execute_process(f'touch {TOP_LVL_NAME}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
-    BuilderUtils.execute_process('git add .', to_null=False)
-    BuilderUtils.execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
-    BuilderUtils.execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+    execute_process(f'touch {BASE_DIR}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
+    execute_process('git add .', to_null=False)
+    execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
+    execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
     # pylint: disable=logging-fstring-interpolation
     logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
     logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
-
-def _create_requirements():
-    """Writes a requirements.txt to the component_base directory.
-       Infers pip requirements from the python srcfiles using 
-       pipreqs. Takes user-inputted requirements, and addes some 
-       default gcp packages as well as packages that are often missing
-       in setup.py files (e.g db_types, pyarrow, gcsfs, fsspec).
-    """
-    reqs_filename = f'{COMPONENT_BASE}/requirements.txt'
-    default_gcp_reqs = [
-        'google-cloud-aiplatform',
-        'google-cloud-appengine-logging',
-        'google-cloud-audit-log',
-        'google-cloud-bigquery',
-        'google-cloud-bigquery-storage',
-        'google-cloud-bigtable',
-        'google-cloud-core',
-        'google-cloud-dataproc',
-        'google-cloud-datastore',
-        'google-cloud-dlp',
-        'google-cloud-firestore',
-        'google-cloud-kms',
-        'google-cloud-language',
-        'google-cloud-logging',
-        'google-cloud-monitoring',
-        'google-cloud-notebooks',
-        'google-cloud-pipeline-components',
-        'google-cloud-pubsub',
-        'google-cloud-pubsublite',
-        'google-cloud-recommendations-ai',
-        'google-cloud-resource-manager',
-        'google-cloud-scheduler',
-        'google-cloud-spanner',
-        'google-cloud-speech',
-        'google-cloud-storage',
-        'google-cloud-tasks',
-        'google-cloud-translate',
-        'google-cloud-videointelligence',
-        'google-cloud-vision',
-        'db_dtypes',
-        'pyarrow',
-        'gcsfs',
-        'fsspec']
-
-    # Infer reqs using pipreqs
-    BuilderUtils.execute_process(f'python3 -m pipreqs.pipreqs {COMPONENT_BASE} --mode no-pin --force', to_null=False)
-    pipreqs = BuilderUtils.read_file(reqs_filename).splitlines()
-
-    # Get user-inputted requirements from .tmpfiles dir
-    user_inp_reqs = []
-    components_path_list = BuilderUtils.get_components_list()
-    for component_path in components_path_list:
-        component_spec = BuilderUtils.read_yaml_file(component_path)
-        reqs = component_spec['implementation']['container']['command'][2]
-        formatted_reqs = re.findall('\'([^\']*)\'', reqs)
-        user_inp_reqs.extend(formatted_reqs)
-
-    # Remove duplicate packages
-    set_of_requirements = set(pipreqs + user_inp_reqs + default_gcp_reqs)
-    reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
-
-    # Delete any previous versions (???) and write requirements file
-    BuilderUtils.delete_file(reqs_filename)
-    BuilderUtils.write_file(reqs_filename, reqs_str, 'w')
 
 def component(func: Optional[Callable] = None,
               *,
@@ -346,7 +267,7 @@ def component(func: Optional[Callable] = None,
             component,
             packages_to_install=packages_to_install)
     else:
-        ComponentBuilder.create_component_scaffold(
+        return KfpScaffold.create_component_scaffold(
             func=func,
             packages_to_install=packages_to_install)
 
@@ -383,7 +304,7 @@ def pipeline(func: Optional[Callable] = None,
             name=name,
             description=description)
     else:
-        PipelineBuilder.create_pipeline_scaffold(
+        return KfpScaffold.create_pipeline_scaffold(
             func=func,
             name=name,
             description=description)

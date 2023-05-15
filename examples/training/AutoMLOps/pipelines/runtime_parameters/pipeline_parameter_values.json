@@ -1,7 +1,7 @@
 {
-    "bq_table": "sandbox-allegranoto.test_dataset.dry-beans",
-    "model_directory": "gs://sandbox-allegranoto-bucket/trained_models/2023-05-01 15:39:26.065033",
-    "data_path": "gs://sandbox-allegranoto-bucket/data.csv",
-    "project_id": "sandbox-allegranoto",
+    "bq_table": "automlops-sandbox.test_dataset.dry-beans",
+    "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-15 13:26:12.561035",
+    "data_path": "gs://automlops-sandbox-bucket/data",
+    "project_id": "automlops-sandbox",
     "region": "us-central1"
 }

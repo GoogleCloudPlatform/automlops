@@ -230,7 +230,7 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Tony DiLoreto](mailto:tonydiloreto@google.com): Project Manager
 
-[Allegra Noto](mailto:allegranoto@google.com): Engineer
+[Allegra Noto](mailto:allegranoto@google.com): Senior Project Engineer
 
 # Disclaimer
 

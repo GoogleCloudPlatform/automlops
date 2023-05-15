@@ -28,9 +28,9 @@ gcp:
   cloud_schedule_pattern: 0 */12 * * *
   cloud_source_repository: AutoMLOps-repo
   cloud_source_repository_branch: automlops
-  gs_bucket_name: sandbox-allegranoto-bucket
-  pipeline_runner_service_account: vertex-pipelines@sandbox-allegranoto.iam.gserviceaccount.com
-  project_id: sandbox-allegranoto
+  gs_bucket_name: automlops-sandbox-bucket
+  pipeline_runner_service_account: vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com
+  project_id: automlops-sandbox
   vpc_connector: No VPC Specified
 
 pipelines:
@@ -38,4 +38,4 @@ pipelines:
   pipeline_component_directory: components
   pipeline_job_spec_path: scripts/pipeline_spec/pipeline_job.json
   pipeline_region: us-central1
-  pipeline_storage_path: gs://sandbox-allegranoto-bucket/pipeline_root
+  pipeline_storage_path: gs://automlops-sandbox-bucket/pipeline_root

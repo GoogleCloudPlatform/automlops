@@ -17,14 +17,14 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-# Builder Utils
+# utils
 TMPFILES_DIR = '.tmpfiles'
 IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
 CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'
 PIPELINE_TMPFILE = f'{TMPFILES_DIR}/pipeline_scaffold.py'
-PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
-PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
-LICENSE = (
+GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
+GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
+GENERATED_LICENSE = (
     '# Licensed under the Apache License, Version 2.0 (the "License");\n'
     '# you may not use this file except in compliance with the License.\n'
     '# You may obtain a copy of the License at\n'
@@ -38,34 +38,38 @@ LICENSE = (
     '# limitations under the License.\n'
     '#\n'
     '# DISCLAIMER: This code is generated as part of the AutoMLOps output.\n'
-    '\n')
+    '\n'
+)
 
 # AutoMLOps file paths
-TOP_LVL_NAME = 'AutoMLOps/'
-DEFAULTS_FILE = TOP_LVL_NAME + 'configs/defaults.yaml'
-PIPELINE_SPEC_SH_FILE = TOP_LVL_NAME + 'scripts/build_pipeline_spec.sh'
-BUILD_COMPONENTS_SH_FILE = TOP_LVL_NAME + 'scripts/build_components.sh'
-RUN_PIPELINE_SH_FILE = TOP_LVL_NAME + 'scripts/run_pipeline.sh'
-RUN_ALL_SH_FILE = TOP_LVL_NAME + 'scripts/run_all.sh'
-RESOURCES_SH_FILE = TOP_LVL_NAME + 'scripts/create_resources.sh'
-SUBMIT_JOB_FILE = TOP_LVL_NAME + 'scripts/submit_to_runner_svc.sh'
-CLOUDBUILD_FILE = TOP_LVL_NAME + 'cloudbuild.yaml'
-PIPELINE_FILE = TOP_LVL_NAME + 'pipelines/pipeline.py'
+BASE_DIR = 'AutoMLOps/'
 DEFAULT_IMAGE = 'python:3.9-slim'
-COMPONENT_BASE = TOP_LVL_NAME + 'components/component_base'
-COMPONENT_BASE_SRC = TOP_LVL_NAME + 'components/component_base/src'
+GENERATED_DEFAULTS_FILE = BASE_DIR + 'configs/defaults.yaml'
+GENERATED_PIPELINE_SPEC_SH_FILE = BASE_DIR + 'scripts/build_pipeline_spec.sh'
+GENERATED_BUILD_COMPONENTS_SH_FILE = BASE_DIR + 'scripts/build_components.sh'
+GENERATED_RUN_PIPELINE_SH_FILE = BASE_DIR + 'scripts/run_pipeline.sh'
+GENERATED_RUN_ALL_SH_FILE = BASE_DIR + 'scripts/run_all.sh'
+GENERATED_RESOURCES_SH_FILE = BASE_DIR + 'scripts/create_resources.sh'
+GENERATED_SUBMIT_JOB_FILE = BASE_DIR + 'scripts/submit_to_runner_svc.sh'
+GENERATED_CLOUDBUILD_FILE = BASE_DIR + 'cloudbuild.yaml'
+GENERATED_PIPELINE_FILE = BASE_DIR + 'pipelines/pipeline.py'
+GENERATED_COMPONENT_BASE = BASE_DIR + 'components/component_base'
+GENERATED_COMPONENT_BASE_SRC = BASE_DIR + 'components/component_base/src'
+GENERATED_DIRS = [
+    BASE_DIR,
+    BASE_DIR + 'components',
+    BASE_DIR + 'components/component_base',
+    BASE_DIR + 'components/component_base/src',
+    BASE_DIR + 'configs',
+    BASE_DIR + 'images',
+    BASE_DIR + 'pipelines',
+    BASE_DIR + 'pipelines/runtime_parameters',
+    BASE_DIR + 'scripts',
+    BASE_DIR + 'scripts/pipeline_spec'
+]
+
+# KFP Spec output_file location
 OUTPUT_DIR = TMPFILES_DIR
-DIRS = [
-    TOP_LVL_NAME,
-    TOP_LVL_NAME + 'components',
-    TOP_LVL_NAME + 'components/component_base',
-    TOP_LVL_NAME + 'components/component_base/src',
-    TOP_LVL_NAME + 'configs',
-    TOP_LVL_NAME + 'images',
-    TOP_LVL_NAME + 'pipelines',
-    TOP_LVL_NAME + 'pipelines/runtime_parameters',
-    TOP_LVL_NAME + 'scripts',
-    TOP_LVL_NAME + 'scripts/pipeline_spec']
 
 # Pipeline builder
 DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
