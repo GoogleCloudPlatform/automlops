@@ -1,13 +1,37 @@
-import pytest, pathlib
-from . import BuilderUtils
-import os, yaml
-from pathlib import Path
+# Copyright 2023 Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import pathlib
+import pytest
+import yaml
+
+from AutoMLOps.utils.utils import (
+    delete_file,
+    get_components_list,
+    make_dirs,
+    read_file,
+    read_yaml_file,
+    write_and_chmod,
+    write_file,
+    write_yaml_file,
+)
 
 @pytest.fixture
 def write_yaml():
     file_path = pathlib.Path("testing.yaml")
     file_path.write_text(
-            
     '# ===================================================\n'
     '# Test Yaml File'
     '# ===================================================\n'
@@ -26,12 +50,11 @@ def write_yaml():
     file_path.unlink()
 
 def test_make_dirs():
-    
     # Create a list of directories to create.
     directories = ["dir1", "dir2"]
 
     # Call the `make_dirs` function.
-    BuilderUtils.make_dirs(directories)
+    make_dirs(directories)
 
     # Assert that the directories were created.
     for d in directories:
@@ -44,31 +67,31 @@ def test_read_yaml_file():
         yaml.dump({'key1': 'value1', 'key2': 'value2'}, file)
 
     # Call the `read_yaml_file` function.
-    file_dict = BuilderUtils.read_yaml_file('test.yaml')
+    file_dict = read_yaml_file('test.yaml')
 
     # Assert that the file_dict contains the expected values.
     assert file_dict == {'key1': 'value1', 'key2': 'value2'}
-    
+
     # Remove test file
     os.remove('test.yaml')
-    
+
 def test_write_yaml_file():
 
     # Call the `write_yaml_file` function.
-    BuilderUtils.write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'w')
+    write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'w')
 
     # Assert that the file contains the expected values.
     with open('test.yaml', 'r') as file:
         file_dict = yaml.safe_load(file)
     assert file_dict == {'key1': 'value1', 'key2': 'value2'}
-    
+
     # Call the `write_yaml_file` function with an invalid mode.
     with pytest.raises(IOError):
-        BuilderUtils.write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'r')
-    
+        write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'r')
+
     # Remove test file
     os.remove('test.yaml')
-    
+
     # This still works for an invalid content and file path parameter, is that right?
 
 def test_read_file():
@@ -77,26 +100,26 @@ def test_read_file():
         file.write('This is a test file.')
 
     # Call the `read_file` function.
-    contents = BuilderUtils.read_file('test.txt')
+    contents = read_file('test.txt')
 
     # Assert that the contents of the file are correct.
     assert contents == 'This is a test file.'
-    
+
     # Remove test file
     os.remove('test.txt')
 
     # THIS SHOULD WORK BUT IT DOESN'T
     # Call the `read_file` function with an invalid file path.
     #with pytest.raises(FileNotFoundError):
-    #    BuilderUtils.read_file('invalid_file_path.txt')
-    
+    #    read_file('invalid_file_path.txt')
+
 def test_write_file():
     # Create a file.
     with open('test.txt', 'w') as file:
         file.write('This is a test file.')
 
     # Call the `write_file` function.
-    BuilderUtils.write_file('test.txt', 'This is a test file.', 'w')
+    write_file('test.txt', 'This is a test file.', 'w')
 
     # Assert that the file exists.
     assert os.path.exists('test.txt')
@@ -105,21 +128,21 @@ def test_write_file():
     with open('test.txt', 'r') as file:
         contents = file.read()
     assert contents == 'This is a test file.'
-    
+
     # Remove test file
     os.remove('test.txt')
 
     # Call the `write_file` function with an invalid file path.
     with pytest.raises(OSError):
-        BuilderUtils.write_file(15, 'This is a test file.', 'w')
-        
+        write_file(15, 'This is a test file.', 'w')
+
 def test_write_and_chmod():
     # Create a file.
     with open('test.txt', 'w') as file:
         file.write('This is a test file.')
 
     # Call the `write_and_chmod` function.
-    BuilderUtils.write_and_chmod('test.txt', 'This is a test file.')
+    write_and_chmod('test.txt', 'This is a test file.')
 
     # Assert that the file exists and is executable.
     assert os.path.exists('test.txt')
@@ -131,7 +154,7 @@ def test_write_and_chmod():
     # THIS SHOULDN'T WORK BUT IT DOES
     # Call the `write_and_chmod` function with an invalid file path.
     #with pytest.raises(OSError):
-    #    BuilderUtils.write_and_chmod('invalid_file_path.txt', 'This is a test file.')
+    #    write_and_chmod('invalid_file_path.txt', 'This is a test file.')
 
 def test_delete_fileh():
     # Create a file.
@@ -139,21 +162,21 @@ def test_delete_fileh():
         file.write('This is a test file.')
 
     # Call the `delete_file` function.
-    BuilderUtils.delete_file('test.txt')
+    delete_file('test.txt')
 
     # Assert that the file does not exist.
     assert not os.path.exists('test.txt')
-    
+
     # THIS SHOULD WORK BUT IT DOESN'T
     # Call the `delete_file` function with an invalid file path.
-    
+
     #with pytest.raises(OSError):
-    #    BuilderUtils.delete_file('invalid_file_path.txt')
+    #    delete_file('invalid_file_path.txt')
 
 @pytest.mark.parametrize("full_path", [True, False])
 def test_get_components_list(full_path: bool) -> None:
     # Create a temporary directory
-    tmp_dir = Path("/tmp/test_get_components_list")
+    tmp_dir = pathlib.Path("/tmp/test_get_components_list")
     tmp_dir.mkdir()
 
     # Create some component yaml files
@@ -163,7 +186,7 @@ def test_get_components_list(full_path: bool) -> None:
     component_yaml_2.write_text("This is another component yaml file.")
 
     # Get the list of component yaml files
-    components_list = BuilderUtils.get_components_list(full_path)
+    components_list = get_components_list(full_path)
 
     # Check that the list contains the correct files
     if full_path:
@@ -188,7 +211,7 @@ def test_get_components_list(full_path: bool) -> None:
 """
 def test_read_yaml_file(write_yaml):
     
-    assert(BuilderUtils.read_yaml_file(write_yaml) == 
+    assert(read_yaml_file(write_yaml) == 
            {'Test1' : [
                {
                    'name': 'my_name1',
@@ -232,33 +255,33 @@ def test_validate_schedule():
     
     # Check that error is raised when it should be
     with pytest.raises(Exception, match='run_local must be set to False to use Cloud Scheduler.'):
-        BuilderUtils.validate_schedule(schedule_pattern="*", 
+        validate_schedule(schedule_pattern="*", 
                                        run_local=True)
 
     # Check that error is not raised when it shouldn't be
-    BuilderUtils.validate_schedule(schedule_pattern="*", 
+    validate_schedule(schedule_pattern="*", 
                                    run_local=False)
     
-    BuilderUtils.validate_schedule(schedule_pattern="No Schedule Specified",
+    validate_schedule(schedule_pattern="No Schedule Specified",
                                    run_local=True)
     
-    BuilderUtils.validate_schedule(schedule_pattern="No Schedule Specified",
+    validate_schedule(schedule_pattern="No Schedule Specified",
                                    run_local=False)
     
 def test_validate_name():
     
     # Check that an error is raised when it should be
     with pytest.raises(Exception, match="Pipeline and Component names must be of type string."):
-        BuilderUtils.validate_name(name=10)
+        validate_name(name=10)
     
     # Check that error is not raised when it shouldn't be
-    BuilderUtils.validate_name(name="My Name")
+    validate_name(name="My Name")
         
 def test_validate_params():
     
     # Test for user providing a value for 'name' that is not a string
     with pytest.raises(Exception, match = 'Parameter name must be of type string.'):
-        BuilderUtils.validate_params([
+        validate_params([
             {
                 'name': 1,
                 'type': str,
@@ -268,7 +291,7 @@ def test_validate_params():
     
     # Test for user providing a value for 'type' that is not a valid python type
     with pytest.raises(Exception, match = 'Parameter type must be a valid python type.'):
-        BuilderUtils.validate_params([
+        validate_params([
             {
                 'name': 'my_name',
                 'type': 1,
@@ -278,7 +301,7 @@ def test_validate_params():
         
     # Test for user missing a required parameter value
     with pytest.raises(Exception, match = "Parameter {'name': 'my_name', 'description': 'my_description'} does not contain required keys. 'type'"):
-        BuilderUtils.validate_params([
+        validate_params([
             {
                 'name': 'my_name',
                 'description': 'my_description'
@@ -286,7 +309,7 @@ def test_validate_params():
         ])
     
     # don't think this can be tested
-    BuilderUtils.validate_params([
+    validate_params([
             {
                 'name': 'my_name',
                 'name': ',ajksdfj',
@@ -296,7 +319,7 @@ def test_validate_params():
         ])
     
     # Test that a correct list of dictionaries passes as expected
-    BuilderUtils.validate_params([
+    validate_params([
         {
             'name': 'my_name',
             'type': str,
@@ -311,7 +334,7 @@ def test_update_params():
     
     # Test for an exception with an incorrect value for 'type'
     with pytest.raises(Exception):
-        BuilderUtils.update_params([
+        update_params([
             {
                 'name': 'my_name_1',
                 'type': str,
@@ -325,7 +348,7 @@ def test_update_params():
     
     # Test for an exception with an incorrect value for 'type'
     with pytest.raises(Exception):
-        BuilderUtils.update_params([
+        update_params([
             {
                 'name': 'my_name_1',
                 'type': str,
@@ -338,7 +361,7 @@ def test_update_params():
         ])
     
     # Test that correctly formatted parameters will pass
-    BuilderUtils.update_params([
+    update_params([
         {
             'name': 'my_name_1',
             'type': str,
@@ -351,7 +374,7 @@ def test_update_params():
     ])
     
     # Test that correctly formatted parameters will pass
-    BuilderUtils.update_params([
+    update_params([
         {
             'name': 'my_name_1',
             'type': str,
