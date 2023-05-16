@@ -17,13 +17,13 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-# utils
+# temporary files
 TMPFILES_DIR = '.tmpfiles'
 IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
 CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'
 PIPELINE_TMPFILE = f'{TMPFILES_DIR}/pipeline_scaffold.py'
-GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
-GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
+
+# Apache license
 GENERATED_LICENSE = (
     '# Licensed under the Apache License, Version 2.0 (the "License");\n'
     '# you may not use this file except in compliance with the License.\n'
@@ -55,6 +55,8 @@ GENERATED_CLOUDBUILD_FILE = BASE_DIR + 'cloudbuild.yaml'
 GENERATED_PIPELINE_FILE = BASE_DIR + 'pipelines/pipeline.py'
 GENERATED_COMPONENT_BASE = BASE_DIR + 'components/component_base'
 GENERATED_COMPONENT_BASE_SRC = BASE_DIR + 'components/component_base/src'
+GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
+GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
 GENERATED_DIRS = [
     BASE_DIR,
     BASE_DIR + 'components',
@@ -71,10 +73,10 @@ GENERATED_DIRS = [
 # KFP Spec output_file location
 OUTPUT_DIR = TMPFILES_DIR
 
-# Pipeline builder
+# Generated kfp pipeline metadata name
 DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
 
-# Scripts Builder constants
+# Character substitution constants
 LEFT_BRACKET = '{'
 RIGHT_BRACKET = '}'
 NEWLINE = '\n'

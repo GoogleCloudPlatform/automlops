@@ -227,9 +227,8 @@ def _push_to_csr():
         execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
         has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
-        # WHAT IS THIS
+        # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
         if not has_remote_branch:
-            # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
             execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
             execute_process('git add .gitkeep', to_null=False)
             execute_process('''git commit -m 'init' ''', to_null=False)
