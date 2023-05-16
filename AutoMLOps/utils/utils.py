@@ -27,27 +27,7 @@ import textwrap
 from typing import Callable
 import yaml
 
-TMPFILES_DIR = '.tmpfiles'
-IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
-CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'
-PIPELINE_TMPFILE = f'{TMPFILES_DIR}/pipeline_scaffold.py'
-PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
-PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
-LICENSE = (
-    '# Licensed under the Apache License, Version 2.0 (the "License");\n'
-    '# you may not use this file except in compliance with the License.\n'
-    '# You may obtain a copy of the License at\n'
-    '#\n'
-    '#     http://www.apache.org/licenses/LICENSE-2.0\n'
-    '#\n'
-    '# Unless required by applicable law or agreed to in writing, software\n'
-    '# distributed under the License is distributed on an "AS IS" BASIS,\n'
-    '# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n'
-    '# See the License for the specific language governing permissions and\n'
-    '# limitations under the License.\n'
-    '#\n'
-    '# DISCLAIMER: This code is generated as part of the AutoMLOps output.\n'
-    '\n')
+from AutoMLOps.utils.constants import TMPFILES_DIR
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.
@@ -205,9 +185,11 @@ def execute_process(command: str, to_null: bool):
     """
     stdout = subprocess.DEVNULL if to_null else None
     try:
-        subprocess.run([command], shell=True, check=True,
-            stdout=stdout,
-            stderr=subprocess.STDOUT)
+        subprocess.run([command],
+                       shell=True,
+                       check=True,
+                       stdout=stdout,
+                       stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
         raise RuntimeError(f'Error executing process. {err}') from err
 
@@ -252,7 +234,7 @@ def update_params(params: list) -> list:
             param['type'] = python_kfp_types_mapper[param['type']]
         except KeyError as err:
             raise ValueError(f'Unsupported python type - we only support '
-                            f'primitive types at this time. {err}') from err
+                             f'primitive types at this time. {err}') from err
     return params
 
 def get_function_source_definition(func: Callable) -> str:
@@ -279,3 +261,24 @@ def get_function_source_definition(func: Callable) -> str:
             f'It is probably not properly indented.')
 
     return '\n'.join(source_code_lines)
+
+def format_spec_dict(job_spec: dict) -> str:
+    """Takes in a job spec dictionary and removes the quotes around the component op name. 
+    e.g. 'component_spec': 'train_model' becomes 'component_spec': train_model.
+    This is necessary to in order for the op to be callable within the Python code.
+
+    Args:
+        job_spec: Dictionary with job spec info.
+
+    Returns:
+        str: Python formatted dictionary code.
+    """
+    quote = '\''
+    left_bracket = '{'
+    right_bracket = '}'
+    newline = '\n'
+
+    return (
+        f'''{left_bracket}\n'''
+        f'''    {f'{newline}    '.join(f"   {quote}{k}{quote}: {quote if k != 'component_spec' else ''}{v}{quote if k != 'component_spec' else ''}," for k, v in job_spec.items())}{newline}'''
+        f'''    {right_bracket}\n''')

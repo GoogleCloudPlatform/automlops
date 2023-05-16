@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Setup AutoMLOps modules"""
+from setuptools import find_packages
 from setuptools import setup
 
 with open('README.md', 'r', encoding='utf-8') as file:
@@ -19,7 +20,7 @@ with open('README.md', 'r', encoding='utf-8') as file:
 
 setup(
     name='google-cloud-automlops',
-    version='1.1.0',
+    version='1.1.1',
     description='AutoMLOps is a service that generates a production-style \
         MLOps pipeline from Jupyter Notebooks.',
     long_description=readme_contents,
@@ -28,7 +29,7 @@ setup(
     author='Sean Rastatter',
     author_email='srastatter@google.com',
     license='Apache-2.0',
-    packages=['AutoMLOps'],
+    packages=find_packages(),
     install_requires=['docopt==0.6.2',
                       'docstring-parser==0.15',
                       'pipreqs==0.4.11',

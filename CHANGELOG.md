@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2023-05-17
+
+### Added
+- Refactored backend modules to be structured based on frameworks (e.g. kfp, tfx, etc.) and deployments (e.g. cloudbuild, github actions, etc.)
+- Added some unit tests for the utils.py module.
+ 
+### Changed
+
+- Moved unit tests to /tests directory.
+
 ## [1.1.0] - 2023-04-28
 
 ### Added

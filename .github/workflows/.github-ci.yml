@@ -34,4 +34,4 @@ jobs:
         pylint --jobs=0 $(git ls-files '*.py') --ignore-paths=example --rcfile=.pylintrc
     - name: Test with pytest
       run: |
-        pytest AutoMLOps --cov=AutoMLOps
+        pytest tests --cov=AutoMLOps
