@@ -194,7 +194,7 @@ def execute_process(command: str, to_null: bool):
         raise RuntimeError(f'Error executing process. {err}') from err
 
 def validate_schedule(schedule_pattern: str, run_local: str):
-    """Validates that the inputted schedule parameter.
+    """Validates the inputted schedule parameter.
 
     Args:
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
@@ -238,7 +238,7 @@ def update_params(params: list) -> list:
     return params
 
 def get_function_source_definition(func: Callable) -> str:
-    """Returns a formatted list of parameters.
+    """Returns a formatted string of the source code.
 
     Args:
         func: The python function to create a component from. The function
