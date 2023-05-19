@@ -232,11 +232,11 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Allegra Noto](mailto:allegranoto@google.com): Senior Project Engineer
 
-[Erin Horning](mailto:ehorning@google.com): Infrastructure Engineer
-
 [Ahmad Khan](mailto:ahmadkh@google.com): Engineer
 
 [Jesus Orozco](mailto:jesusfc@google.com): Cloud Engineer
+
+[Erin Horning](mailto:ehorning@google.com): Infrastructure Engineer
 
 # Disclaimer
 
