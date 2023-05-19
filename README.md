@@ -236,6 +236,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Jesus Orozco](mailto:jesusfc@google.com): Cloud Engineer
 
+[Erin Horning](mailto:ehorning@google.com): Infrastructure Engineer
+
 # Disclaimer
 
 **This is not an officially supported Google product.**
