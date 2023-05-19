@@ -232,6 +232,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Allegra Noto](mailto:allegranoto@google.com): Senior Project Engineer
 
+[Ahmad Khan](mailto:ahmadkh@google.com): Engineer
+
 [Jesus Orozco](mailto:jesusfc@google.com): Cloud Engineer
 
 # Disclaimer
