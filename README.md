@@ -232,6 +232,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Allegra Noto](mailto:allegranoto@google.com): Senior Project Engineer
 
+[Alex Ho](mailto:alexanderho@google.com): Project Engineer
+
 # Disclaimer
 
 **This is not an officially supported Google product.**
