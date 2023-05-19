@@ -138,7 +138,6 @@ def build(project_id: str,
     if not run_local:
         build_cloudrun(BASE_DIR, GENERATED_DEFAULTS_FILE)
 
-
 def build_component(component_path: str,
                     base_dir: str,
                     defaults_file: str,
