@@ -234,6 +234,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Ahmad Khan](mailto:ahmadkh@google.com): Engineer
 
+[Jesus Orozco](mailto:jesusfc@google.com): Cloud Engineer
+
 # Disclaimer
 
 **This is not an officially supported Google product.**
