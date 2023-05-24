@@ -41,17 +41,22 @@ class KfpComponent(Component):
         Returns:
             str: Contents of component base source code.
         """
+        # Determine if the user is using kfp_spec based the temporary TBD image placeholder
+        use_kfp_spec = False if self._component_spec['implementation']['container']['image'] == 'TBD' else True
         custom_code = self._component_spec['implementation']['container']['command'][-1]
-        default_imports = (
-            GENERATED_LICENSE +
+        default_imports = (GENERATED_LICENSE +
             'import argparse\n'
             'import json\n'
+            'from kfp.v2.components import executor\n')
+        if not use_kfp_spec:
+            custom_imports = ('\n'
             'import kfp\n'
             'from kfp.v2 import dsl\n'
-            'from kfp.v2.components import executor\n'
             'from kfp.v2.dsl import *\n'
             'from typing import *\n'
             '\n')
+        else:
+            custom_imports = '' # already included as part of the kfp spec
         main_func = (
             '\n'
             '''def main():\n'''
@@ -70,7 +75,7 @@ class KfpComponent(Component):
             '\n'
             '''if __name__ == '__main__':\n'''
             '''    main()\n''')
-        return default_imports + custom_code + main_func
+        return default_imports + custom_imports + custom_code + main_func
 
     def _create_compspec_image(self):
         """Write the correct image for the component spec.

@@ -116,7 +116,6 @@ class KfpScripts():
         self.run_pipeline = self._run_pipeline()
         self.run_all = self._run_all()
         self.create_resources_script = self._create_resources_script()
-        self.create_cloudbuild_config = self._create_cloudbuild_config()
         self.dockerfile = self._create_dockerfile()
         self.defaults = self._create_default_config()
         self.requirements = self._create_requirements()
@@ -381,131 +380,6 @@ class KfpScripts():
                 f'fi\n')
 
         return create_resources_script
-
-    def _create_cloudbuild_config(self):
-        """Builds the content of cloudbuild.yaml.
-
-        Args:
-            str: Text content of cloudbuild.yaml.
-        """
-        vpc_connector_tail = ''
-        if self.__vpc_connector != 'No VPC Specified':
-            vpc_connector_tail = (
-                f'\n'
-                f'           "--ingress", "internal",\n'
-                f'           "--vpc-connector", "{self.__vpc_connector}",\n'
-                f'           "--vpc-egress", "all-traffic"')
-        vpc_connector_tail += ']\n'
-
-        cloudbuild_comp_config = (
-            GENERATED_LICENSE +
-            f'steps:\n'
-            f'# ==============================================================================\n'
-            f'# BUILD CUSTOM IMAGES\n'
-            f'# ==============================================================================\n'
-            f'\n'
-            f'''  # build the component_base image\n'''
-            f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-            f'''    args: [ "build", "-t", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest", "." ]\n'''
-            f'''    dir: "{self.__base_dir}components/component_base"\n'''
-            f'''    id: "build_component_base"\n'''
-            f'''    waitFor: ["-"]\n'''
-            f'\n'
-            f'''  # build the run_pipeline image\n'''
-            f'''  - name: 'gcr.io/cloud-builders/docker'\n'''
-            f'''    args: [ "build", "-t", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]\n'''
-            f'''    dir: "{self.__base_dir}"\n'''
-            f'''    id: "build_pipeline_runner_svc"\n'''
-            f'''    waitFor: ['build_component_base']\n''')
-
-        cloudbuild_cloudrun_config = (
-            f'\n'
-            f'# ==============================================================================\n'
-            f'# PUSH & DEPLOY CUSTOM IMAGES\n'
-            f'# ==============================================================================\n'
-            f'\n'
-            f'''  # push the component_base image\n'''
-            f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-            f'''    args: ["push", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest"]\n'''
-            f'''    dir: "{self.__base_dir}components/component_base"\n'''
-            f'''    id: "push_component_base"\n'''
-            f'''    waitFor: ["build_pipeline_runner_svc"]\n'''
-            f'\n'
-            f'''  # push the run_pipeline image\n'''
-            f'''  - name: "gcr.io/cloud-builders/docker"\n'''
-            f'''    args: ["push", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest"]\n'''
-            f'''    dir: "{self.__base_dir}"\n'''
-            f'''    id: "push_pipeline_runner_svc"\n'''
-            f'''    waitFor: ["push_component_base"]\n'''
-            f'\n'
-            f'''  # deploy the cloud run service\n'''
-            f'''  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"\n'''
-            f'''    entrypoint: gcloud\n'''
-            f'''    args: ["run",\n'''
-            f'''           "deploy",\n'''
-            f'''           "{self.__cloud_run_name}",\n'''
-            f'''           "--image",\n'''
-            f'''           "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest",\n'''
-            f'''           "--region",\n'''
-            f'''           "{self.__cloud_run_location}",\n'''
-            f'''           "--service-account",\n'''
-            f'''           "{self.__pipeline_runner_service_account}",{vpc_connector_tail}'''
-            f'''    id: "deploy_pipeline_runner_svc"\n'''
-            f'''    waitFor: ["push_pipeline_runner_svc"]\n'''
-            f'\n'
-            f'''  # Copy runtime parameters\n'''
-            f'''  - name: 'gcr.io/cloud-builders/gcloud'\n'''
-            f'''    entrypoint: bash\n'''
-            f'''    args:\n'''
-            f'''      - '-e'\n'''
-            f'''      - '-c'\n'''
-            f'''      - |\n'''
-            f'''        cp -r {self.__base_dir}cloud_run/queueing_svc .\n'''
-            f'''    id: "setup_queueing_svc"\n'''
-            f'''    waitFor: ["deploy_pipeline_runner_svc"]\n'''
-            f'\n'
-            f'''  # Install dependencies\n'''
-            f'''  - name: python\n'''
-            f'''    entrypoint: pip\n'''
-            f'''    args: ["install", "-r", "queueing_svc/requirements.txt", "--user"]\n'''
-            f'''    id: "install_queueing_svc_deps"\n'''
-            f'''    waitFor: ["setup_queueing_svc"]\n'''
-            f'\n'
-            f'''  # Submit to queue\n'''
-            f'''  - name: python\n'''
-            f'''    entrypoint: python\n'''
-            f'''    args: ["queueing_svc/main.py", "--setting", "queue_job"]\n'''
-            f'''    id: "submit_job_to_queue"\n'''
-            f'''    waitFor: ["install_queueing_svc_deps"]\n''')
-
-        cloudbuild_scheduler_config = (
-            '\n'
-            '''  # Create Scheduler Job\n'''
-            '''  - name: python\n'''
-            '''    entrypoint: python\n'''
-            '''    args: ["queueing_svc/main.py", "--setting", "schedule_job"]\n'''
-            '''    id: "schedule_job"\n'''
-            '''    waitFor: ["submit_job_to_queue"]\n''')
-
-        custom_comp_image = (
-            f'\n'
-            f'images:\n'
-            f'''  # custom component images\n'''
-            f'''  - "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest"\n''')
-
-        cloudrun_image = (
-            f'''  # Cloud Run image\n'''
-            f'''  - "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest"\n''')
-
-        if self.__run_local:
-            cb_file_contents = cloudbuild_comp_config + custom_comp_image
-        else:
-            if self.__cloud_schedule_pattern == 'No Schedule Specified':
-                cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + custom_comp_image + cloudrun_image
-            else:
-                cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + cloudbuild_scheduler_config + custom_comp_image + cloudrun_image
-
-        return cb_file_contents
 
     def _create_dockerfile(self):
         """Creates the content of a Dockerfile to be written to the component_base directory.

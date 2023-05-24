@@ -32,7 +32,6 @@ from AutoMLOps.utils.constants import (
     BASE_DIR,
     DEFAULT_IMAGE,
     GENERATED_BUILD_COMPONENTS_SH_FILE,
-    GENERATED_CLOUDBUILD_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_COMPONENT_BASE,
     GENERATED_PIPELINE_FILE,
@@ -115,9 +114,8 @@ def build(project_id: str,
     write_and_chmod(GENERATED_RUN_PIPELINE_SH_FILE, kfp_scripts.run_pipeline)
     write_and_chmod(GENERATED_RUN_ALL_SH_FILE, kfp_scripts.run_all)
 
-    # Write scripts to create resources and cloud build config
+    # Write scripts to create resources
     write_and_chmod(GENERATED_RESOURCES_SH_FILE, kfp_scripts.create_resources_script)
-    write_file(GENERATED_CLOUDBUILD_FILE, kfp_scripts.create_cloudbuild_config, 'w+')
 
     # Copy tmp pipeline file over to AutoMLOps directory
     execute_process(f'cp {PIPELINE_TMPFILE} {GENERATED_PIPELINE_FILE}', to_null=False)
@@ -137,7 +135,6 @@ def build(project_id: str,
     # Build the cloud run files
     if not run_local:
         build_cloudrun(BASE_DIR, GENERATED_DEFAULTS_FILE)
-
 
 def build_component(component_path: str,
                     base_dir: str,
@@ -186,7 +183,6 @@ def build_component(component_path: str,
     filename = component_dir + '/component.yaml'
     write_file(filename, GENERATED_LICENSE, 'w')
     write_yaml_file(filename, component_spec, 'a')
-
 
 def build_pipeline(custom_training_job_specs: List[Dict],
                    defaults_file: str,

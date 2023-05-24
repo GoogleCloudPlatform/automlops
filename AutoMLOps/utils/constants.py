@@ -19,9 +19,7 @@
 
 # temporary files
 TMPFILES_DIR = '.tmpfiles'
-IMPORTS_TMPFILE = f'{TMPFILES_DIR}/imports.py'
-CELL_TMPFILE = f'{TMPFILES_DIR}/cell.py'
-PIPELINE_TMPFILE = f'{TMPFILES_DIR}/pipeline_scaffold.py'
+PIPELINE_TMPFILE = TMPFILES_DIR + '/pipeline_scaffold.py'
 
 # Apache license
 GENERATED_LICENSE = (
