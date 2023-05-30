@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Updated readme and implementation guide.
+- Long-term change: .tmpfiles/ subdirectory to .AutoMLOps-cache/
 
 ### Fixed
  
