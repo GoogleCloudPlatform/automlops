@@ -228,11 +228,19 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 # Contributors
 
-[Sean Rastatter](mailto:srastatter@google.com): Technical Lead
+[Sean Rastatter](mailto:srastatter@google.com): Tech Lead
 
 [Tony DiLoreto](mailto:tonydiloreto@google.com): Project Manager
 
 [Allegra Noto](mailto:allegranoto@google.com): Senior Project Engineer
+
+[Ahmad Khan](mailto:ahmadkh@google.com): Engineer
+
+[Jesus Orozco](mailto:jesusfc@google.com): Cloud Engineer
+
+[Erin Horning](mailto:ehorning@google.com): Infrastructure Engineer
+
+[Alex Ho](mailto:alexanderho@google.com): Engineer
 
 # Disclaimer
 
