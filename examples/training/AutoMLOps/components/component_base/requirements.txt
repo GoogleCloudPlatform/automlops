@@ -1,4 +1,9 @@
+db_dtypes
+google-cloud-aiplatform
+google-cloud-bigquery
+joblib
 kfp==1.8.18
-opencv-python-headless
+pandas
+pyarrow
+scikit-learn
 tensorflow
-tensorflow_datasets

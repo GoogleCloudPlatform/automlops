@@ -47,7 +47,7 @@ def train_model(
     skmodel.fit(x_train,y_train)
     score = skmodel.score(x_test,y_test)
     print('accuracy is:',score)
-    metrics.log_metric('accuracy',(score * 100.0))
+    metrics.log_metric('accuracy', (score * 100.0))
     metrics.log_metric('framework', 'Scikit Learn')
     metrics.log_metric('dataset_size', len(df))
 

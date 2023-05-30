@@ -12,7 +12,7 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-name: custom_train_model
+name: Custom train model
 inputs:
 - name: model_dir
   type: String
@@ -42,7 +42,7 @@ implementation:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
     command:
     - python3
-    - /pipelines/component/src/custom_train_model.py
+    - /pipelines/component/src/Custom train model.py
     args:
     - --executor_input
     - executorInput: null

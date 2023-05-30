@@ -315,6 +315,6 @@ def pipeline(func: Optional[Callable] = None,
 
 def clear_cache():
     """Deletes all temporary files stored in the cache directory."""
-    execute_process(f'rm -rf {OUTPUT_DIR}', to_null=False)    
+    execute_process(f'rm -rf {OUTPUT_DIR}', to_null=False)
     make_dirs([OUTPUT_DIR])
     logging.info('Cache cleared.')

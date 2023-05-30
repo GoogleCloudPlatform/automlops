@@ -1,9 +1,6 @@
 {
-    "project_id": "automlops-sandbox",
-    "model_dir": "gs://automlops-sandbox-bucket/tensorflow_model",
-    "lr": 0.01,
-    "epochs": 10,
-    "steps": 200,
-    "serving_image": "us-docker.pkg.dev/vertex-ai/prediction/tf-gpu.2-11.py310:latest",
-    "distribute": "single"
+    "bq_table": "automlops-sandbox.test_dataset.dry-beans",
+    "output_model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-30 16:12:00.837088",
+    "project": "automlops-sandbox",
+    "region": "us-central1"
 }

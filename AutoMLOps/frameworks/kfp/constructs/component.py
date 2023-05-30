@@ -42,7 +42,7 @@ class KfpComponent(Component):
             str: Contents of component base source code.
         """
         # Determine if the user is using kfp_spec based the temporary TBD image placeholder
-        use_kfp_spec = False if self._component_spec['implementation']['container']['image'] == 'TBD' else True
+        use_kfp_spec = self._component_spec['implementation']['container']['image'] != 'TBD'
         custom_code = self._component_spec['implementation']['container']['command'][-1]
         default_imports = (GENERATED_LICENSE +
             'import argparse\n'
