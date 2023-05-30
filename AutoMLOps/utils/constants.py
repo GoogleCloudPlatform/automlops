@@ -41,7 +41,6 @@ GENERATED_LICENSE = (
 
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
-DEFAULT_IMAGE = 'python:3.9-slim'
 GENERATED_DEFAULTS_FILE = BASE_DIR + 'configs/defaults.yaml'
 GENERATED_PIPELINE_SPEC_SH_FILE = BASE_DIR + 'scripts/build_pipeline_spec.sh'
 GENERATED_BUILD_COMPONENTS_SH_FILE = BASE_DIR + 'scripts/build_components.sh'

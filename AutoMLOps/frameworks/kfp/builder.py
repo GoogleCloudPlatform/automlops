@@ -30,7 +30,6 @@ from AutoMLOps.utils.utils import (
 )
 from AutoMLOps.utils.constants import (
     BASE_DIR,
-    DEFAULT_IMAGE,
     GENERATED_BUILD_COMPONENTS_SH_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_COMPONENT_BASE,
@@ -52,6 +51,7 @@ def build(project_id: str,
           pipeline_params: Dict,
           af_registry_location: Optional[str],
           af_registry_name: Optional[str],
+          base_image: Optional[str],
           cb_trigger_location: Optional[str],
           cb_trigger_name: Optional[str],
           cloud_run_location: Optional[str],
@@ -75,6 +75,7 @@ def build(project_id: str,
     Args:
         af_registry_location: Region of the Artifact Registry.
         af_registry_name: Artifact Registry name where components are stored.
+        base_image: The image to use in the component base dockerfile.
         cb_trigger_location: The location of the cloudbuild trigger.
         cb_trigger_name: The name of the cloudbuild trigger.
         cloud_run_location: The location of the cloud runner service.
@@ -83,7 +84,6 @@ def build(project_id: str,
         cloud_tasks_queue_name: The name of the cloud tasks queue.
         csr_branch_name: The name of the csr branch to push to to trigger cb job.
         csr_name: The name of the cloud source repo to use.
-        default_image: The image to use in the dockerfile.
         gs_bucket_location: Region of the GS bucket.
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
@@ -98,10 +98,10 @@ def build(project_id: str,
 
     # Get scripts builder object
     kfp_scripts = KfpScripts(
-        af_registry_location, af_registry_name, cb_trigger_location,
+        af_registry_location, af_registry_name, base_image, cb_trigger_location,
         cb_trigger_name, cloud_run_location, cloud_run_name,
         cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
-        csr_name, DEFAULT_IMAGE, gs_bucket_location, gs_bucket_name,
+        csr_name, gs_bucket_location, gs_bucket_name,
         pipeline_runner_sa, project_id, run_local, schedule_location,
         schedule_name, schedule_pattern, BASE_DIR, vpc_connector)
 

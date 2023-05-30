@@ -97,24 +97,25 @@ Required parameters:
 Optional parameters (defaults shown):
 1. `af_registry_location: str = 'us-central1'`
 2. `af_registry_name: str = 'vertex-mlops-af'`
-3. `cb_trigger_location: str = 'us-central1'`
-4. `cb_trigger_name: str = 'automlops-trigger'`
-5. `cloud_run_location: str = 'us-central1'`
-6. `cloud_run_name: str = 'run-pipeline'`
-7. `cloud_tasks_queue_location: str = 'us-central1'`
-8. `cloud_tasks_queue_name: str = 'queueing-svc'`
-9. `csr_branch_name: str = 'automlops'`
-10. `csr_name: str = 'AutoMLOps-repo'`
-11. `custom_training_job_specs: list[dict] = None`
-12. `gs_bucket_location: str = 'us-central1'`
-13. `gs_bucket_name: str = None`
-14. `pipeline_runner_sa: str = None`
-15. `run_local: bool = True`
-16. `schedule_location: str = 'us-central1'`
-17. `schedule_name: str = 'AutoMLOps-schedule'`
-18. `schedule_pattern: str = 'No Schedule Specified'`
-19. `use_kfp_spec: bool = False`
-20. `vpc_connector: str = None`
+3. `base_image: str = 'python:3.9-slim'`
+4. `cb_trigger_location: str = 'us-central1'`
+5. `cb_trigger_name: str = 'automlops-trigger'`
+6. `cloud_run_location: str = 'us-central1'`
+7. `cloud_run_name: str = 'run-pipeline'`
+8. `cloud_tasks_queue_location: str = 'us-central1'`
+9. `cloud_tasks_queue_name: str = 'queueing-svc'`
+10. `csr_branch_name: str = 'automlops'`
+11. `csr_name: str = 'AutoMLOps-repo'`
+12. `custom_training_job_specs: list[dict] = None`
+13. `gs_bucket_location: str = 'us-central1'`
+14. `gs_bucket_name: str = None`
+15. `pipeline_runner_sa: str = None`
+16. `run_local: bool = True`
+17. `schedule_location: str = 'us-central1'`
+18. `schedule_name: str = 'AutoMLOps-schedule'`
+19. `schedule_pattern: str = 'No Schedule Specified'`
+20. `use_kfp_spec: bool = False`
+21. `vpc_connector: str = None`
 
 AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 
@@ -129,8 +130,9 @@ schedule_pattern = '0 */12 * * *'
 
 **Set pipeline compute resources:**
 
-Use the `custom_training_job_specs` parameter to specify resources for any custom component in the pipeline.
+Use the `base_image` and `custom_training_job_specs` parameter to specify resources for any custom component in the pipeline.
 ```
+base_image = 'us-docker.pkg.dev/vertex-ai/training/tf-gpu.2-11.py310:latest',
 custom_training_job_specs = [{
     'component_spec': 'train_model',
     'display_name': 'train-model-accelerated',

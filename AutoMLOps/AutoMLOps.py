@@ -46,10 +46,13 @@ from AutoMLOps.deployments.cloudbuild import builder as CloudBuildBuilder
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
 logger = logging.getLogger()
 
+make_dirs([OUTPUT_DIR])
+
 def go(project_id: str,
        pipeline_params: Dict,
        af_registry_location: Optional[str] = 'us-central1',
        af_registry_name: Optional[str] = 'vertex-mlops-af',
+       base_image: Optional[str] = 'python:3.9-slim',
        cb_trigger_location: Optional[str] = 'us-central1',
        cb_trigger_name: Optional[str] = 'automlops-trigger',
        cloud_run_location: Optional[str] = 'us-central1',
@@ -76,6 +79,7 @@ def go(project_id: str,
         pipeline_params: Dictionary containing runtime pipeline parameters.
         af_registry_location: Region of the Artifact Registry.
         af_registry_name: Artifact Registry name where components are stored.
+        base_image: The image to use in the component base dockerfile.
         cb_trigger_location: The location of the cloudbuild trigger.
         cb_trigger_name: The name of the cloudbuild trigger.
         cloud_run_location: The location of the cloud runner service.
@@ -96,7 +100,7 @@ def go(project_id: str,
         vpc_connector: The name of the vpc connector to use.
     """
     generate(project_id, pipeline_params, af_registry_location,
-             af_registry_name, cb_trigger_location, cb_trigger_name,
+             af_registry_name, base_image, cb_trigger_location, cb_trigger_name,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
@@ -109,6 +113,7 @@ def generate(project_id: str,
              pipeline_params: Dict,
              af_registry_location: Optional[str] = 'us-central1',
              af_registry_name: Optional[str] = 'vertex-mlops-af',
+             base_image: Optional[str] = 'python:3.9-slim',
              cb_trigger_location: Optional[str] = 'us-central1',
              cb_trigger_name: Optional[str] = 'automlops-trigger',
              cloud_run_location: Optional[str] = 'us-central1',
@@ -145,7 +150,7 @@ def generate(project_id: str,
 
     # Build files required to run a Kubeflow Pipeline
     KfpBuilder.build(project_id, pipeline_params, af_registry_location,
-        af_registry_name, cb_trigger_location, cb_trigger_name,
+        af_registry_name, base_image, cb_trigger_location, cb_trigger_name,
         cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
         cloud_tasks_queue_name, csr_branch_name, csr_name,
         custom_training_job_specs, gs_bucket_location, default_bucket_name,

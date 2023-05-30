@@ -29,6 +29,7 @@ def load_custom_component(component_name: str):
 def create_training_pipeline(pipeline_job_spec_path: str):
     deploy_model = load_custom_component(component_name='deploy_model')
     train_model = load_custom_component(component_name='train_model')
+    custom_train_model = load_custom_component(component_name='custom_train_model')
     create_dataset = load_custom_component(component_name='create_dataset')
 
     @dsl.pipeline(

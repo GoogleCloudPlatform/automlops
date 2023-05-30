@@ -40,6 +40,7 @@ class KfpScripts():
     def __init__(self,
                  af_registry_location: str,
                  af_registry_name: str,
+                 base_image: str,
                  cb_trigger_location: str,
                  cb_trigger_name: str,
                  cloud_run_location: str,
@@ -48,7 +49,6 @@ class KfpScripts():
                  cloud_tasks_queue_name: str,
                  csr_branch_name: str,
                  csr_name: str,
-                 default_image: str,
                  gs_bucket_location: str,
                  gs_bucket_name: str,
                  pipeline_runner_sa: str,
@@ -72,7 +72,7 @@ class KfpScripts():
             cloud_tasks_queue_name: The name of the cloud tasks queue.
             csr_branch_name: The name of the csr branch to push to to trigger cb job.
             csr_name: The name of the cloud source repo to use.
-            default_image: The image to use in the dockerfile.
+            base_image: The image to use in the dockerfile.
             gs_bucket_location: Region of the GS bucket.
             gs_bucket_name: GS bucket name where pipeline run metadata is stored.
             pipeline_runner_sa: Service Account to runner PipelineJobs.
@@ -108,7 +108,7 @@ class KfpScripts():
         self.__cloud_schedule_location = schedule_location
         self.__cloud_schedule_name = schedule_name
         self.__cloud_schedule_pattern = schedule_pattern
-        self.__default_image = default_image
+        self.__base_image = base_image
 
         # Set generated scripts as public attributes
         self.build_pipeline_spec = self._build_pipeline_spec()
@@ -384,15 +384,12 @@ class KfpScripts():
     def _create_dockerfile(self):
         """Creates the content of a Dockerfile to be written to the component_base directory.
 
-        Args:
-            default_image: Default image used for this process.
-
         Returns:
             str: Text content of dockerfile.
         """
         return (
             GENERATED_LICENSE +
-            f'FROM {self.__default_image}\n'
+            f'FROM {self.__base_image}\n'
             f'RUN python -m pip install --upgrade pip\n'
             f'COPY requirements.txt .\n'
             f'RUN python -m pip install -r \ \n'
@@ -416,6 +413,7 @@ class KfpScripts():
             f'gcp:\n'
             f'  af_registry_location: {self.__af_registry_location}\n'
             f'  af_registry_name: {self.__af_registry_name}\n'
+            f'  base_image: {self.__base_image}\n'
             f'  cb_trigger_location: {self.__cb_trigger_location}\n'
             f'  cb_trigger_name: {self.__cb_trigger_name}\n'
             f'  cloud_run_location: {self.__cloud_run_location}\n'
