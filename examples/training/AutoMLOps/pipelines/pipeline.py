@@ -14,6 +14,8 @@
 
 import argparse
 import os
+from functools import partial
+from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component
 import kfp
 from kfp.v2 import compiler, dsl
 from kfp.v2.dsl import *
@@ -27,34 +29,58 @@ def load_custom_component(component_name: str):
     return kfp.components.load_component_from_file(component_path)
 
 def create_training_pipeline(pipeline_job_spec_path: str):
-    deploy_model = load_custom_component(component_name='deploy_model')
-    train_model = load_custom_component(component_name='train_model')
     custom_train_model = load_custom_component(component_name='custom_train_model')
-    create_dataset = load_custom_component(component_name='create_dataset')
 
+    custom_train_model_custom_training_job_specs = {
+       'component_spec': custom_train_model,
+       'display_name': 'train-model-accelerated',
+       'machine_type': 'a2-highgpu-1g',
+       'accelerator_type': 'NVIDIA_TESLA_A100',
+       'accelerator_count': '1',
+    }
+
+    custom_train_model_job_op = create_custom_training_job_op_from_component(**custom_train_model_custom_training_job_specs)
+    custom_train_model = partial(custom_train_model_job_op, project='automlops-sandbox')
     @dsl.pipeline(
-        name='automlops-pipeline',
+        name='tensorflow-gpu-example',
     )
-    def pipeline(bq_table: str,
-                 model_directory: str,
-                 data_path: str,
-                 project_id: str,
-                 region: str,
-                ):
+    def pipeline(
+        project_id: str,
+        model_dir: str,
+        lr: float,
+        epochs: int,
+        steps: int,
+        serving_image: str,
+        distribute: str,
+    ):
+        from google_cloud_pipeline_components.types import artifact_types
+        from google_cloud_pipeline_components.v1.model import ModelUploadOp
+        from kfp.v2.components import importer_node
     
-        create_dataset_task = create_dataset(
-            bq_table=bq_table,
-            data_path=data_path,
-            project_id=project_id)
+        custom_train_model_task = custom_train_model(
+            model_dir=model_dir,
+            lr=lr,
+            epochs=epochs,
+            steps=steps,
+            distribute=distribute
+        )
     
-        train_model_task = train_model(
-            model_directory=model_directory,
-            data_path=data_path).after(create_dataset_task)
+        unmanaged_model_importer = importer_node.importer(
+            artifact_uri=model_dir,
+            artifact_class=artifact_types.UnmanagedContainerModel,
+            metadata={
+                'containerSpec': {
+                    'imageUri': serving_image
+                }
+            },
+        )
     
-        deploy_model_task = deploy_model(
-            model_directory=model_directory,
-            project_id=project_id,
-            region=region).after(train_model_task)
+        model_upload_op = ModelUploadOp(
+            project=project_id,
+            display_name='tensorflow_gpu_example',
+            unmanaged_container_model=unmanaged_model_importer.outputs['artifact'],
+        )
+        model_upload_op.after(custom_train_model_task)
     
     compiler.Compiler().compile(
         pipeline_func=pipeline,

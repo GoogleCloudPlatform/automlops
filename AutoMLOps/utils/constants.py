@@ -17,10 +17,6 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-# temporary files
-TMPFILES_DIR = '.tmpfiles'
-PIPELINE_TMPFILE = TMPFILES_DIR + '/pipeline_scaffold.py'
-
 # Apache license
 GENERATED_LICENSE = (
     '# Licensed under the Apache License, Version 2.0 (the "License");\n'
@@ -67,8 +63,12 @@ GENERATED_DIRS = [
     BASE_DIR + 'scripts/pipeline_spec'
 ]
 
+# temporary files
+CACHE_DIR = '.AutoMLOps-cache'
+PIPELINE_CACHE_FILE = CACHE_DIR + '/pipeline_scaffold.py'
+
 # KFP Spec output_file location
-OUTPUT_DIR = TMPFILES_DIR
+OUTPUT_DIR = CACHE_DIR
 
 # Generated kfp pipeline metadata name
 DEFAULT_PIPELINE_NAME = 'automlops-pipeline'

@@ -12,7 +12,7 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-FROM foo
+FROM us-docker.pkg.dev/vertex-ai/training/tf-gpu.2-11.py310:latest
 RUN python -m pip install --upgrade pip
 COPY requirements.txt .
 RUN python -m pip install -r \ 

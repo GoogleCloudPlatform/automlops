@@ -17,7 +17,7 @@
 gcp:
   af_registry_location: us-central1
   af_registry_name: vertex-mlops-af
-  base_image: foo
+  base_image: us-docker.pkg.dev/vertex-ai/training/tf-gpu.2-11.py310:latest
   cb_trigger_location: us-central1
   cb_trigger_name: automlops-trigger
   cloud_run_location: us-central1

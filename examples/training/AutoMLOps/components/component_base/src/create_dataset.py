@@ -23,21 +23,19 @@ from typing import *
 
 def create_dataset(
     bq_table: str,
-    data_path: str,
-    project_id: str
+    output_data_path: OutputPath('Dataset'),
+    project: str
 ):
     """Custom component that takes in a BQ table and writes it to GCS.
 
     Args:
         bq_table: The source biquery table.
-        data_path: The gcs location to write the csv.
-        project_id: The project ID.
+        output_data_path: The gcs location to write the csv.
+        project: The project ID.
     """
     from google.cloud import bigquery
     import pandas as pd
-    from sklearn import preprocessing
-
-    bq_client = bigquery.Client(project=project_id)
+    bq_client = bigquery.Client(project=project)
 
     def get_query(bq_input_table: str) -> str:
         """Generates BQ Query to read data.
@@ -64,9 +62,8 @@ def create_dataset(
         return df
 
     dataframe = load_bq_data(get_query(bq_table), bq_client)
-    le = preprocessing.LabelEncoder()
-    dataframe['Class'] = le.fit_transform(dataframe['Class'])
-    dataframe.to_csv(data_path, index=False)
+    dataframe.to_csv(output_data_path)
+
 
 def main():
     """Main executor."""

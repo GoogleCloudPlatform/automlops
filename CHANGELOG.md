@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Added in optional parameter for specifying a base_image.
 - Created an example notebook that walks the user through a transfer learning example using a GPU.
+- Added in a `clear_cache` function which deletes all files within the tmpfiles directory.
  
 ### Changed
 

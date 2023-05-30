@@ -27,7 +27,7 @@ import textwrap
 from typing import Callable
 import yaml
 
-from AutoMLOps.utils.constants import TMPFILES_DIR
+from AutoMLOps.utils.constants import CACHE_DIR
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.
@@ -143,7 +143,7 @@ def delete_file(filepath: str):
         pass
 
 def get_components_list(full_path: bool = True) -> list:
-    """Reads yamls in tmpfiles directory, verifies they are component
+    """Reads yamls in the cache directory, verifies they are component
        yamls, and returns the name of the files.
 
     Args:
@@ -152,9 +152,9 @@ def get_components_list(full_path: bool = True) -> list:
         list: Contains the names or paths of all component yamls in the dir.
     """
     components_list = []
-    elements = os.listdir(TMPFILES_DIR)
+    elements = os.listdir(CACHE_DIR)
     for file in list(filter(lambda y: ('.yaml' or '.yml') in y, elements)):
-        path = os.path.join(TMPFILES_DIR, file)
+        path = os.path.join(CACHE_DIR, file)
         if is_component_config(path):
             if full_path:
                 components_list.append(path)

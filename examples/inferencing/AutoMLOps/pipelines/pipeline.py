@@ -27,8 +27,6 @@ def load_custom_component(component_name: str):
     return kfp.components.load_component_from_file(component_path)
 
 def create_training_pipeline(pipeline_job_spec_path: str):
-    batch_prediction = load_custom_component(component_name='batch_prediction')
-    create_dataset = load_custom_component(component_name='create_dataset')
     batch_predict = load_custom_component(component_name='batch_predict')
 
     @dsl.pipeline(

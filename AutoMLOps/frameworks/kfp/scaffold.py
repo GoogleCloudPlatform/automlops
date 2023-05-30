@@ -24,8 +24,8 @@ import docstring_parser
 
 from AutoMLOps.utils.constants import (
     DEFAULT_PIPELINE_NAME,
-    PIPELINE_TMPFILE,
-    TMPFILES_DIR
+    PIPELINE_CACHE_FILE,
+    CACHE_DIR
 )
 from AutoMLOps.utils.utils import (
     get_function_source_definition,
@@ -72,8 +72,8 @@ def create_component_scaffold(func: Optional[Callable] = None,
                                                              '--function_to_execute', 
                                                              name]
     # Write component yaml
-    filename = TMPFILES_DIR + f'/{name}.yaml'
-    make_dirs([TMPFILES_DIR])
+    filename = CACHE_DIR + f'/{name}.yaml'
+    make_dirs([CACHE_DIR])
     write_yaml_file(filename, component_spec, 'w')
 
 def get_packages_to_install_command(func: Optional[Callable] = None,
@@ -171,8 +171,8 @@ def create_pipeline_scaffold(func: Optional[Callable] = None,
     pipeline_scaffold = (get_pipeline_decorator(name, description) +
                          get_function_source_definition(func) +
                          get_compile_step(func.__name__))
-    make_dirs([TMPFILES_DIR]) # if it doesn't already exist
-    write_file(PIPELINE_TMPFILE, pipeline_scaffold, 'w')
+    make_dirs([CACHE_DIR]) # if it doesn't already exist
+    write_file(PIPELINE_CACHE_FILE, pipeline_scaffold, 'w')
 
 def get_pipeline_decorator(name: Optional[str] = None,
                            description: Optional[str] = None):

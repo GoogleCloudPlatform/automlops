@@ -38,7 +38,7 @@ from AutoMLOps.utils.constants import (
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_RUN_PIPELINE_SH_FILE,
     GENERATED_RUN_ALL_SH_FILE,
-    PIPELINE_TMPFILE,
+    PIPELINE_CACHE_FILE,
     GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH
 )
@@ -118,7 +118,7 @@ def build(project_id: str,
     write_and_chmod(GENERATED_RESOURCES_SH_FILE, kfp_scripts.create_resources_script)
 
     # Copy tmp pipeline file over to AutoMLOps directory
-    execute_process(f'cp {PIPELINE_TMPFILE} {GENERATED_PIPELINE_FILE}', to_null=False)
+    execute_process(f'cp {PIPELINE_CACHE_FILE} {GENERATED_PIPELINE_FILE}', to_null=False)
 
     # Create components and pipelines
     components_path_list = get_components_list()

@@ -32,6 +32,11 @@ inputs:
   type: String
   default: single
   optional: true
+outputs:
+- name: metrics
+  type: Metrics
+- name: output_model
+  type: Model
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest

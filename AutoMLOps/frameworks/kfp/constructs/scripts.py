@@ -482,7 +482,7 @@ class KfpScripts():
         # Infer reqs using pipreqs
         execute_process(f'python3 -m pipreqs.pipreqs {GENERATED_COMPONENT_BASE} --mode no-pin --force', to_null=False)
         pipreqs = read_file(reqs_filename).splitlines()
-        # Get user-inputted requirements from .tmpfiles dir
+        # Get user-inputted requirements from the cache dir
         user_inp_reqs = []
         components_path_list = get_components_list()
         for component_path in components_path_list:

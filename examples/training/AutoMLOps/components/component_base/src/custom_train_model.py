@@ -22,11 +22,13 @@ from kfp.v2.dsl import *
 from typing import *
 
 def custom_train_model(
+    metrics: Output[Metrics],
     model_dir: str,
+    output_model: Output[Model],
     lr: float = 0.001,
     epochs: int = 10,
     steps: int = 200,
-    distribute: str = "single",
+    distribute: str = 'single'
 ):
 
     import faulthandler
@@ -40,28 +42,28 @@ def custom_train_model(
     faulthandler.enable()
     tfds.disable_progress_bar()
 
-    print("Component start")
+    print('Component start')
 
-    print("Python Version = {}".format(sys.version))
-    print("TensorFlow Version = {}".format(tf.__version__))
-    print("TF_CONFIG = {}".format(os.environ.get("TF_CONFIG", "Not found")))
-    print("DEVICES", device_lib.list_local_devices())
+    print(f'Python Version = {sys.version}')
+    print(f'TensorFlow Version = {tf.__version__}')
+    print(f'TF_CONFIG = {os.environ.get("TF_CONFIG", "Not found")}')
+    print(f'DEVICES = {device_lib.list_local_devices()}')
 
     # Single Machine, single compute device
-    if distribute == "single":
+    if distribute == 'single':
         if tf.test.is_gpu_available():
             strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")
         else:
             strategy = tf.distribute.OneDeviceStrategy(device="/cpu:0")
     # Single Machine, multiple compute device
-    elif distribute == "mirror":
+    elif distribute == 'mirror':
         strategy = tf.distribute.MirroredStrategy()
     # Multiple Machine, multiple compute device
-    elif distribute == "multi":
+    elif distribute == 'multi':
         strategy = tf.distribute.experimental.MultiWorkerMirroredStrategy()
 
     # Multi-worker configuration
-    print("num_replicas_in_sync = {}".format(strategy.num_replicas_in_sync))
+    print(f'num_replicas_in_sync = {strategy.num_replicas_in_sync}')
 
     # Preparing dataset
     BUFFER_SIZE = 10000
@@ -117,10 +119,15 @@ def custom_train_model(
 
     with strategy.scope():
         # Creation of dataset, and model building/compiling need to be within `strategy.scope()`.
-        model = create_model(number_of_classes, lr)
+        resnet_model = create_model(number_of_classes, lr)
 
-    model.fit(x=train_dataset, epochs=epochs, steps_per_epoch=steps)
-    model.save(model_dir)
+    h = resnet_model.fit(x=train_dataset, epochs=epochs, steps_per_epoch=steps)
+    acc = h.history['accuracy'][-1]
+    resnet_model.save(model_dir)
+
+    output_model.path = model_dir
+    metrics.log_metric('accuracy', (acc * 100.0))
+    metrics.log_metric('framework', 'Tensorflow')
 
 
 def main():
