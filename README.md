@@ -82,13 +82,8 @@ For a user-guide, please view these [slides](./AutoMLOps_Implementation_Guide_Ex
 
 # Options
 
-AutoMLOps currently supports 4 different configurations based on the following flags:
-1. `use_kfp_spec`: (Optional) Bool that specifies whether to use Kubeflow definitions or Python custom definitions. Defaults to False. See [user guide](./AutoMLOps_Implementation_Guide_External.pdf).
-    - if True:
-        - The pipeline uses Kubeflow objects and syntax, and will generate all the necessary files in the backend to compile and run the pipeline.
-    - if False:
-        - The pipeline uses a custom defined syntax (through a series of python dictionaries and lists) that effectively removes the need to know Kubeflow syntax to compile and run the pipeline. 
-2. `run_local`: (Optional) Bool that specifies whether to use generate files resources locally or use cloud CI/CD workflow (see below). Defaults to True. See [CI/CD Workflow](#cloud-continuous-integration-and-continuous-deployment-workflow)
+AutoMLOps CI/CD options:
+1. `run_local`: Bool that specifies whether to use generate files resources locally or use cloud CI/CD workflow (see below). Defaults to True. See [CI/CD Workflow](#cloud-continuous-integration-and-continuous-deployment-workflow)
 
 Required parameters:
 1. `project_id: str`
@@ -114,8 +109,7 @@ Optional parameters (defaults shown):
 17. `schedule_location: str = 'us-central1'`
 18. `schedule_name: str = 'AutoMLOps-schedule'`
 19. `schedule_pattern: str = 'No Schedule Specified'`
-20. `use_kfp_spec: bool = False`
-21. `vpc_connector: str = None`
+20. `vpc_connector: str = None`
 
 AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 

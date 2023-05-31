@@ -16,15 +16,14 @@ name: create_dataset
 description: Custom component that takes in a BQ table and writes it to GCS.
 inputs:
 - name: bq_table
-  type: String
   description: The source biquery table.
-- name: project
   type: String
-  description: The project ID.
-outputs:
-- name: output_data_path
-  type: Dataset
+- name: data_path
   description: The gcs location to write the csv.
+  type: String
+- name: project_id
+  description: The project ID.
+  type: String
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest

@@ -24,6 +24,7 @@ import docstring_parser
 
 from AutoMLOps.utils.constants import (
     DEFAULT_PIPELINE_NAME,
+    PLACEHOLDER_IMAGE,
     PIPELINE_CACHE_FILE,
     CACHE_DIR
 )
@@ -65,7 +66,7 @@ def create_component_scaffold(func: Optional[Callable] = None,
     component_spec['inputs'] = get_function_parameters(func)
     component_spec['implementation'] = {}
     component_spec['implementation']['container'] = {}
-    component_spec['implementation']['container']['image'] = 'TBD'
+    component_spec['implementation']['container']['image'] = PLACEHOLDER_IMAGE
     component_spec['implementation']['container']['command'] = get_packages_to_install_command(func, packages_to_install)
     component_spec['implementation']['container']['args'] = ['--executor_input',
                                                              {'executorInput': None},

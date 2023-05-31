@@ -27,7 +27,10 @@ import textwrap
 from typing import Callable
 import yaml
 
-from AutoMLOps.utils.constants import CACHE_DIR
+from AutoMLOps.utils.constants import (
+    CACHE_DIR,
+    PLACEHOLDER_IMAGE
+)
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.
@@ -282,3 +285,14 @@ def format_spec_dict(job_spec: dict) -> str:
         f'''{left_bracket}\n'''
         f'''    {f'{newline}    '.join(f"   {quote}{k}{quote}: {quote if k != 'component_spec' else ''}{v}{quote if k != 'component_spec' else ''}," for k, v in job_spec.items())}{newline}'''
         f'''    {right_bracket}\n''')
+
+def is_using_kfp_spec(image: str):
+    """Takes in an image string from a component yaml and determines if it came from kfp or not.
+
+    Args:
+        image: image string.
+
+    Returns:
+        bool: is the component using kfp spec.
+    """
+    return image != PLACEHOLDER_IMAGE

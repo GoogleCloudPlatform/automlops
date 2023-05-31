@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 
 - Updated readme and implementation guide.
 - Long-term change: .tmpfiles/ subdirectory to .AutoMLOps-cache/
+- Long-term change: removed `use_kfp_spec` from parameter lists and switched to determining this at run-time.
 
 ### Fixed
  

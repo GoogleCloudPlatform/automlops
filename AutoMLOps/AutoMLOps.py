@@ -69,7 +69,6 @@ def go(project_id: str,
        schedule_location: Optional[str] = 'us-central1',
        schedule_name: Optional[str] = 'AutoMLOps-schedule',
        schedule_pattern: Optional[str] = 'No Schedule Specified',
-       use_kfp_spec: Optional[bool] = False,
        vpc_connector: Optional[str] = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts,
        then builds, compiles, and submits the PipelineJob.
@@ -96,7 +95,6 @@ def go(project_id: str,
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
-        use_kfp_spec: Flag that determines the format of the component yamls.
         vpc_connector: The name of the vpc connector to use.
     """
     generate(project_id, pipeline_params, af_registry_location,
@@ -105,8 +103,7 @@ def go(project_id: str,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
              pipeline_runner_sa, run_local, schedule_location,
-             schedule_name, schedule_pattern, use_kfp_spec,
-             vpc_connector)
+             schedule_name, schedule_pattern, vpc_connector)
     run(run_local)
 
 def generate(project_id: str,
@@ -130,7 +127,6 @@ def generate(project_id: str,
              schedule_location: Optional[str] = 'us-central1',
              schedule_name: Optional[str] = 'AutoMLOps-schedule',
              schedule_pattern: Optional[str] = 'No Schedule Specified',
-             use_kfp_spec: Optional[bool] = False,
              vpc_connector: Optional[str] = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts.
 
@@ -155,8 +151,7 @@ def generate(project_id: str,
         cloud_tasks_queue_name, csr_branch_name, csr_name,
         custom_training_job_specs, gs_bucket_location, default_bucket_name,
         default_pipeline_runner_sa, run_local, schedule_location,
-        schedule_name, schedule_pattern, use_kfp_spec,
-        vpc_connector)
+        schedule_name, schedule_pattern, vpc_connector)
 
     CloudBuildBuilder.build(af_registry_location, af_registry_name, cloud_run_location,
         cloud_run_name, default_pipeline_runner_sa, project_id,

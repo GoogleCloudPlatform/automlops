@@ -35,6 +35,9 @@ GENERATED_LICENSE = (
     '\n'
 )
 
+# Placeholder
+PLACEHOLDER_IMAGE = 'AutoMLOps_image_tbd'
+
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
 GENERATED_DEFAULTS_FILE = BASE_DIR + 'configs/defaults.yaml'

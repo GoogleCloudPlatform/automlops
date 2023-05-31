@@ -35,23 +35,25 @@ def create_training_pipeline(pipeline_job_spec_path: str):
         name='automlops-pipeline',
     )
     def pipeline(bq_table: str,
-                 output_model_directory: str,
-                 project: str,
+                 model_directory: str,
+                 data_path: str,
+                 project_id: str,
                  region: str,
                 ):
     
-        dataset_task = create_dataset(
-            bq_table=bq_table, 
-            project=project)
+        create_dataset_task = create_dataset(
+            bq_table=bq_table,
+            data_path=data_path,
+            project_id=project_id)
     
-        model_task = train_model(
-            output_model_directory=output_model_directory,
-            dataset=dataset_task.output)
+        train_model_task = train_model(
+            model_directory=model_directory,
+            data_path=data_path).after(create_dataset_task)
     
-        deploy_task = deploy_model(
-            model=model_task.outputs['model'],
-            project=project,
-            region=region)
+        deploy_model_task = deploy_model(
+            model_directory=model_directory,
+            project_id=project_id,
+            region=region).after(train_model_task)
     
     compiler.Compiler().compile(
         pipeline_func=pipeline,
