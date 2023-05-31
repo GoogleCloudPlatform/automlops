@@ -14,9 +14,10 @@
 
 import argparse
 import json
+from kfp.v2.components import executor
+
 import kfp
 from kfp.v2 import dsl
-from kfp.v2.components import executor
 from kfp.v2.dsl import *
 from typing import *
 
@@ -53,7 +54,7 @@ def deploy_model(
 
     serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest'
     uploaded_model = aiplatform.Model.upload(
-        artifact_uri = model_directory,
+        artifact_uri=model_directory,
         model_id=model_id,
         display_name=model_name,
         parent_model=parent_model,

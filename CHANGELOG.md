@@ -1,6 +1,26 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.2] - 2023-05-26
+
+### Added
+- Added in optional parameter for specifying a base_image.
+- Created an example notebook that walks the user through a transfer learning example using a GPU.
+- Added in a `clear_cache` function which deletes all files within the tmpfiles directory.
+ 
+### Changed
+
+- Updated readme and implementation guide.
+- Long-term change: .tmpfiles/ subdirectory to .AutoMLOps-cache/
+- Long-term change: removed `use_kfp_spec` from parameter lists and switched to determining this at run-time.
+
+### Fixed
+ 
+- Removed redundant code for cloudbuild config generation.
+- Updated constants.py file to remove constants no longer being used.
+- Fixed custom imports mismatch between kfp spec and custom automlops spec.
+- Verified custom_training_jobs_specs works as intended. 
+
 ## [1.1.1] - 2023-05-17
 
 ### Added

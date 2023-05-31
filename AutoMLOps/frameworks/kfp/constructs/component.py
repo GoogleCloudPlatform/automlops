@@ -17,6 +17,7 @@
 # pylint: disable=line-too-long
 
 from AutoMLOps.utils.constants import GENERATED_LICENSE
+from AutoMLOps.utils.utils import is_using_kfp_spec
 from AutoMLOps.frameworks.base import Component
 
 class KfpComponent(Component):
@@ -42,16 +43,19 @@ class KfpComponent(Component):
             str: Contents of component base source code.
         """
         custom_code = self._component_spec['implementation']['container']['command'][-1]
-        default_imports = (
-            GENERATED_LICENSE +
+        default_imports = (GENERATED_LICENSE +
             'import argparse\n'
             'import json\n'
+            'from kfp.v2.components import executor\n')
+        if not is_using_kfp_spec(self._component_spec['implementation']['container']['image']):
+            custom_imports = ('\n'
             'import kfp\n'
             'from kfp.v2 import dsl\n'
-            'from kfp.v2.components import executor\n'
             'from kfp.v2.dsl import *\n'
             'from typing import *\n'
             '\n')
+        else:
+            custom_imports = '' # the above is already included as part of the kfp spec
         main_func = (
             '\n'
             '''def main():\n'''
@@ -70,7 +74,7 @@ class KfpComponent(Component):
             '\n'
             '''if __name__ == '__main__':\n'''
             '''    main()\n''')
-        return default_imports + custom_code + main_func
+        return default_imports + custom_imports + custom_code + main_func
 
     def _create_compspec_image(self):
         """Write the correct image for the component spec.

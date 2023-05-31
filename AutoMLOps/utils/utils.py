@@ -27,7 +27,10 @@ import textwrap
 from typing import Callable
 import yaml
 
-from AutoMLOps.utils.constants import TMPFILES_DIR
+from AutoMLOps.utils.constants import (
+    CACHE_DIR,
+    PLACEHOLDER_IMAGE
+)
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.
@@ -143,7 +146,7 @@ def delete_file(filepath: str):
         pass
 
 def get_components_list(full_path: bool = True) -> list:
-    """Reads yamls in tmpfiles directory, verifies they are component
+    """Reads yamls in the cache directory, verifies they are component
        yamls, and returns the name of the files.
 
     Args:
@@ -152,9 +155,9 @@ def get_components_list(full_path: bool = True) -> list:
         list: Contains the names or paths of all component yamls in the dir.
     """
     components_list = []
-    elements = os.listdir(TMPFILES_DIR)
+    elements = os.listdir(CACHE_DIR)
     for file in list(filter(lambda y: ('.yaml' or '.yml') in y, elements)):
-        path = os.path.join(TMPFILES_DIR, file)
+        path = os.path.join(CACHE_DIR, file)
         if is_component_config(path):
             if full_path:
                 components_list.append(path)
@@ -282,3 +285,14 @@ def format_spec_dict(job_spec: dict) -> str:
         f'''{left_bracket}\n'''
         f'''    {f'{newline}    '.join(f"   {quote}{k}{quote}: {quote if k != 'component_spec' else ''}{v}{quote if k != 'component_spec' else ''}," for k, v in job_spec.items())}{newline}'''
         f'''    {right_bracket}\n''')
+
+def is_using_kfp_spec(image: str):
+    """Takes in an image string from a component yaml and determines if it came from kfp or not.
+
+    Args:
+        image: image string.
+
+    Returns:
+        bool: is the component using kfp spec.
+    """
+    return image != PLACEHOLDER_IMAGE

@@ -180,7 +180,7 @@ def test_delete_file():
 # @pytest.mark.parametrize('full_path', [True, False])
 # def test_get_components_list(full_path: bool) -> None:
 #     # Create a temporary directory
-#     tmp_dir = pathlib.Path('.tmpfiles')
+#     tmp_dir = pathlib.Path('.AutoMLOps-cache')
 #     try:
 #         tmp_dir.mkdir()
 #     except FileExistsError:
