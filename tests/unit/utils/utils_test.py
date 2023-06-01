@@ -70,19 +70,15 @@ def test_make_dirs_with_same_name():
     os.rmdir('dir1')
     assert not os.path.exists(directories[1])
 
-def test_make_dirs_with_same_name():
+def test_make_dirs_invalid_dir_names():
     """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
-    if they do not already exist. Checks how same directory names are handled."""
-    # Create a list of directories to create.
-    directories = ['dir1', 'dir1']
+    if they do not already exist."""
+    # Create a list of directories to create, including the invalid name.
+    directories = ['dir1', '\0']
 
-    # Call the `make_dirs` function.
-    make_dirs(directories)
-
-    # Assert that the directories were created and a duplicate does not exist.
-    assert os.path.exists(directories[0])
-    os.rmdir('dir1')
-    assert not os.path.exists(directories[1])
+    # Call the `make_dirs` function and expect ValueError.
+    with pytest.raises(ValueError):
+        make_dirs(directories)
 
 
 def test_read_yaml_file():
