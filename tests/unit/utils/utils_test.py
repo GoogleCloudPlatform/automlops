@@ -22,6 +22,7 @@ import pytest
 import yaml
 from contextlib import nullcontext as does_not_raise
 import pandas as pd
+ 
 
 from AutoMLOps.utils.utils import (
     delete_file,
@@ -54,6 +55,35 @@ def test_make_dirs():
     for directory in directories:
         assert os.path.exists(directory)
         os.rmdir(directory)
+
+def test_make_dirs_with_same_name():
+    """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
+    if they do not already exist. Checks how same directory names are handled."""
+    # Create a list of directories to create.
+    directories = ['dir1', 'dir1']
+
+    # Call the `make_dirs` function.
+    make_dirs(directories)
+
+    # Assert that the directories were created and a duplicate does not exist.
+    assert os.path.exists(directories[0])
+    os.rmdir('dir1')
+    assert not os.path.exists(directories[1])
+
+def test_make_dirs_with_same_name():
+    """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
+    if they do not already exist. Checks how same directory names are handled."""
+    # Create a list of directories to create.
+    directories = ['dir1', 'dir1']
+
+    # Call the `make_dirs` function.
+    make_dirs(directories)
+
+    # Assert that the directories were created and a duplicate does not exist.
+    assert os.path.exists(directories[0])
+    os.rmdir('dir1')
+    assert not os.path.exists(directories[1])
+
 
 def test_read_yaml_file():
     """Tests AutoMLOps.utils.utils.read_yaml_file, which reads a yaml file and 
