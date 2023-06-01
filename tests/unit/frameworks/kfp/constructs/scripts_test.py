@@ -19,7 +19,7 @@ from contextlib import nullcontext as does_not_raise
 import pandas as pd
 from AutoMLOps.frameworks.kfp.constructs.scripts import KfpScripts 
 
-@pytest.mark.skip
+# @pytest.mark.skip
 def test_init():
     """Tests the initialization of the KFPScripts class."""
     kfp_scripts = KfpScripts(

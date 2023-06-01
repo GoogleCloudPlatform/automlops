@@ -97,6 +97,21 @@ def test_read_yaml_file():
     # Remove test file
     os.remove('test.yaml')
 
+def test_read_invalid_yaml_file():
+    """Tests AutoMLOps.utils.utils.read_yaml_file with invalid syntax, which reads a yaml file and 
+    returns the file contents as a dict."""
+    # Create a yaml file.
+    with open('test.yaml', 'w', encoding='utf-8') as file:
+        yaml.dump({'key1': 'value1', False: 'random stuff'}, file)
+        yaml.dump(r"-A fails", file)
+
+    # Call the `read_yaml_file` function.
+    with pytest.raises(yaml.YAMLError):
+        read_yaml_file('test.yaml')
+        
+    # Remove test file
+    os.remove('test.yaml')
+
 def test_write_yaml_file():
     """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file."""
     # Call the `write_yaml_file` function.
