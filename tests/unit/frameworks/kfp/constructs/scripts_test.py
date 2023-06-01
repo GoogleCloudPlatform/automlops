@@ -40,7 +40,7 @@ def test_init(mock_function_a):
         default_image="gcr.io/my-project/my-image",
         gs_bucket_location="us-central1",
         gs_bucket_name="my-bucket",
-        pipeline_runner_sa="my-service-account",
+        pipeline_runner_sa="my-service-account@serviceaccount.com",
         project_id="my-project",
         run_local=False,
         schedule_location="us-central1",
