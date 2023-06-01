@@ -24,15 +24,14 @@ from AutoMLOps.utils.utils import (
     get_components_list,
     make_dirs,
     read_yaml_file,
+    is_using_kfp_spec,
     write_and_chmod,
     write_file,
     write_yaml_file
 )
 from AutoMLOps.utils.constants import (
     BASE_DIR,
-    DEFAULT_IMAGE,
     GENERATED_BUILD_COMPONENTS_SH_FILE,
-    GENERATED_CLOUDBUILD_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_COMPONENT_BASE,
     GENERATED_PIPELINE_FILE,
@@ -40,7 +39,7 @@ from AutoMLOps.utils.constants import (
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_RUN_PIPELINE_SH_FILE,
     GENERATED_RUN_ALL_SH_FILE,
-    PIPELINE_TMPFILE,
+    PIPELINE_CACHE_FILE,
     GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH
 )
@@ -53,6 +52,7 @@ def build(project_id: str,
           pipeline_params: Dict,
           af_registry_location: Optional[str],
           af_registry_name: Optional[str],
+          base_image: Optional[str],
           cb_trigger_location: Optional[str],
           cb_trigger_name: Optional[str],
           cloud_run_location: Optional[str],
@@ -69,13 +69,13 @@ def build(project_id: str,
           schedule_location: Optional[str],
           schedule_name: Optional[str],
           schedule_pattern: Optional[str],
-          use_kfp_spec: Optional[bool],
           vpc_connector: Optional[str]):
     """Constructs scripts for resource deployment and running Kubeflow pipelines.
 
     Args:
         af_registry_location: Region of the Artifact Registry.
         af_registry_name: Artifact Registry name where components are stored.
+        base_image: The image to use in the component base dockerfile.
         cb_trigger_location: The location of the cloudbuild trigger.
         cb_trigger_name: The name of the cloudbuild trigger.
         cloud_run_location: The location of the cloud runner service.
@@ -84,7 +84,6 @@ def build(project_id: str,
         cloud_tasks_queue_name: The name of the cloud tasks queue.
         csr_branch_name: The name of the csr branch to push to to trigger cb job.
         csr_name: The name of the cloud source repo to use.
-        default_image: The image to use in the dockerfile.
         gs_bucket_location: Region of the GS bucket.
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
@@ -93,16 +92,15 @@ def build(project_id: str,
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
-        base_dir: Top directory name.
         vpc_connector: The name of the vpc connector to use.
     """
 
     # Get scripts builder object
     kfp_scripts = KfpScripts(
-        af_registry_location, af_registry_name, cb_trigger_location,
+        af_registry_location, af_registry_name, base_image, cb_trigger_location,
         cb_trigger_name, cloud_run_location, cloud_run_name,
         cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
-        csr_name, DEFAULT_IMAGE, gs_bucket_location, gs_bucket_name,
+        csr_name, gs_bucket_location, gs_bucket_name,
         pipeline_runner_sa, project_id, run_local, schedule_location,
         schedule_name, schedule_pattern, BASE_DIR, vpc_connector)
 
@@ -115,18 +113,17 @@ def build(project_id: str,
     write_and_chmod(GENERATED_RUN_PIPELINE_SH_FILE, kfp_scripts.run_pipeline)
     write_and_chmod(GENERATED_RUN_ALL_SH_FILE, kfp_scripts.run_all)
 
-    # Write scripts to create resources and cloud build config
+    # Write scripts to create resources
     write_and_chmod(GENERATED_RESOURCES_SH_FILE, kfp_scripts.create_resources_script)
-    write_file(GENERATED_CLOUDBUILD_FILE, kfp_scripts.create_cloudbuild_config, 'w+')
 
     # Copy tmp pipeline file over to AutoMLOps directory
-    execute_process(f'cp {PIPELINE_TMPFILE} {GENERATED_PIPELINE_FILE}', to_null=False)
+    execute_process(f'cp {PIPELINE_CACHE_FILE} {GENERATED_PIPELINE_FILE}', to_null=False)
 
     # Create components and pipelines
     components_path_list = get_components_list()
     for path in components_path_list:
-        build_component(path, BASE_DIR, GENERATED_DEFAULTS_FILE, use_kfp_spec)
-    build_pipeline(custom_training_job_specs, GENERATED_DEFAULTS_FILE, pipeline_params, BASE_DIR)
+        build_component(path)
+    build_pipeline(custom_training_job_specs, pipeline_params)
 
     # Write dockerfile to the component base directory
     write_file(f'{GENERATED_COMPONENT_BASE}/Dockerfile', kfp_scripts.dockerfile, 'w')
@@ -136,12 +133,9 @@ def build(project_id: str,
 
     # Build the cloud run files
     if not run_local:
-        build_cloudrun(BASE_DIR, GENERATED_DEFAULTS_FILE)
+        build_cloudrun()
 
-def build_component(component_path: str,
-                    base_dir: str,
-                    defaults_file: str,
-                    use_kfp_spec: bool):
+def build_component(component_path: str):
     """Constructs and writes component.yaml and {component_name}.py files.
         component.yaml: Contains the Kubeflow custom component definition.
         {component_name}.py: Contains the python code from the Jupyter cell.
@@ -150,27 +144,24 @@ def build_component(component_path: str,
         component_path: Path to the temporary component yaml. This file
             is used to create the permanent component.yaml, and deleted
             after calling AutoMLOps.generate().
-        base_dir: Top directory name.
-        defaults_file: Path to the default config variables yaml.
-        use_kfp_spec: Flag that determines the format of the component yamls.
     """
     # Read in component specs
     component_spec = read_yaml_file(component_path)
 
     # If using kfp, remove spaces in name and convert to lowercase
-    if use_kfp_spec:
+    if is_using_kfp_spec(component_spec['implementation']['container']['image']):
         component_spec['name'] = component_spec['name'].replace(' ', '_').lower()
 
     # Set and create directory for component, and set directory for task
-    component_dir = base_dir + 'components/' + component_spec['name']
-    task_filepath = (base_dir
+    component_dir = BASE_DIR + 'components/' + component_spec['name']
+    task_filepath = (BASE_DIR
                      + 'components/component_base/src/'
                      + component_spec['name']
                      + '.py')
     make_dirs([component_dir])
 
     # Initialize component scripts builder
-    kfp_comp = KfpComponent(component_spec, defaults_file)
+    kfp_comp = KfpComponent(component_spec, GENERATED_DEFAULTS_FILE)
 
     # Write task script to component base
     write_file(task_filepath, kfp_comp.task, 'w+')
@@ -186,11 +177,8 @@ def build_component(component_path: str,
     write_file(filename, GENERATED_LICENSE, 'w')
     write_yaml_file(filename, component_spec, 'a')
 
-
 def build_pipeline(custom_training_job_specs: List[Dict],
-                   defaults_file: str,
-                   pipeline_parameter_values: dict,
-                   base_dir: str):
+                   pipeline_parameter_values: dict):
     """Constructs and writes pipeline.py, pipeline_runner.py, and pipeline_parameter_values.json files.
         pipeline.py: Generates a Kubeflow pipeline spec from custom components.
         pipeline_runner.py: Sends a PipelineJob to Vertex AI using pipeline spec.
@@ -198,19 +186,17 @@ def build_pipeline(custom_training_job_specs: List[Dict],
 
     Args:
         custom_training_job_specs: Specifies the specs to run the training job with.
-        defaults_file: Path to the default config variables yaml.
         pipeline_parameter_values: Dictionary of runtime parameters for the PipelineJob.
-        base_dir: Top directory name.
     Raises:
         Exception: If an error is encountered reading/writing to a file.
     """
     # Set paths
-    pipeline_file = base_dir + 'pipelines/pipeline.py'
-    pipeline_runner_file = base_dir + 'pipelines/pipeline_runner.py'
-    pipeline_params_file = base_dir + GENERATED_PARAMETER_VALUES_PATH
+    pipeline_file = BASE_DIR + 'pipelines/pipeline.py'
+    pipeline_runner_file = BASE_DIR + 'pipelines/pipeline_runner.py'
+    pipeline_params_file = BASE_DIR + GENERATED_PARAMETER_VALUES_PATH
 
     # Initializes pipeline scripts builder
-    kfp_pipeline = KfpPipeline(custom_training_job_specs, defaults_file)
+    kfp_pipeline = KfpPipeline(custom_training_job_specs, GENERATED_DEFAULTS_FILE)
     try:
         with open(pipeline_file, 'r+', encoding='utf-8') as file:
             pipeline_scaffold = file.read()
@@ -231,29 +217,24 @@ def build_pipeline(custom_training_job_specs: List[Dict],
     serialized_params = json.dumps(pipeline_parameter_values, indent=4)
     write_file(pipeline_params_file, serialized_params, 'w+')
 
-def build_cloudrun(base_dir: str,
-                   defaults_file: str,):
+def build_cloudrun():
     """Constructs and writes a Dockerfile, requirements.txt, and
        main.py to the cloud_run/run_pipeline directory. Also
        constructs and writes a main.py, requirements.txt, and
        pipeline_parameter_values.json to the
        cloud_run/queueing_svc directory.
-
-    Args:
-        base_dir: Top directory name.
-        defaults_file: Path to the default config variables yaml.
     """
     # Make new directories
-    make_dirs([base_dir + 'cloud_run',
-               base_dir + 'cloud_run/run_pipeline',
-               base_dir + 'cloud_run/queueing_svc'])
+    make_dirs([BASE_DIR + 'cloud_run',
+               BASE_DIR + 'cloud_run/run_pipeline',
+               BASE_DIR + 'cloud_run/queueing_svc'])
 
     # Initialize cloud run scripts object
-    cloudrun_scripts = KfpCloudRun(defaults_file)
+    cloudrun_scripts = KfpCloudRun(GENERATED_DEFAULTS_FILE)
 
     # Set new folders as variables
-    cloudrun_base = base_dir + 'cloud_run/run_pipeline'
-    queueing_svc_base = base_dir + 'cloud_run/queueing_svc'
+    cloudrun_base = BASE_DIR + 'cloud_run/run_pipeline'
+    queueing_svc_base = BASE_DIR + 'cloud_run/queueing_svc'
 
     # Write cloud run dockerfile
     write_file(f'{cloudrun_base}/Dockerfile', cloudrun_scripts.dockerfile, 'w')
@@ -267,4 +248,4 @@ def build_cloudrun(base_dir: str,
     write_file(f'{queueing_svc_base}/main.py', cloudrun_scripts.queueing_svc, 'w')
 
     # Copy runtime parameters over to queueing_svc dir
-    execute_process(f'''cp -r {base_dir + GENERATED_PARAMETER_VALUES_PATH} {base_dir + 'cloud_run/queueing_svc'}''', to_null=False)
+    execute_process(f'''cp -r {BASE_DIR + GENERATED_PARAMETER_VALUES_PATH} {BASE_DIR + 'cloud_run/queueing_svc'}''', to_null=False)

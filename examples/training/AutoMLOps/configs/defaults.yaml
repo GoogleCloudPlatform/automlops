@@ -17,6 +17,7 @@
 gcp:
   af_registry_location: us-central1
   af_registry_name: vertex-mlops-af
+  base_image: python:3.9-slim
   cb_trigger_location: us-central1
   cb_trigger_name: automlops-trigger
   cloud_run_location: us-central1
