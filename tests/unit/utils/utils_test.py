@@ -125,6 +125,14 @@ def test_write_yaml_file():
     # Remove test file
     os.remove('test.yaml')
 
+def test_write_yaml_file_invalid_filepath():
+    """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file inputting an invalid filepath."""
+    # Call the `write_yaml_file` function.
+    with pytest.raises(FileNotFoundError):
+        write_yaml_file('/nonexistent/directory', {'key1': 'value1', 'key2': 'value2'}, 'w') 
+
+def test_write_yaml_file_invalid_mode():
+    """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file. Input an invalid mode expecting an IOError."""
     # Call the `write_yaml_file` function with an invalid mode.
     with pytest.raises(IOError):
         write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'r')
