@@ -223,7 +223,7 @@ def test_get_components_list(mocker):
     """Tests the get_components_list function, which reads yamls in tmpfiles directory,
     verifies they are component yamls, and returns the name of the files."""
     # Patch tmpfiles directory with the cwd
-    mocker.patch.object(AutoMLOps.utils.utils, 'TMPFILES_DIR', '.')
+    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
     # Create a component YAML file.
     with open("component.yaml", "w") as f:
@@ -235,6 +235,29 @@ def test_get_components_list(mocker):
 
     # Delete the temporary directory.
     os.remove('component.yaml')
+
+def test_get_components_list_empty(mocker):
+    """Tests the get_components_list function, which reads yamls in tmpfiles directory,
+    verifies they are component yamls, and returns the name of the files. Verifies an empty list comes back if no YAMLs are present."""
+
+    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    assert get_components_list(full_path=False) == []
+
+def test_get_components_list_invalid_dir():
+    """Tests the get_components_list function, which reads yamls in tmpfiles directory,
+    verifies they are component yamls, and returns the name of the files. Call function with a nonexistent dir, expecting OSError."""
+
+    # Create a component YAML file.
+    with open("component.yaml", "w") as f:
+        yaml.dump({'name': 'value1', 'inputs': 'value2', 'implementation': 'value3'}, f)
+
+    # Assert that calling get_components_list with an invalid directory raises FileNotFoundError
+    with pytest.raises(FileNotFoundError):
+        get_components_list(full_path=False) == ["component"]
+
+    # Delete the temporary directory.
+    os.remove('component.yaml')
+
 
 @pytest.mark.parametrize(
     'yaml_contents, expected',
