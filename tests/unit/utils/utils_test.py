@@ -152,6 +152,12 @@ def test_read_file():
     # Remove test file
     os.remove('test.txt')
 
+def test_read_file_invalid_path():
+    """Tests AutoMLOps.utils.utils.read_file, which writes a dictionary to a yaml file. Expects FileError from passing invalid filepath"""
+    # Call the `read_file` function with nonexistent file and expect FileNotFound Error.
+    with pytest.raises(FileNotFoundError):
+        read_file('fail') 
+
 def test_write_file():
     """Tests AutoMLOps.utils.utils.write_file, which writes a file at the specified path."""
     # Create a file.
