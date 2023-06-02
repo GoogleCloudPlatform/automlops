@@ -161,8 +161,7 @@ def test_read_file_invalid_path():
 def test_write_file():
     """Tests AutoMLOps.utils.utils.write_file, which writes a file at the specified path."""
     # Create a file.
-    with open('test.txt', 'w', encoding='utf-8') as file:
-        file.write('This is a test file.')
+    open('test.txt', 'w', encoding='utf-8')
 
     # Call the `write_file` function.
     write_file('test.txt', 'This is a test file.', 'w')
@@ -178,6 +177,10 @@ def test_write_file():
     # Remove test file
     os.remove('test.txt')
 
+    
+def test_write_file_invalid_path():
+    """Tests AutoMLOps.utils.utils.write_file, which writes a file at the specified path.
+    Expect OSError passing an invalid filepath."""
     # Call the `write_file` function with an invalid file path.
     with pytest.raises(OSError):
         write_file(15, 'This is a test file.', 'w')
