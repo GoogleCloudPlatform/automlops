@@ -291,6 +291,11 @@ def test_execute_process():
     assert os.path.exists('test.txt')
     os.remove('test.txt')
 
+def test_execute_process_invalid_command(): 
+    """Tests execute_process function, which executes an external shell process. Runs an invalid command, expecting error."""
+    with pytest.raises(RuntimeError):
+        execute_process('not a real command', to_null=False)
+
 @pytest.mark.parametrize(
     'sch_pattern, run_loc, raises_error',
     [
