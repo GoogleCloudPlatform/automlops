@@ -335,10 +335,16 @@ def func2(x, y):
     return x + y
 def func3(x, y, z):
     return x + y + z
+def func4():
+    def inner_func():
+        res = 1+1
+    return inner_func()
+
 @pytest.mark.parametrize("func, expected", [
     (func1, "def func1(x):\n    return x + 1\n"),
     (func2, "def func2(x, y):\n    return x + y\n"),
-    (func3, "def func3(x, y, z):\n    return x + y + z\n")
+    (func3, "def func3(x, y, z):\n    return x + y + z\n"),
+    (func4, "def func4():\n    def inner_func():\n        res = 1+1\n    return inner_func()\n")
 ])
 def test_get_function_source_definition(func, expected):
     """Tests the get_function_source_definition function, which returns a formatted string
