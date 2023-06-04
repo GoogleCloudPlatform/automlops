@@ -353,10 +353,12 @@ def test_get_function_source_definition(func, expected):
 
 @pytest.mark.parametrize("job_spec, expected", [
     ({"component_spec": "train_model"}, "{\n       'component_spec': train_model,\n    }\n"),
-    ({"component_spec": "train_model", "other_spec": "other_value"}, "{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n")
+    ({"component_spec": "train_model", "other_spec": "other_value"}, "{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n"),
+    ({}, "{\n    \n    }\n"), 
+    ({"{": "}"},"{\n       '{': '}',\n    }\n" )
 ])
 def test_format_spec_dict(job_spec, expected):
-    """Tests the format_spec_dict function, which takes in a spec dictionary dictionary and removes the quotes
+    """Tests the format_spec_dict function, which takes in a spec dictionary and removes the quotes
     around the component op name."""
 
     # Format the spec dict.
