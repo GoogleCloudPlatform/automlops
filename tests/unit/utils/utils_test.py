@@ -18,9 +18,10 @@
 # pylint: disable=missing-function-docstring
 
 import os
-import pathlib
 import pytest
 import yaml
+from contextlib import nullcontext as does_not_raise
+import pandas as pd
 
 from AutoMLOps.utils.utils import (
     delete_file,
@@ -30,29 +31,19 @@ from AutoMLOps.utils.utils import (
     write_and_chmod,
     write_file,
     write_yaml_file,
+    get_components_list,
+    is_component_config,
+    execute_process, 
+    validate_schedule,
+    update_params,
+    get_function_source_definition,
+    format_spec_dict
 )
-
-@pytest.fixture
-def write_yaml():
-    file_path = pathlib.Path('testing.yaml')
-    file_path.write_text(
-    '# ===================================================\n'
-    '# Test Yaml File'
-    '# ===================================================\n'
-    '\n'
-    'Test1:\n'
-    '  - name: "my_name1"\n'
-    '    id: "my_id1"\n'
-    '    description: my_description1'
-    '\n'
-    'Test2:\n'
-    '  - name: "my_name2"\n'
-    '    id: "my_id2"\n'
-    '    description: my_description2', encoding='utf-8')
-    yield file_path
-    file_path.unlink()
+import AutoMLOps.utils.utils
 
 def test_make_dirs():
+    """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
+    if they do not already exist."""
     # Create a list of directories to create.
     directories = ['dir1', 'dir2']
 
@@ -65,6 +56,8 @@ def test_make_dirs():
         os.rmdir(directory)
 
 def test_read_yaml_file():
+    """Tests AutoMLOps.utils.utils.read_yaml_file, which reads a yaml file and 
+    returns the file contents as a dict."""
     # Create a yaml file.
     with open('test.yaml', 'w', encoding='utf-8') as file:
         yaml.dump({'key1': 'value1', 'key2': 'value2'}, file)
@@ -79,7 +72,7 @@ def test_read_yaml_file():
     os.remove('test.yaml')
 
 def test_write_yaml_file():
-
+    """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file."""
     # Call the `write_yaml_file` function.
     write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'w')
 
@@ -88,16 +81,15 @@ def test_write_yaml_file():
         file_dict = yaml.safe_load(file)
     assert file_dict == {'key1': 'value1', 'key2': 'value2'}
 
+    # Remove test file
+    os.remove('test.yaml')
+
     # Call the `write_yaml_file` function with an invalid mode.
     with pytest.raises(IOError):
         write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'r')
 
-    # Remove test file
-    os.remove('test.yaml')
-
-    # This still works for an invalid content and file path parameter, is that right?
-
 def test_read_file():
+    """Tests AutoMLOps.utils.utils.read_file, which writes a dictionary to a yaml file."""
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -111,12 +103,8 @@ def test_read_file():
     # Remove test file
     os.remove('test.txt')
 
-    # THIS SHOULD WORK BUT IT DOESN'T
-    # Call the `read_file` function with an invalid file path.
-    #with pytest.raises(FileNotFoundError):
-    #    read_file('invalid_file_path.txt')
-
 def test_write_file():
+    """Tests AutoMLOps.utils.utils.write_file, which writes a file at the specified path."""
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -140,6 +128,8 @@ def test_write_file():
         write_file(15, 'This is a test file.', 'w')
 
 def test_write_and_chmod():
+    """Tests AutoMLOps.utils.utils.write_and_chmod, which writes a file at the specified path
+    and chmods the file to allow for execution"""
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -151,15 +141,16 @@ def test_write_and_chmod():
     assert os.path.exists('test.txt')
     assert os.access('test.txt', os.X_OK)
 
+    # Assert that the contents of the file are correct.
+    with open('test.txt', 'r', encoding='utf-8') as file:
+        contents = file.read()
+    assert contents == 'This is a test file.'
+
     # Delete the file.
     os.remove('test.txt')
 
-    # THIS SHOULDN'T WORK BUT IT DOES
-    # Call the `write_and_chmod` function with an invalid file path.
-    #with pytest.raises(OSError):
-    #    write_and_chmod('invalid_file_path.txt', 'This is a test file.')
-
 def test_delete_file():
+    """Tests AutoMLOps.utils.utils.delete_file, which deletes a file at the specified path."""
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -170,226 +161,114 @@ def test_delete_file():
     # Assert that the file does not exist.
     assert not os.path.exists('test.txt')
 
-    # THIS SHOULD WORK BUT IT DOESN'T
-    # Call the `delete_file` function with an invalid file path.
+def test_get_components_list(mocker):
+    """Tests the get_components_list function, which reads yamls in tmpfiles directory,
+    verifies they are component yamls, and returns the name of the files."""
+    # Patch tmpfiles directory with the cwd
+    mocker.patch.object(AutoMLOps.utils.utils, 'TMPFILES_DIR', '.')
 
-    #with pytest.raises(OSError):
-    #    delete_file('invalid_file_path.txt')
+    # Create a component YAML file.
+    with open("component.yaml", "w") as f:
+        yaml.dump({'name': 'value1', 'inputs': 'value2', 'implementation': 'value3'}, f)
 
-# TBD
-# @pytest.mark.parametrize('full_path', [True, False])
-# def test_get_components_list(full_path: bool) -> None:
-#     # Create a temporary directory
-#     tmp_dir = pathlib.Path('.AutoMLOps-cache')
-#     try:
-#         tmp_dir.mkdir()
-#     except FileExistsError:
-#         pass
+    # Assert that the returned list contains the expected path.
+    assert get_components_list(full_path=False) == ["component"]
+    assert get_components_list(full_path=True) == [os.path.join(".", "component.yaml")]
 
-#     # Create some component yaml files
-#     component_yaml_1 = tmp_dir / 'component_1.yaml'
-#     component_yaml_1.write_text('name: example_component\ndescription: Custom component that takes in a BQ table and writes it to GCS.')
-#     component_yaml_2 = tmp_dir / 'component_2.yml'
-#     component_yaml_2.write_text('name: example_component_2\ndescription: Custom component that trains a decision tree on the training data.')
+    # Delete the temporary directory.
+    os.remove('component.yaml')
 
-#     # Get the list of component yaml files
-#     components_list = get_components_list(full_path)
-#     print(components_list)
+@pytest.mark.parametrize(
+    'yaml_contents, expected',
+    [
+        (
+            {
+                'name': 'value1',
+                'inputs': 'value2', 
+                'implementation': 'value3'
+            }, 
+            True),
+        (
+            {
+                'name': 'value1', 
+                'inputs': 'value2'
+            },
+            False)
+    ]
+)
+def test_is_component_config(yaml_contents, expected):
+    """Tests the is_component_config function, which checks to see if the given file is
+    a component yaml."""
+    with open("component.yaml", "w") as f:
+        yaml.dump(yaml_contents, f)
+    assert expected == is_component_config("component.yaml")
+    os.remove("component.yaml")
 
-#     # Check that the list contains the correct files
-#     if full_path:
-#         assert components_list == [tmp_dir / 'component_1.yaml', tmp_dir / 'component_2.yml']
-#     else:
-#         assert components_list == ['component_1', 'component_2']
+def test_execute_process():
+    """Tests execute_process function, which executes an external shell process."""
+    execute_process('touch test.txt', to_null=False)
+    assert os.path.exists('test.txt')
+    os.remove('test.txt')
 
-#     # Clean up the the temporary directory
-#     tmp_dir.rmdir()
+@pytest.mark.parametrize(
+    'sch_pattern, run_loc, raises_error',
+    [
+        ('No Schedule Specified', True, False), 
+        ('No Schedule Specified', False, False), 
+        ('Schedule', True, True), 
+        ('Schedule', False, False)
+    ])
+def test_validate_schedule(sch_pattern, run_loc, raises_error):
+    """ Tests validate_schedule function, which validates the inputted schedule parameter."""
+    if raises_error:
+        with pytest.raises(ValueError):
+            validate_schedule(schedule_pattern=sch_pattern, run_local=run_loc)
+    else:
+        assert validate_schedule(schedule_pattern=sch_pattern, run_local=run_loc) is None
 
+@pytest.mark.parametrize("params, expected", [
+    ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
+    ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
+    ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
+    ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Bool'}]),
+    ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'List'}]),
+    ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'Dict'}]),
+    ([{'name': 'param6', 'type': pd.DataFrame}], None)
+])
+def test_update_params(params, expected):
+    """Tests the update_params function, which reformats the source code type labels as strings."""
+    if expected is not None:
+        assert expected == update_params(params)
+    else:
+        with pytest.raises(ValueError):
+            assert update_params(params)
 
+def func1(x):
+    return x + 1
+def func2(x, y):
+    return x + y
+def func3(x, y, z):
+    return x + y + z
+@pytest.mark.parametrize("func, expected", [
+    (func1, "def func1(x):\n    return x + 1\n"),
+    (func2, "def func2(x, y):\n    return x + y\n"),
+    (func3, "def func3(x, y, z):\n    return x + y + z\n")
+])
+def test_get_function_source_definition(func, expected):
+    """Tests the get_function_source_definition function, which returns a formatted string
+    of the source code."""
+    assert expected == get_function_source_definition(func)
 
+@pytest.mark.parametrize("job_spec, expected", [
+    ({"component_spec": "train_model"}, "{\n       'component_spec': train_model,\n    }\n"),
+    ({"component_spec": "train_model", "other_spec": "other_value"}, "{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n")
+])
+def test_format_spec_dict(job_spec, expected):
+    """Tests the format_spec_dict function, which takes in a spec dictionary dictionary and removes the quotes
+    around the component op name."""
 
+    # Format the spec dict.
+    formatted_spec = format_spec_dict(job_spec)
 
-
-
-
-
-
-
-
-
-# def test_read_yaml_file(write_yaml):
-
-#     assert(read_yaml_file(write_yaml) ==
-#            {'Test1' : [
-#                {
-#                    'name': 'my_name1',
-#                    'id': 'my_id1',
-#                    'description': 'my_description1'
-#                 }
-#                ],
-#             'Test2': [
-#                 {
-#                     'name': 'my_name2',
-#                     'id': 'my_id2',
-#                     'description': 'my_description2'
-#                 }
-#             ]})
-
-# def test_write_yaml_file():
-#     assert True
-
-# def test_read_file():
-#     assert True
-
-# def test_write_file():
-#     assert True
-
-# def test_write_and_chmod():
-#     assert True
-
-# def test_delete_file():
-#     assert True
-
-# def test_get_components_list():
-#     assert True
-
-# def test_is_component_config():
-#     assert True
-
-# def test_execute_script():
-#     assert True
-
-# def test_validate_schedule():
-
-#     # Check that error is raised when it should be
-#     with pytest.raises(Exception, match='run_local must be set to False to use Cloud Scheduler.'):
-#         validate_schedule(schedule_pattern="*",
-#                                        run_local=True)
-
-#     # Check that error is not raised when it shouldn't be
-#     validate_schedule(schedule_pattern="*",
-#                                    run_local=False)
-
-#     validate_schedule(schedule_pattern="No Schedule Specified",
-#                                    run_local=True)
-
-#     validate_schedule(schedule_pattern="No Schedule Specified",
-#                                    run_local=False)
-
-# def test_validate_name():
-
-#     # Check that an error is raised when it should be
-#     with pytest.raises(Exception, match="Pipeline and Component names must be of type string."):
-#         validate_name(name=10)
-
-#     # Check that error is not raised when it shouldn't be
-#     validate_name(name="My Name")
-
-# def test_validate_params():
-
-#     # Test for user providing a value for 'name' that is not a string
-#     with pytest.raises(Exception, match = 'Parameter name must be of type string.'):
-#         validate_params([
-#             {
-#                 'name': 1,
-#                 'type': str,
-#                 'description': 'my_description'
-#             }
-#         ])
-
-#     # Test for user providing a value for 'type' that is not a valid python type
-#     with pytest.raises(Exception, match = 'Parameter type must be a valid python type.'):
-#         validate_params([
-#             {
-#                 'name': 'my_name',
-#                 'type': 1,
-#                 'description': 'my_description'
-#             }
-#         ])
-
-#     # Test for user missing a required parameter value
-#     with pytest.raises(Exception, match = "Parameter {'name': 'my_name', 'description': 'my_description'} does not contain required keys. 'type'"):
-#         validate_params([
-#             {
-#                 'name': 'my_name',
-#                 'description': 'my_description'
-#             }
-#         ])
-
-#     # don't think this can be tested
-#     validate_params([
-#             {
-#                 'name': 'my_name',
-#                 'name': ',ajksdfj',
-#                 'type': int,
-#                 'type': float
-#             }
-#         ])
-
-#     # Test that a correct list of dictionaries passes as expected
-#     validate_params([
-#         {
-#             'name': 'my_name',
-#             'type': str,
-#             'description': 'my_description'
-#         }
-#     ])
-
-# def test_validate_pipeline_structure():
-#     assert True
-
-# def test_update_params():
-
-#     # Test for an exception with an incorrect value for 'type'
-#     with pytest.raises(Exception):
-#         update_params([
-#             {
-#                 'name': 'my_name_1',
-#                 'type': str,
-#                 'description': 'my_description_1'
-#             },
-#             {
-#                 'name': 'my_name_2',
-#                 'type': 10
-#             }
-#         ])
-
-#     # Test for an exception with an incorrect value for 'type'
-#     with pytest.raises(Exception):
-#         update_params([
-#             {
-#                 'name': 'my_name_1',
-#                 'type': str,
-#                 'description': 'my_description_1'
-#             },
-#             {
-#                 'name': 'my_name_2',
-#                 'type': 'wrong_type'
-#             }
-#         ])
-
-#     # Test that correctly formatted parameters will pass
-#     update_params([
-#         {
-#             'name': 'my_name_1',
-#             'type': str,
-#             'description': 'my_description_1'
-#         },
-#         {
-#             'name': 'my_name_2',
-#             'type': int
-#         }
-#     ])
-
-#     # Test that correctly formatted parameters will pass
-#     update_params([
-#         {
-#             'name': 'my_name_1',
-#             'type': str,
-#             'description': 'my_description_1'
-#         },
-#         {
-#             'name': 'my_name_2',
-#             'type': float
-#         }
-#     ])
+    # Assert that the formatted spec is equal to the expected value.
+    assert formatted_spec == expected

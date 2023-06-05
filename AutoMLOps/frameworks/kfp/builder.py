@@ -136,6 +136,7 @@ def build(project_id: str,
         build_cloudrun()
 
 def build_component(component_path: str):
+
     """Constructs and writes component.yaml and {component_name}.py files.
         component.yaml: Contains the Kubeflow custom component definition.
         {component_name}.py: Contains the python code from the Jupyter cell.
