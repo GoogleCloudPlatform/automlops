@@ -74,7 +74,7 @@ def test_make_dirs_invalid_dir_names():
     """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
     if they do not already exist."""
     # Create a list of directories to create, including the invalid name.
-    directories = ['dir1', '\0']
+    directories = ['\0']
 
     # Call the `make_dirs` function and expect ValueError.
     with pytest.raises(ValueError):
