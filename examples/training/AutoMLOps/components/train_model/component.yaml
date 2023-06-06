@@ -13,14 +13,16 @@
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
 name: train_model
-description: Custom component that trains a decision tree on the training data.
 inputs:
-- name: data_path
-  description: GS location where the training data.
+- name: output_model_directory
   type: String
-- name: model_directory
-  description: GS location of saved model.
-  type: String
+- name: dataset
+  type: Dataset
+outputs:
+- name: metrics
+  type: Metrics
+- name: model
+  type: Model
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
