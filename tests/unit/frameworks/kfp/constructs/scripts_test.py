@@ -18,6 +18,7 @@ import AutoMLOps.utils.constants
 from AutoMLOps.utils.utils import (
     execute_process
 )
+import os
 from mock import patch
 import mock
 from AutoMLOps.utils.constants import (
@@ -33,10 +34,11 @@ from AutoMLOps.utils.constants import (
 def test_init(mocker):
     """Tests the initialization of the KFPScripts class."""
     
-    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts, 'GENERATED_COMPONENT_BASE', '.')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts, 'GENERATED_COMPONENT_BASE', 'test_temp_dir')
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    os.makedirs("test_temp_dir")
 
-    with open('requirements.txt', 'w') as f:
+    with open('test_temp_dir/requirements.txt', 'w') as f:
         f.write('')
     with mock.patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process', return_value=""):
         kfp_scripts = KfpScripts(
@@ -308,3 +310,5 @@ def test_init(mocker):
             f'  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${LEFT_BRACKET}CLOUD_SOURCE_REPO{RIGHT_BRACKET}"\n'
             f'\n'
             f'fi\n')
+    os.remove("test_temp_dir/requirements.txt")
+    os.rmdir("test_temp_dir")
