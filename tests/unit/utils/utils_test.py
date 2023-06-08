@@ -18,12 +18,12 @@
 # pylint: disable=missing-function-docstring
 
 import os
+import pandas as pd
 import pytest
 import yaml
-from contextlib import nullcontext as does_not_raise
-import pandas as pd
- 
+from contextlib import nullcontext as does_not_raise 
 
+import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import (
     delete_file,
     make_dirs,
@@ -40,154 +40,171 @@ from AutoMLOps.utils.utils import (
     get_function_source_definition,
     format_spec_dict
 )
-import AutoMLOps.utils.utils
 
-def test_make_dirs():
-    """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
-    if they do not already exist."""
-    # Create a list of directories to create.
-    directories = ['dir1', 'dir2']
+@pytest.mark.parametrize(
+    'directories, existance, expectation',
+    [
+        (['dir1', 'dir2'], [True, True], does_not_raise()),
+        (['dir1', 'dir1'], [True, False], does_not_raise()),
+        (['dir1', '\0'], [True, True], pytest.raises(ValueError))
+    ]
+)
+def test_make_dirs(directories, existance, expectation):
+    """Tests make_dirs, which creates a list of directories 
+    if they do not already exist. There are three test cases 
+    for this function:
+        1. Expected outcome, folders created as expected.
+        2. Duplicate folder names given, expecting only one 
+            folder created.
+        3. Invalid folder name given, expects an error.
 
-    # Call the `make_dirs` function.
-    make_dirs(directories)
+    Args:
+        directories: List of directories to be created.
+        existance: List of booleans indicating whether the 
+            listed directories to be created are expected to
+            exist after invoking make_dirs.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
+    with expectation:
+        make_dirs(directories=directories)
+        for dir, exist in zip(directories, existance):
+            assert os.path.exists(dir) == exist
+            if exist:
+                os.rmdir(dir)
 
-    # Assert that the directories were created.
-    for directory in directories:
-        assert os.path.exists(directory)
-        os.rmdir(directory)
+@pytest.mark.parametrize(
+    'filepath, content1, content2, expectation',
+    [
+        ('test.yaml', {'key1': 'value1', 'key2': 'value2'}, None, does_not_raise()),
+        ('test.yaml', {'key1': 'value1', False: 'random stuff'}, r"-A fails", pytest.raises(yaml.YAMLError))
+    ]
+)
+def test_read_yaml_file(filepath, content1, content2, expectation):
+    """Tests read_yaml_file, which reads a yaml file and returns
+    the file contents as a dict. There are two sets of test cases for
+    this function:
+        1. Expected outcome, file read in with correct content.
+        2. File to be read is not in standard yaml format, expects 
+            a yaml error.
 
-def test_make_dirs_with_same_name():
-    """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
-    if they do not already exist. Checks how same directory names are handled."""
-    # Create a list of directories to create.
-    directories = ['dir1', 'dir1']
+    Args:
+        filepath: Path to yaml file to be read.
+        content1: First set of content to be included in the yaml 
+            at the given file path.
+        content2: Second set of content to be included in the yaml
+            at the given file path.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
+    with open(file=filepath, mode='w', encoding='utf-8') as file:
+        if content1:
+            yaml.dump(content1, file)
+        if content2:
+            yaml.dump(content2, file)
+    with expectation:
+        assert read_yaml_file(filepath=filepath) == content1
+    os.remove(path=filepath)
 
-    # Call the `make_dirs` function.
-    make_dirs(directories)
+@pytest.mark.parametrize(
+    'filepath, mode, expectation',
+    [
+        ('test.yaml', 'w', does_not_raise()),
+        ('/nonexistent/directory', 'w',  pytest.raises(FileNotFoundError)),
+        ('test.yaml', 'r', pytest.raises(IOError))
+    ]
+)
+def test_write_yaml(filepath, mode, expectation):
+    """Tests write_yaml_file, which writes a yaml file. There are three
+    sets of test cases for this function:
+            1. Expected outcome, yaml is written correctly.
+            2. Invalid file path given, expecting a FileNotFoundError.
+            3. Invalid mode given, expecting an IOError.
 
-    # Assert that the directories were created and a duplicate does not exist.
-    assert os.path.exists(directories[0])
-    os.rmdir('dir1')
-    assert not os.path.exists(directories[1])
+    Args:
+        filepath: Path for yaml file to be written.
+        mode: Read/write mode to be used.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
+    contents = {'key1': 'value1', 'key2': 'value2'}
+    with expectation: 
+        write_yaml_file(
+            filepath=filepath,
+            contents=contents,
+            mode=mode
+        )
+        with open(file=filepath, mode='r', encoding='utf-8') as file:
+            yaml.safe_load(filepath) == contents
+        os.remove(path=filepath)
 
-def test_make_dirs_invalid_dir_names():
-    """Tests AutoMLOps.utils.utils.make_dirs, which creates a list of directories
-    if they do not already exist."""
-    # Create a list of directories to create, including the invalid name.
-    directories = ['dir1', '\0']
+@pytest.mark.parametrize(
+    'filepath, text, write_file, expectation',
+    [
+        ('test.txt', 'This is a text file.', True, does_not_raise()),
+        ('fail', '', False, pytest.raises(FileNotFoundError))
+    ]
+)
+def test_read_file(filepath, text, write_file, expectation):
+    """Tests read_file, which reads a text file in as a string. There
+    are two sets of test cases for this function:
+        1. Expected outcome, file is read correctly.
+        2. Invalid file path given (file was not written), expecting 
+            a FileNotFoundError.
 
-    # Call the `make_dirs` function and expect ValueError.
-    with pytest.raises(ValueError):
-        make_dirs(directories)
+    Args:
+        filepath: Path for file to be read from.
+        text: Text expected to be read from the given file.
+        write_file: Whether or not the file should be written for this 
+            test case.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
+    if write_file:
+        with open(file=filepath, mode='w', encoding='utf-8') as file:
+            file.write(text)
+    with expectation:
+        assert read_file(filepath=filepath) == text
+    if os.path.exists(filepath):
+        os.remove(filepath)
 
+@pytest.mark.parametrize(
+    'filepath, text, mode, expectation',
+    [
+        ('test.txt', 'This is a test file.', 'w', does_not_raise()),
+        (15, 'This is a test file.', 'w', pytest.raises(OSError))
+    ]
+)
+def test_write_file(filepath, text, mode, expectation):
+    """Tests write_file, which writes a string to a text file. There
+    are two test cases for this function:
+        1. Expected outcome, file is written as expected.
+        2. Invalid file path given (file was not written), expecting 
+            an OSError.
 
-def test_read_yaml_file():
-    """Tests AutoMLOps.utils.utils.read_yaml_file, which reads a yaml file and 
-    returns the file contents as a dict."""
-    # Create a yaml file.
-    with open('test.yaml', 'w', encoding='utf-8') as file:
-        yaml.dump({'key1': 'value1', 'key2': 'value2'}, file)
-
-    # Call the `read_yaml_file` function.
-    file_dict = read_yaml_file('test.yaml')
-
-    # Assert that the file_dict contains the expected values.
-    assert file_dict == {'key1': 'value1', 'key2': 'value2'}
-
-    # Remove test file
-    os.remove('test.yaml')
-
-def test_read_invalid_yaml_file():
-    """Tests AutoMLOps.utils.utils.read_yaml_file with invalid syntax, which reads a yaml file and 
-    returns the file contents as a dict."""
-    # Create a yaml file.
-    with open('test.yaml', 'w', encoding='utf-8') as file:
-        yaml.dump({'key1': 'value1', False: 'random stuff'}, file)
-        yaml.dump(r"-A fails", file)
-
-    # Call the `read_yaml_file` function.
-    with pytest.raises(yaml.YAMLError):
-        read_yaml_file('test.yaml')
-        
-    # Remove test file
-    os.remove('test.yaml')
-
-def test_write_yaml_file():
-    """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file."""
-    # Call the `write_yaml_file` function.
-    write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'w')
-
-    # Assert that the file contains the expected values.
-    with open('test.yaml', 'r', encoding='utf-8') as file:
-        file_dict = yaml.safe_load(file)
-    assert file_dict == {'key1': 'value1', 'key2': 'value2'}
-
-    # Remove test file
-    os.remove('test.yaml')
-
-def test_write_yaml_file_invalid_filepath():
-    """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file inputting an invalid filepath."""
-    # Call the `write_yaml_file` function.
-    with pytest.raises(FileNotFoundError):
-        write_yaml_file('/nonexistent/directory', {'key1': 'value1', 'key2': 'value2'}, 'w') 
-
-def test_write_yaml_file_invalid_mode():
-    """Tests AutoMLOps.utils.utils.write_yaml_file, which writes a yaml file. Input an invalid mode expecting an IOError."""
-    # Call the `write_yaml_file` function with an invalid mode.
-    with pytest.raises(IOError):
-        write_yaml_file('test.yaml', {'key1': 'value1', 'key2': 'value2'}, 'r')
-
-def test_read_file():
-    """Tests AutoMLOps.utils.utils.read_file, which writes a dictionary to a yaml file."""
-    # Create a file.
-    with open('test.txt', 'w', encoding='utf-8') as file:
-        file.write('This is a test file.')
-
-    # Call the `read_file` function.
-    contents = read_file('test.txt')
-
-    # Assert that the contents of the file are correct.
-    assert contents == 'This is a test file.'
-
-    # Remove test file
-    os.remove('test.txt')
-
-def test_read_file_invalid_path():
-    """Tests AutoMLOps.utils.utils.read_file, which writes a dictionary to a yaml file. Expects FileError from passing invalid filepath"""
-    # Call the `read_file` function with nonexistent file and expect FileNotFound Error.
-    with pytest.raises(FileNotFoundError):
-        read_file('fail') 
-
-def test_write_file():
-    """Tests AutoMLOps.utils.utils.write_file, which writes a file at the specified path."""
-    # Create a file.
-    open('test.txt', 'w', encoding='utf-8')
-
-    # Call the `write_file` function.
-    write_file('test.txt', 'This is a test file.', 'w')
-
-    # Assert that the file exists.
-    assert os.path.exists('test.txt')
-
-    # Assert that the contents of the file are correct.
-    with open('test.txt', 'r', encoding='utf-8') as file:
-        contents = file.read()
-    assert contents == 'This is a test file.'
-
-    # Remove test file
-    os.remove('test.txt')
-
-    
-def test_write_file_invalid_path():
-    """Tests AutoMLOps.utils.utils.write_file, which writes a file at the specified path.
-    Expect OSError passing an invalid filepath."""
-    # Call the `write_file` function with an invalid file path.
-    with pytest.raises(OSError):
-        write_file(15, 'This is a test file.', 'w')
+    Args:
+        filepath: Path for file to be written.
+        text: Content to be written to the file at the given filepath.
+        mode: Read/write mode to be used.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
+    with expectation:
+        write_file(
+            filepath=filepath,
+            text=text,
+            mode=mode
+        )
+        assert os.path.exists(filepath)
+        with open(filepath, 'r', encoding='utf-8') as file:
+            assert text == file.read()
+        os.remove(filepath)
 
 def test_write_and_chmod():
-    """Tests AutoMLOps.utils.utils.write_and_chmod, which writes a file at the specified path
-    and chmods the file to allow for execution"""
+    """Tests write_and_chmod, which writes a file at the  
+    specified path and chmods the file to allow for 
+    execution.
+    """
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -203,12 +220,11 @@ def test_write_and_chmod():
     with open('test.txt', 'r', encoding='utf-8') as file:
         contents = file.read()
     assert contents == 'This is a test file.'
-
-    # Delete the file.
     os.remove('test.txt')
 
 def test_delete_file():
-    """Tests AutoMLOps.utils.utils.delete_file, which deletes a file at the specified path."""
+    """Tests delete_file, which deletes a file at the 
+    specified path."""
     # Create a file.
     with open('test.txt', 'w', encoding='utf-8') as file:
         file.write('This is a test file.')
@@ -219,45 +235,42 @@ def test_delete_file():
     # Assert that the file does not exist.
     assert not os.path.exists('test.txt')
 
-def test_get_components_list(mocker):
-    """Tests the get_components_list function, which reads yamls in tmpfiles directory,
-    verifies they are component yamls, and returns the name of the files."""
+@pytest.mark.parametrize(
+    'comp_path, comp_name, patch_cwd, expectation',
+    [
+        (['component.yaml'], ['component'], True, does_not_raise()),
+        ([], [], True, does_not_raise()),
+        (['component.yaml'], ['component'], False, pytest.raises(FileNotFoundError))
+    ]
+)
+def test_get_components_list(mocker, comp_path, comp_name, patch_cwd, expectation):
+    """Tests get_components_list, which reads yamls in tmpfiles directory, 
+    verifies they are component yamls, and returns the name of the files.
+    There are three test cases for this function:
+        1. Expected outcome, component list is pulled as expected.
+        2. Verifies an empty list comes back if no YAMLs are present.
+        3. Call function with a nonexistent dir, expecting OSError.
+
+    Args:
+        mocker: Mocker to patch the cache directory for component files.
+        comp_path: Path(s) to component yamls.
+        comp_name: Name(s) of components.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
     # Patch tmpfiles directory with the cwd
-    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
-
-    # Create a component YAML file.
-    with open("component.yaml", "w") as f:
-        yaml.dump({'name': 'value1', 'inputs': 'value2', 'implementation': 'value3'}, f)
-
-    # Assert that the returned list contains the expected path.
-    assert get_components_list(full_path=False) == ["component"]
-    assert get_components_list(full_path=True) == [os.path.join(".", "component.yaml")]
-
-    # Delete the temporary directory.
-    os.remove('component.yaml')
-
-def test_get_components_list_empty(mocker):
-    """Tests the get_components_list function, which reads yamls in tmpfiles directory,
-    verifies they are component yamls, and returns the name of the files. Verifies an empty list comes back if no YAMLs are present."""
-
-    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
-    assert get_components_list(full_path=False) == []
-
-def test_get_components_list_invalid_dir():
-    """Tests the get_components_list function, which reads yamls in tmpfiles directory,
-    verifies they are component yamls, and returns the name of the files. Call function with a nonexistent dir, expecting OSError."""
-
-    # Create a component YAML file.
-    with open("component.yaml", "w") as f:
-        yaml.dump({'name': 'value1', 'inputs': 'value2', 'implementation': 'value3'}, f)
-
-    # Assert that calling get_components_list with an invalid directory raises FileNotFoundError
-    with pytest.raises(FileNotFoundError):
-        get_components_list(full_path=False) == ["component"]
-
-    # Delete the temporary directory.
-    os.remove('component.yaml')
-
+    if patch_cwd:
+        mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    if comp_path:
+        for file in comp_path:
+            with open(file, 'w') as f:
+                yaml.dump({'name': 'value1', 'inputs': 'value2', 'implementation': 'value3'}, f)
+    with expectation:
+        assert get_components_list(full_path=False) == comp_name
+        assert get_components_list(full_path=True) == [os.path.join('.', file) for file in comp_path]
+    for file in comp_path:
+        if os.path.exists(file):
+            os.remove(file)
 
 @pytest.mark.parametrize(
     'yaml_contents, expected',
@@ -268,66 +281,105 @@ def test_get_components_list_invalid_dir():
                 'inputs': 'value2', 
                 'implementation': 'value3'
             }, 
-            True),
+            True
+        ),
         (
             {
                 'name': 'value1', 
                 'inputs': 'value2'
             },
-            False)
+            False
+        )
     ]
 )
 def test_is_component_config(yaml_contents, expected):
-    """Tests the is_component_config function, which checks to see if the given file is
-    a component yaml."""
+    """Tests is_component_config, which which checks to see if the given 
+    file is a component yaml. There are two test cases for this function:
+        1. A valid component is given, expecting return value True.
+        2. An invalid component is given, expecting return value False.
+
+    Args:
+        yaml_contents: Component configurations to be written to yaml file.
+        expected: Expectation of whether or not the configuration is valid.
+    """
     with open("component.yaml", "w") as f:
         yaml.dump(yaml_contents, f)
     assert expected == is_component_config("component.yaml")
     os.remove("component.yaml")
 
-def test_execute_process():
-    """Tests execute_process function, which executes an external shell process."""
-    execute_process('touch test.txt', to_null=False)
-    assert os.path.exists('test.txt')
-    os.remove('test.txt')
+@pytest.mark.parametrize(
+    'command, expectation',
+    [
+        ('touch test.txt', False),
+        ('not a real command', True)
+    ]
+)
+def test_execute_process(command, raises_error):
+    """Tests execute_process, which executes an external shell process. There are two
+    test cases for this function:
+        1. A valid command to create a file, which is expected to run successfully.
+        2. An invalid command, which is expected to raise a RunTime Error.
 
-def test_execute_process_invalid_command(): 
-    """Tests execute_process function, which executes an external shell process. Runs an invalid command, expecting error."""
-    with pytest.raises(RuntimeError):
-        execute_process('not a real command', to_null=False)
+    Args:
+        command: Command that is to be executed.
+        raises_error: Whether or not an error is expected to be raised.
+    """
+    if raises_error:
+        with pytest.raises(RuntimeError):
+            execute_process(command=command, to_null=False)
+    else:
+        execute_process(command=command, to_null=False)
+        assert os.path.exists('test.txt')
+        os.remove('test.txt')
 
 @pytest.mark.parametrize(
-    'sch_pattern, run_loc, raises_error',
+    'sch_pattern, run_loc, expectation',
     [
-        ('No Schedule Specified', True, False), 
-        ('No Schedule Specified', False, False), 
-        ('Schedule', True, True), 
-        ('Schedule', False, False)
+        ('No Schedule Specified', True, does_not_raise()), 
+        ('No Schedule Specified', False, does_not_raise()), 
+        ('Schedule', True, pytest.raises(ValueError)), 
+        ('Schedule', False, does_not_raise())
     ])
-def test_validate_schedule(sch_pattern, run_loc, raises_error):
-    """ Tests validate_schedule function, which validates the inputted schedule parameter."""
-    if raises_error:
-        with pytest.raises(ValueError):
-            validate_schedule(schedule_pattern=sch_pattern, run_local=run_loc)
-    else:
-        assert validate_schedule(schedule_pattern=sch_pattern, run_local=run_loc) is None
+def test_validate_schedule(sch_pattern, run_loc, expectation):
+    """Tests execute_process, which validates the inputted schedule 
+    parameter. There are four test cases for this function, which tests each
+    combination of sch_pattern and run_loc for the expected results.
 
-@pytest.mark.parametrize("params, expected", [
-    ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
-    ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
-    ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
-    ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Bool'}]),
-    ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'List'}]),
-    ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'Dict'}]),
-    ([{'name': 'param6', 'type': pd.DataFrame}], None)
-])
+    Args:
+        sch_pattern: Cron formatted value used to create a Scheduled retrain job
+        run_loc: Flag that determines whether to use Cloud Run CI/CD.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
+    with expectation:
+        validate_schedule(schedule_pattern=sch_pattern, run_local=run_loc)
+
+@pytest.mark.parametrize(
+    "params, expected",
+    [
+        ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
+        ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
+        ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
+        ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Bool'}]),
+        ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'List'}]),
+        ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'Dict'}]),
+        ([{'name': 'param6', 'type': pd.DataFrame}], None)
+    ]
+)
 def test_update_params(params, expected):
-    """Tests the update_params function, which reformats the source code type labels as strings."""
+    """Tests the update_params function, which reformats the source code type
+    labels as strings. There are seven test cases for this function, which test
+    for updating different parameter types
+
+    Args:
+        params: _description_
+        expected: _description_
+    """
     if expected is not None:
-        assert expected == update_params(params)
+        assert expected == update_params(params=params)
     else:
         with pytest.raises(ValueError):
-            assert update_params(params)
+            assert update_params(params=params)
 
 def func1(x):
     return x + 1
@@ -347,9 +399,14 @@ def func4():
     (func4, "def func4():\n    def inner_func():\n        res = 1+1\n    return inner_func()\n")
 ])
 def test_get_function_source_definition(func, expected):
-    """Tests the get_function_source_definition function, which returns a formatted string
-    of the source code."""
-    assert expected == get_function_source_definition(func)
+    """Tests execute_process, which returns a formatted string of the
+    source code.
+
+    Args:
+        func: Function to pull source definition from.
+        expected: Expected source definition of the given function.
+    """
+    assert expected == get_function_source_definition(func=func)
 
 @pytest.mark.parametrize("job_spec, expected", [
     ({"component_spec": "train_model"}, "{\n       'component_spec': train_model,\n    }\n"),
@@ -358,11 +415,12 @@ def test_get_function_source_definition(func, expected):
     ({"{": "}"},"{\n       '{': '}',\n    }\n" )
 ])
 def test_format_spec_dict(job_spec, expected):
-    """Tests the format_spec_dict function, which takes in a spec dictionary and removes the quotes
-    around the component op name."""
+    """Tests execute_process, which takes in a spec dictionary and 
+    removes the quotes around the component op name.
 
-    # Format the spec dict.
-    formatted_spec = format_spec_dict(job_spec)
-
-    # Assert that the formatted spec is equal to the expected value.
+    Args:
+        job_spec: Component spec dictionary.
+        expected: Expected outcome.
+    """
+    formatted_spec = format_spec_dict(job_spec=job_spec)
     assert formatted_spec == expected
