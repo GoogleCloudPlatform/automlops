@@ -13,22 +13,35 @@
 # limitations under the License.
 
 from AutoMLOps.frameworks.kfp.constructs.scripts import KfpScripts
+import AutoMLOps.utils.constants
+
 from AutoMLOps.utils.utils import (
     execute_process
 )
+import os
 from mock import patch
-import pytest
+import mock
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
     NEWLINE,
     LEFT_BRACKET,
-    RIGHT_BRACKET
+    RIGHT_BRACKET, 
+    GENERATED_COMPONENT_BASE, 
+    CACHE_DIR
 )
-@pytest.mark.skip
-@patch('AutoMLOps.utils.utils.execute_process', autospec=False, side_effect=lambda: None)
-def test_init(mock_function_a):
+# @pytest.mark.skip
+# @patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process', autospec=False, side_effect=lambda: None)
+def test_init(mocker):
     """Tests the initialization of the KFPScripts class."""
-    kfp_scripts = KfpScripts(
+    
+    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts, 'GENERATED_COMPONENT_BASE', 'test_temp_dir')
+    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    os.makedirs("test_temp_dir")
+
+    with open('test_temp_dir/requirements.txt', 'w') as f:
+        f.write('')
+    with mock.patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process', return_value=""):
+        kfp_scripts = KfpScripts(
         af_registry_location="us-central1",
         af_registry_name="my-registry",
         cb_trigger_location="us-central1",
@@ -51,27 +64,28 @@ def test_init(mock_function_a):
         base_dir="base_dir",
         vpc_connector="my-connector",
     )
-    assert kfp_scripts.__af_registry_location == "us-central1"
-    assert kfp_scripts.__af_registry_name == "my-registry"
-    assert kfp_scripts.__cb_trigger_location == "us-central1"
-    assert kfp_scripts.__cb_trigger_name == "my-trigger"
-    assert kfp_scripts.__cloud_run_location == "us-central1"
-    assert kfp_scripts.__cloud_run_name == "my-run"
-    assert kfp_scripts.__cloud_tasks_queue_location == "us-central1"
-    assert kfp_scripts.__cloud_tasks_queue_name == "my-queue"
-    assert kfp_scripts.__cloud_source_repository_branch == "main"
-    assert kfp_scripts.__cloud_source_repository == "my-repo"
-    assert kfp_scripts.__base_image == "gcr.io/my-project/my-image"
-    assert kfp_scripts.__gs_bucket_location == "us-central1"
-    assert kfp_scripts.__gs_bucket_name == "my-bucket"
-    assert kfp_scripts.__pipeline_runner_service_account == "my-service-account@serviceaccount.com"
-    assert kfp_scripts.__project_id == "my-project"
-    assert kfp_scripts.__run_local == False
-    assert kfp_scripts.__cloud_schedule_location == "us-central1"
-    assert kfp_scripts.__cloud_schedule_name == "my-schedule"
-    assert kfp_scripts.__cloud_schedule_pattern == "0 12 * * *"
-    assert kfp_scripts.__base_dir == "base_dir"
-    assert kfp_scripts.__vpc_connector == "my-connector"
+
+    assert kfp_scripts._KfpScripts__af_registry_location == "us-central1"
+    assert kfp_scripts._KfpScripts__af_registry_name == "my-registry"
+    assert kfp_scripts._KfpScripts__cb_trigger_location == "us-central1"
+    assert kfp_scripts._KfpScripts__cb_trigger_name == "my-trigger"
+    assert kfp_scripts._KfpScripts__cloud_run_location == "us-central1"
+    assert kfp_scripts._KfpScripts__cloud_run_name == "my-run"
+    assert kfp_scripts._KfpScripts__cloud_tasks_queue_location == "us-central1"
+    assert kfp_scripts._KfpScripts__cloud_tasks_queue_name == "my-queue"
+    assert kfp_scripts._KfpScripts__cloud_source_repository_branch == "main"
+    assert kfp_scripts._KfpScripts__cloud_source_repository == "my-repo"
+    assert kfp_scripts._KfpScripts__base_image == "gcr.io/my-project/my-image"
+    assert kfp_scripts._KfpScripts__gs_bucket_location == "us-central1"
+    assert kfp_scripts._KfpScripts__gs_bucket_name == "my-bucket"
+    assert kfp_scripts._KfpScripts__pipeline_runner_service_account == "my-service-account@serviceaccount.com"
+    assert kfp_scripts._KfpScripts__project_id == "my-project"
+    assert kfp_scripts._KfpScripts__run_local == False
+    assert kfp_scripts._KfpScripts__cloud_schedule_location == "us-central1"
+    assert kfp_scripts._KfpScripts__cloud_schedule_name == "my-schedule"
+    assert kfp_scripts._KfpScripts__cloud_schedule_pattern == "0 12 * * *"
+    assert kfp_scripts._KfpScripts__base_dir == "base_dir"
+    assert kfp_scripts._KfpScripts__vpc_connector == "my-connector"
 
     assert kfp_scripts.build_pipeline_spec == (
         '#!/bin/bash\n' + GENERATED_LICENSE +
@@ -296,3 +310,5 @@ def test_init(mock_function_a):
             f'  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${LEFT_BRACKET}CLOUD_SOURCE_REPO{RIGHT_BRACKET}"\n'
             f'\n'
             f'fi\n')
+    os.remove("test_temp_dir/requirements.txt")
+    os.rmdir("test_temp_dir")
