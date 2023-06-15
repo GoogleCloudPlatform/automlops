@@ -18,6 +18,7 @@
 # pylint: disable=missing-function-docstring
 
 import os
+import pytest
 from AutoMLOps.utils.utils import write_yaml_file
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
@@ -25,7 +26,6 @@ from AutoMLOps.utils.constants import (
     RIGHT_BRACKET
 )
 from AutoMLOps.frameworks.kfp.constructs.cloudrun import KfpCloudRun
-import pytest
 
 DEFAULTS = {
     'gcp': 
@@ -49,11 +49,11 @@ def defaults_file(tmpdir):
     Yields:
         str: Path of yaml file
     """
-    yaml_path = tmpdir.join("test.yaml")
+    yaml_path = tmpdir.join('test.yaml')
     write_yaml_file(yaml_path, DEFAULTS, 'w')
     yield yaml_path
     os.remove(yaml_path)
-    
+
 def test_KfpCloudRun(defaults_file):
     """Tests the KFP Cloud Run class."""
 
