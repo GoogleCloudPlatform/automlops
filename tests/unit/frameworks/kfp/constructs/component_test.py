@@ -31,8 +31,7 @@ from AutoMLOps.utils.constants import (
 )
 
 #read in test data for component_spec
-test_component_spec_data = read_yaml_file("tests/test_data/component.yaml")
-
+test_component_spec_data = read_yaml_file("tests/unit/test_data/component.yaml")
 
 @pytest.mark.parametrize(
     """component_spec, defaults_file""",
@@ -51,8 +50,8 @@ def test_init(mocker, component_spec, defaults_file):
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
     # Create pipeline object
-    pipeline = KfpComponent(
-        component_spec==component_spec,
+    component = KfpComponent(
+        component_spec=component_spec,
         defaults_file=defaults_file
     )
 
@@ -61,9 +60,7 @@ def test_init(mocker, component_spec, defaults_file):
         'from functools import partial\n'
         'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
     quote = '\''
-    newline_tab = '\n    '
-    components_list = ''
-    custom_specs = pipeline.custom_specs_helper(custom_training_job_specs)
+
 
     # Assert object properties were created properly
     assert pipeline.pipeline_imports == (
