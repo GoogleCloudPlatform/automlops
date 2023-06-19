@@ -12,23 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mock import patch
-import mock
 import pytest
-import os
-import AutoMLOps.utils.constants
 from AutoMLOps.utils.utils import read_yaml_file
 from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent
-from AutoMLOps.utils.constants import (
-    GENERATED_LICENSE,
-    NEWLINE,
-    LEFT_BRACKET,
-    RIGHT_BRACKET,
-    GENERATED_COMPONENT_BASE,
-    CACHE_DIR,
-    GENERATED_PARAMETER_VALUES_PATH,
-    GENERATED_PIPELINE_JOB_SPEC_PATH,
-)
 
 #read in test data for component_spec
 test_component_spec_data = read_yaml_file("tests/unit/test_data/component.yaml")
@@ -43,11 +29,8 @@ test_component_spec_data = read_yaml_file("tests/unit/test_data/component.yaml")
     ],
 )
 
-def test_init(mocker, component_spec, defaults_file):
+def test_init(component_spec, defaults_file):
     """Tests the initialization of the KFPPipeline class."""
-
-    #patch global directory variables
-    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
     # Create pipeline object
     component = KfpComponent(
