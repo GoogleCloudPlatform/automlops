@@ -17,7 +17,8 @@ import mock
 import pytest
 import os
 import AutoMLOps.utils.constants
-from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
+from AutoMLOps.utils.utils import read_yaml_file
+from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
     NEWLINE,
@@ -29,32 +30,29 @@ from AutoMLOps.utils.constants import (
     GENERATED_PIPELINE_JOB_SPEC_PATH,
 )
 
+#read in test data for component_spec
+test_component_spec_data = read_yaml_file("tests/test_data/component.yaml")
+
+
 @pytest.mark.parametrize(
-    """custom_training_job_specs, defaults_file""",
+    """component_spec, defaults_file""",
     [
         (
-            [
-                {
-                    "component_spec": "train_model",
-                    "display_name": "train-model-accelerated",
-                    "machine_type": "a2-highgpu-1g",
-                    "accelerator_type": "NVIDIA_TESLA_A100",
-                    "accelerator_count": "1",
-                }
-            ],
-            "tests/unit/test_data/defaults.yaml",
+    test_component_spec_data,
+    "tests/unit/test_data/defaults.yaml",
         )
     ],
 )
-def test_init(mocker, custom_training_job_specs, defaults_file):
+
+def test_init(mocker, component_spec, defaults_file):
     """Tests the initialization of the KFPPipeline class."""
 
     #patch global directory variables
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
     # Create pipeline object
-    pipeline = KfpPipeline(
-        custom_training_job_specs=custom_training_job_specs,
+    pipeline = KfpComponent(
+        component_spec==component_spec,
         defaults_file=defaults_file
     )
 
