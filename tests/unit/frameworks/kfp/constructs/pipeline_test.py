@@ -89,16 +89,20 @@ def test_init(mocker, custom_training_job_specs, defaults_file):
             f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in components_list)}\n'''
             f'\n'
             f'''{custom_specs}''')
-
-    # assert scripts.build_pipeline_spec == (
-    #     "#!/bin/bash\n" + GENERATED_LICENSE + "# Builds the pipeline specs\n"
-    #     f"# This script should run from the {base_dir} directory\n"
-    #     "# Change directory in case this is not the script root.\n"
-    #     "\n"
-    #     "CONFIG_FILE=configs/defaults.yaml\n"
-    #     "\n"
-    #     "python3 -m pipelines.pipeline --config $CONFIG_FILE\n"
-    # )
+    
+    assert pipeline.pipeline_argparse == (
+            '''if __name__ == '__main__':\n'''
+            '''    parser = argparse.ArgumentParser()\n'''
+            '''    parser.add_argument('--config', type=str,\n'''
+            '''                       help='The config file for setting default values.')\n'''
+            '\n'
+            '''    args = parser.parse_args()\n'''
+            '\n'
+            '''    with open(args.config, 'r', encoding='utf-8') as config_file:\n'''
+            '''        config = yaml.load(config_file, Loader=yaml.FullLoader)\n'''
+            '\n'
+            '''    pipeline = create_training_pipeline(\n'''
+            '''        pipeline_job_spec_path=config['pipelines']['pipeline_job_spec_path'])\n''')
 
     # # Remove temporary files
     # os.remove("test_temp_dir/requirements.txt")
