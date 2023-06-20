@@ -23,8 +23,8 @@ from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
     NEWLINE,
     LEFT_BRACKET,
-    RIGHT_BRACKET, 
-    GENERATED_COMPONENT_BASE, 
+    RIGHT_BRACKET,
+    GENERATED_COMPONENT_BASE,
     CACHE_DIR,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_JOB_SPEC_PATH
@@ -37,22 +37,22 @@ from AutoMLOps.utils.constants import (
     [
         (
             'us-central1', 'my-registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
-            'us-central1', 'my-queue', 'main', 'my-repo', 'us-central1', 'my-bucket', 'my-service-account@serviceaccount.com', 
+            'us-central1', 'my-queue', 'main', 'my-repo', 'us-central1', 'my-bucket', 'my-service-account@serviceaccount.com',
             'my-project', False, 'us-central1', 'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['req1', 'req2']
         )
     ]
 )
-def test_init(mocker, 
-              af_registry_location, 
+def test_init(mocker,
+              af_registry_location,
               af_registry_name,
               base_image,
               cb_trigger_location,
-              cb_trigger_name, 
+              cb_trigger_name,
               cloud_run_location,
-              cloud_run_name, 
+              cloud_run_name,
               cloud_tasks_queue_location,
               cloud_tasks_queue_name,
-              csr_branch_name, 
+              csr_branch_name,
               csr_name,
               gs_bucket_location,
               gs_bucket_name,
@@ -80,7 +80,7 @@ def test_init(mocker,
         f.write(''.join(r+'\n' for r in reqs))
 
     # Create scripts object
-    with mock.patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process', return_value=""):
+    with mock.patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process', return_value=''):
         scripts = KfpScripts(
             af_registry_location=af_registry_location,
             af_registry_name=af_registry_name,
@@ -351,7 +351,7 @@ def test_init(mocker,
             f'  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${LEFT_BRACKET}CLOUD_SOURCE_REPO{RIGHT_BRACKET}"\n'
             f'\n'
             f'fi\n')
-        
+
         assert scripts.dockerfile == (
             GENERATED_LICENSE +
             f'FROM {base_image}\n'
@@ -431,5 +431,5 @@ def test_init(mocker,
             f'{"".join(r+f"{NEWLINE}" for r in sorted(reqs))}')
 
     # Remove temporary files
-    os.remove("test_temp_dir/requirements.txt")
-    os.rmdir("test_temp_dir")
+    os.remove('test_temp_dir/requirements.txt')
+    os.rmdir('test_temp_dir')

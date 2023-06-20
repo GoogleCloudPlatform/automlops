@@ -27,51 +27,55 @@ from AutoMLOps.utils.constants import (
 )
 from AutoMLOps.frameworks.kfp.constructs.cloudrun import KfpCloudRun
 
-DEFAULTS = {
-    'gcp': 
+DEFAULTS1 = {
+    'gcp':
         {
+            'af_registry_location': 'us-central1',
             'project_id': 'my_project',
-            'pipeline_runner_service_account': 'my-service-account@serviceaccount.com',
-            'cloud_tasks_queue_location': 'us-central1',
-            'cloud_tasks_queue_name': 'my-queue',
-            'cloud_run_name': 'my-run',
-            'cloud_run_location': 'us-central1',
-            'cloud_schedule_pattern': '0 12 * * *',
-            'cloud_schedule_location': 'us-central1',
-            'cloud_schedule_name': 'my-schedule'
+            'af_registry_name': 'my_af_registry'
+        }
+    }
+DEFAULTS2 = {
+    'gcp':
+        {
+            'af_registry_location': 'us-central1',
+            'project_id': 'my_project',
+            'af_registry_name': 'my_af_registry'
         }
     }
 
-@pytest.fixture()
-def defaults_file(tmpdir):
-    """Writes temporary yaml file fixture using DEFAULTS dictionary during pytest session scope.
+@pytest.fixture(params=[DEFAULTS1, DEFAULTS2])
+def defaults_dict(request, tmpdir):
+    """Writes temporary yaml file fixture using defaults parameterized dictionaries
+    during pytest session scope.
 
-    Yields:
-        str: Path of yaml file
+    Returns:
+        dict: Path of yaml file and dictionary it contains.
     """
     yaml_path = tmpdir.join('test.yaml')
-    write_yaml_file(yaml_path, DEFAULTS, 'w')
-    yield yaml_path
-    os.remove(yaml_path)
+    write_yaml_file(yaml_path, request.param, 'w')
+    return {'path': yaml_path, 'vals': request.param}
 
-def test_KfpCloudRun(defaults_file):
+def test_KfpCloudRun(defaults_dict):
     """Tests the KFP Cloud Run class."""
+    # Extract path and contents from defaults dict to create KFP Component
+    path = defaults_dict['path']
+    defaults = defaults_dict['vals']
 
     # Instantiate cloud run object
-    my_cloudrun = KfpCloudRun(defaults_file)
+    my_cloudrun = KfpCloudRun(path)
 
-    # Confirm all attributes were correctly pulled from the defaults file
-    assert my_cloudrun._project_id == DEFAULTS['gcp']['project_id']
-    assert my_cloudrun._pipeline_runner_service_account == DEFAULTS['gcp']['pipeline_runner_service_account']
-    assert my_cloudrun._cloud_tasks_queue_location == DEFAULTS['gcp']['cloud_tasks_queue_location']
-    assert my_cloudrun._cloud_tasks_queue_name == DEFAULTS['gcp']['cloud_tasks_queue_name']
-    assert my_cloudrun._cloud_run_name == DEFAULTS['gcp']['cloud_run_name']
-    assert my_cloudrun._cloud_run_location == DEFAULTS['gcp']['cloud_run_location']
-    assert my_cloudrun._cloud_schedule_pattern == DEFAULTS['gcp']['cloud_schedule_pattern']
-    assert my_cloudrun._cloud_schedule_location == DEFAULTS['gcp']['cloud_schedule_location']
-    assert my_cloudrun._cloud_schedule_name == DEFAULTS['gcp']['cloud_schedule_name']
+    # Confirm all attributes were assigned correctly
+    assert my_cloudrun._project_id == defaults['gcp']['project_id']
+    assert my_cloudrun._pipeline_runner_service_account == defaults['gcp']['pipeline_runner_service_account']
+    assert my_cloudrun._cloud_tasks_queue_location == defaults['gcp']['cloud_tasks_queue_location']
+    assert my_cloudrun._cloud_tasks_queue_name == defaults['gcp']['cloud_tasks_queue_name']
+    assert my_cloudrun._cloud_run_name == defaults['gcp']['cloud_run_name']
+    assert my_cloudrun._cloud_run_location == defaults['gcp']['cloud_run_location']
+    assert my_cloudrun._cloud_schedule_pattern == defaults['gcp']['cloud_schedule_pattern']
+    assert my_cloudrun._cloud_schedule_location == defaults['gcp']['cloud_schedule_location']
+    assert my_cloudrun._cloud_schedule_name == defaults['gcp']['cloud_schedule_name']
 
-    # Confirm dockerfile attribute is correct
     assert my_cloudrun.dockerfile == (
         GENERATED_LICENSE +
         'FROM python:3.9-slim\n'
@@ -96,7 +100,6 @@ def test_KfpCloudRun(defaults_file):
         'CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app\n'
     )
 
-    # Confirm cloud run base reqs attribute is correct
     assert my_cloudrun.cloudrun_base_reqs == (
         'kfp\n'
         'google-cloud-aiplatform\n'
@@ -106,7 +109,6 @@ def test_KfpCloudRun(defaults_file):
         'pyyaml\n'
     )
 
-    # Confirm queueing svc reqs attribute is correct
     assert my_cloudrun.queueing_svc_reqs == (
         'google-cloud\n'
         'google-cloud-tasks\n'
@@ -115,7 +117,6 @@ def test_KfpCloudRun(defaults_file):
         'google-cloud-scheduler\n'
     )
 
-    # Confirm cloud run base attribute is correct
     assert my_cloudrun.cloudrun_base == (
         GENERATED_LICENSE +
         f'''"""Cloud Run to run pipeline spec"""\n'''
@@ -221,16 +222,16 @@ def test_KfpCloudRun(defaults_file):
         f'''from google.cloud import scheduler_v1\n'''
         f'''from google.cloud import tasks_v2\n'''
         f'\n'
-        f'''CLOUD_RUN_LOCATION = '{DEFAULTS["gcp"]["cloud_run_location"]}'\n'''
-        f'''CLOUD_RUN_NAME = '{DEFAULTS["gcp"]["cloud_run_name"]}'\n'''
-        f'''CLOUD_TASKS_QUEUE_LOCATION = '{DEFAULTS["gcp"]["cloud_tasks_queue_location"]}'\n'''
-        f'''CLOUD_TASKS_QUEUE_NAME = '{DEFAULTS["gcp"]["cloud_tasks_queue_name"]}'\n'''
+        f'''CLOUD_RUN_LOCATION = '{defaults["gcp"]["cloud_run_location"]}'\n'''
+        f'''CLOUD_RUN_NAME = '{defaults["gcp"]["cloud_run_name"]}'\n'''
+        f'''CLOUD_TASKS_QUEUE_LOCATION = '{defaults["gcp"]["cloud_tasks_queue_location"]}'\n'''
+        f'''CLOUD_TASKS_QUEUE_NAME = '{defaults["gcp"]["cloud_tasks_queue_name"]}'\n'''
         f'''PARAMETER_VALUES_PATH = 'queueing_svc/pipeline_parameter_values.json'\n'''
-        f'''PIPELINE_RUNNER_SA = '{DEFAULTS["gcp"]["pipeline_runner_service_account"]}'\n'''
-        f'''PROJECT_ID = '{DEFAULTS["gcp"]["project_id"]}'\n'''
-        f'''SCHEDULE_LOCATION = '{DEFAULTS["gcp"]["cloud_schedule_location"]}'\n'''
-        f'''SCHEDULE_PATTERN = '{DEFAULTS["gcp"]["cloud_schedule_pattern"]}'\n'''
-        f'''SCHEDULE_NAME = '{DEFAULTS["gcp"]["cloud_schedule_name"]}'\n'''
+        f'''PIPELINE_RUNNER_SA = '{defaults["gcp"]["pipeline_runner_service_account"]}'\n'''
+        f'''PROJECT_ID = '{defaults["gcp"]["project_id"]}'\n'''
+        f'''SCHEDULE_LOCATION = '{defaults["gcp"]["cloud_schedule_location"]}'\n'''
+        f'''SCHEDULE_PATTERN = '{defaults["gcp"]["cloud_schedule_pattern"]}'\n'''
+        f'''SCHEDULE_NAME = '{defaults["gcp"]["cloud_schedule_name"]}'\n'''
         f'\n'
         f'''def get_runner_svc_uri(\n'''
         f'''    cloud_run_location: str,\n'''
