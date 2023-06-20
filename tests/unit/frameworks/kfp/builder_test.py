@@ -16,3 +16,16 @@
 
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
+
+from AutoMLOps.frameworks.kfp.builder import (
+    build, # Does not necessarily need to be tested, a combination of other functions
+    build_component,
+    build_pipeline,
+    build_cloudrun # Does not necessarily need to be tested, a combination of other functions
+)
+
+def test_build_component():
+    assert True
+
+def test_build_pipeline():
+    assert True

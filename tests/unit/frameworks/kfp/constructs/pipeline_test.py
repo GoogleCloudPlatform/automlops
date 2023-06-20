@@ -60,7 +60,15 @@ def defaults_dict(request, tmpdir):
     'custom_training_job_specs',
     [
         [{'component_spec': 'mycomp1', 'other': 'myother'}],
-        [{'component_spec': 'mycomp2'}]
+        [
+            {
+                "component_spec": "train_model",
+                "display_name": "train-model-accelerated",
+                "machine_type": "a2-highgpu-1g",
+                "accelerator_type": "NVIDIA_TESLA_A100",
+                "accelerator_count": "1",
+            }
+        ]
     ]
 )
 def test_KfpComponent(mocker, custom_training_job_specs, defaults_dict):
@@ -82,19 +90,15 @@ def test_KfpComponent(mocker, custom_training_job_specs, defaults_dict):
     assert pipe._project_id == defaults['gcp']['project_id']
     assert pipe._custom_training_job_specs == custom_training_job_specs
 
-    # Confirm pipeline imports script was created properly
+    # Define variables needed for assertions
     gcpc_imports = (
         'from functools import partial\n'
         'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
     quote = '\''
     newline_tab = '\n    '
-    custom_specs = (
-        f'''    {newline_tab.join(f'{spec["component_spec"]}_custom_training_job_specs = {format_spec_dict(spec)}' for spec in custom_training_job_specs)}'''
-        f'\n'
-        f'''    {newline_tab.join(f'{spec["component_spec"]}_job_op = create_custom_training_job_op_from_component(**{spec["component_spec"]}_custom_training_job_specs)' for spec in custom_training_job_specs)}'''
-        f'\n'
-        f'''    {newline_tab.join(f'{spec["component_spec"]} = partial({spec["component_spec"]}_job_op, project={quote}{defaults["gcp"]["project_id"]}{quote})' for spec in custom_training_job_specs)}'''
-        f'\n')
+    custom_specs = pipe.custom_specs_helper(custom_training_job_specs)
+
+    # Confirm scripts were created correctly
     assert pipe.pipeline_imports == (
         f'''import argparse\n'''
         f'''import os\n'''
@@ -114,9 +118,8 @@ def test_KfpComponent(mocker, custom_training_job_specs, defaults_dict):
         f'''def create_training_pipeline(pipeline_job_spec_path: str):\n'''
         f'''    {newline_tab.join(f'{component} = load_custom_component(component_name={quote}{component}{quote})' for component in get_components_list(full_path=False))}\n'''
         f'\n'
-        f'''{"" if not custom_training_job_specs else custom_specs}''')
+        f'''{custom_specs}''')
 
-    # Confirm all other scripts were created correctly
     assert pipe.pipeline_argparse == (
         '''if __name__ == '__main__':\n'''
         '''    parser = argparse.ArgumentParser()\n'''

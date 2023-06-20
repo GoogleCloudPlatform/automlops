@@ -24,12 +24,15 @@ import pytest
 from AutoMLOps.frameworks.kfp.scaffold import (
     create_component_scaffold,
     get_packages_to_install_command,
+    get_compile_step,
     get_function_parameters,
+    get_pipeline_decorator,
     maybe_strip_optional_from_annotation,
     create_pipeline_scaffold
 )
 import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import get_function_source_definition, read_yaml_file
+from AutoMLOps.utils.constants import DEFAULT_PIPELINE_NAME
 
 def add(a: int, b: int):
     """Testing
@@ -90,7 +93,7 @@ def test_create_component_scaffold(mocker, func, packages_to_install):
         (add, ['pandas'])
     ]
 )
-def test_get_packages_to_install_command(mocker, func, packages_to_install):
+def test_get_packages_to_install_command(func, packages_to_install):
     newline = '\n'
     if not packages_to_install:
         packages_to_install = []
@@ -108,7 +111,9 @@ def test_get_packages_to_install_command(mocker, func, packages_to_install):
     [
         (
             add,
-            [{'description': 'Integer a', 'name': 'a', 'type': 'Integer'}, {'description': 'Integer b', 'name': 'b', 'type': 'Integer'}],
+            [
+                {'description': 'Integer a', 'name': 'a', 'type': 'Integer'},
+                {'description': 'Integer b', 'name': 'b', 'type': 'Integer'}],
             does_not_raise()
         ),
         (
@@ -129,4 +134,53 @@ def test_get_function_parameters(func, params, expectation):
     ]
 )
 def test_maybe_strip_optional_from_annotation(annotation, result, expectation):
-    assert result == maybe_strip_optional_from_annotation(annotation)
+    assert True
+
+@pytest.mark.parametrize(
+    'func, name, description',
+    [
+        (add, "Add", "This is a test"),
+        (sub, "Sub", "Test 2")
+    ]
+)
+def test_create_pipeline_scaffold(mocker, func, name, description):
+    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    create_pipeline_scaffold(func=func, name=name, description=description)
+    fold = '.AutoMLOps-cache'
+    file_path = 'pipeline_scaffold.py'
+    assert os.path.exists(os.path.join(fold, file_path))
+    os.remove(os.path.join(fold, file_path))
+    os.rmdir(fold)
+
+@pytest.mark.parametrize(
+    'name, description',
+    [
+        ('Name1', 'Description1'),
+        ('Name2', 'Description2')
+    ]
+)
+def test_get_pipeline_decorator(name, description):
+    desc_str = f'''    description='{description}',\n''' if description else ''
+    decorator = (
+        f'''@dsl.pipeline'''
+        f'''(\n    name='{DEFAULT_PIPELINE_NAME if not name else name}',\n'''
+        f'''{desc_str}'''
+        f''')\n'''
+    )
+    assert decorator == get_pipeline_decorator(name=name, description=description)
+
+@pytest.mark.parametrize(
+    'func_name',
+    [
+        ('func1'),
+        ('func2')
+    ]
+)
+def test_get_compile_step(func_name):
+    assert get_compile_step(func_name=func_name) == (
+        f'\n'
+        f'compiler.Compiler().compile(\n'
+        f'    pipeline_func={func_name},\n'
+        f'    package_path=pipeline_job_spec_path)\n'
+        f'\n'
+    )

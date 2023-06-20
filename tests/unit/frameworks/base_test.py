@@ -22,8 +22,16 @@ from AutoMLOps.utils.utils import write_yaml_file
 import pytest
 import os
 
-DEFAULTS = {
-    'gcp': 
+DEFAULTS1 = {
+    'gcp':
+        {
+            'af_registry_location': 'us-central1',
+            'project_id': 'my_project',
+            'af_registry_name': 'my_af_registry'
+        }
+    }
+DEFAULTS2 = {
+    'gcp':
         {
             'af_registry_location': 'us-central1',
             'project_id': 'my_project',
@@ -31,42 +39,58 @@ DEFAULTS = {
         }
     }
 
-@pytest.fixture()
-def defaults_file(tmpdir):
-    """Writes temporary yaml file fixture using DEFAULTS dictionary during pytest session scope.
+@pytest.fixture(params=[DEFAULTS1, DEFAULTS2])
+def defaults_dict(request, tmpdir):
+    """Writes temporary yaml file fixture using defaults parameterized dictionaries during pytest session scope.
 
-    Yields:
-        str: Path of yaml file
+    Returns:
+        str: Path of yaml file.
     """
-    yaml_path = tmpdir.join("test.yaml")
-    write_yaml_file(yaml_path, DEFAULTS, 'w')
-    yield yaml_path
-    os.remove(yaml_path)
+    yaml_path = tmpdir.join('test.yaml')
+    write_yaml_file(yaml_path, request.param, 'w')
+    return {'path': yaml_path, 'vals': request.param}
 
-def test_Component(defaults_file):
+@pytest.mark.parametrize(
+    'component_spec',
+    ['test1', 'test2']
+)
+def test_Component(defaults_dict, component_spec):
     """Tests the Component base class."""
-
-    # Set component spec to arbitrary string
-    component_spec = 'Test'
+    # Extract path and contents from defaults dict to create Component
+    path = defaults_dict['path']
+    defaults = defaults_dict['vals']
 
     # Instantiate component base object
-    my_component = Component(component_spec, defaults_file)
+    my_component = Component(component_spec=component_spec, defaults_file=path)
 
-    # Confirm all attributes were correctly pulled from the defaults file
-    assert my_component._af_registry_location == DEFAULTS['gcp']['af_registry_location']
-    assert my_component._af_registry_name == DEFAULTS['gcp']['af_registry_name']
-    assert my_component._project_id == DEFAULTS['gcp']['project_id']
+    # Confirm all attributes were correctly assigned
+    assert my_component._af_registry_location == defaults['gcp']['af_registry_location']
+    assert my_component._af_registry_name == defaults['gcp']['af_registry_name']
+    assert my_component._project_id == defaults['gcp']['project_id']
     assert my_component._component_spec == component_spec
 
-def test_Pipeline(defaults_file):
-    """Tests the Pipeline base class"""
-
-    # Instantiate a blank job specs
-    custom_training_job_specs = [{},{}]
+@pytest.mark.parametrize(
+    'custom_training_job_specs',
+    [
+        [
+            {},
+            {}
+        ],
+        [
+            {},
+            {}
+        ]
+    ]
+)
+def test_Pipeline(defaults_dict, custom_training_job_specs):
+    """Tests the Pipeline base class."""
+    # Extract path and contents from defaults dict to create Component
+    path = defaults_dict['path']
+    defaults = defaults_dict['vals']
 
     # Instantiate pipeline base object
-    my_pipeline = Pipeline(custom_training_job_specs, defaults_file)
+    my_pipeline = Pipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
 
     # Confirm all attributes were created as expected
-    assert my_pipeline._project_id == DEFAULTS['gcp']['project_id']
+    assert my_pipeline._project_id == defaults['gcp']['project_id']
     assert my_pipeline._custom_training_job_specs == custom_training_job_specs
