@@ -71,7 +71,7 @@ def defaults_dict(request, tmpdir):
         ]
     ]
 )
-def test_KfpComponent(mocker, custom_training_job_specs, defaults_dict):
+def test_KfpPipeline(mocker, custom_training_job_specs, defaults_dict):
     """Tests the KFP child class that generates files related to KFP pipelines.
 
     Args:

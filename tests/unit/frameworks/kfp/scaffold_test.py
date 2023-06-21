@@ -69,7 +69,6 @@ def test_create_component_scaffold(mocker, func, packages_to_install):
         packages_to_install: A list of optional packages to install before
             executing func. These will always be installed at component runtime.
     """
-    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
     create_component_scaffold(func=func, packages_to_install=packages_to_install)
 
     # Assert the yaml exists
