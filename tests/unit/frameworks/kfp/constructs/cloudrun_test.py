@@ -31,17 +31,47 @@ DEFAULTS1 = {
     'gcp':
         {
             'af_registry_location': 'us-central1',
-            'project_id': 'my_project',
-            'af_registry_name': 'my_af_registry'
-        }
+            'af_registry_name': 'vertex-mlops-af',
+            'base_image': 'python:3.9-slim',
+            'cb_trigger_location': 'us-central1',
+            'cb_trigger_name': 'automlops-trigger',
+            'cloud_run_location': 'us-central1',
+            'cloud_run_name': 'run-pipeline',
+            'cloud_tasks_queue_location': 'us-central1',
+            'cloud_tasks_queue_name': 'queueing-svc',
+            'cloud_schedule_location': 'us-central1',
+            'cloud_schedule_name': 'AutoMLOps-schedule',
+            'cloud_schedule_pattern': '0 */12 * * *',
+            'cloud_source_repository': 'AutoMLOps-repo',
+            'cloud_source_repository_branch': 'automlops',
+            'gs_bucket_name': 'automlops-sandbox-bucket',
+            'pipeline_runner_service_account': 'vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com',
+            'project_id': 'automlops-sandbox',
+            'vpc_connector': 'No VPC Specified'
+        }   
     }
 DEFAULTS2 = {
     'gcp':
         {
             'af_registry_location': 'us-central1',
-            'project_id': 'my_project',
-            'af_registry_name': 'my_af_registry'
-        }
+            'af_registry_name': 'vertex-mlops-af',
+            'base_image': 'python:3.9-slim',
+            'cb_trigger_location': 'us-central1',
+            'cb_trigger_name': 'automlops-trigger',
+            'cloud_run_location': 'us-central1',
+            'cloud_run_name': 'run-pipeline',
+            'cloud_tasks_queue_location': 'us-central1',
+            'cloud_tasks_queue_name': 'queueing-svc',
+            'cloud_schedule_location': 'us-central1',
+            'cloud_schedule_name': 'AutoMLOps-schedule',
+            'cloud_schedule_pattern': '0 */12 * * *',
+            'cloud_source_repository': 'AutoMLOps-repo',
+            'cloud_source_repository_branch': 'automlops',
+            'gs_bucket_name': 'automlops-sandbox-bucket',
+            'pipeline_runner_service_account': 'vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com',
+            'project_id': 'automlops-sandbox',
+            'vpc_connector': 'No VPC Specified'
+        }  
     }
 
 @pytest.fixture(params=[DEFAULTS1, DEFAULTS2])
@@ -61,6 +91,8 @@ def test_KfpCloudRun(defaults_dict):
     # Extract path and contents from defaults dict to create KFP Component
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
+    print("These are the defaults")
+    print(defaults)
 
     # Instantiate cloud run object
     my_cloudrun = KfpCloudRun(path)
