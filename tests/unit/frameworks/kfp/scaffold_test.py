@@ -18,7 +18,6 @@
 # pylint: disable=missing-function-docstring
 
 from contextlib import nullcontext as does_not_raise
-import mock
 import os
 import pytest
 from AutoMLOps.frameworks.kfp.scaffold import (
@@ -49,14 +48,24 @@ def add(a: int, b: int):
 def sub(a, b):
     return a - b
 
+def div(a: float, b: float):
+    """Testing
+
+    Args:
+        a (float): Float a
+        b (float): Float b
+    """
+    return a/b
+
 @pytest.mark.parametrize(
-    'func, packages_to_install',
+    'func, packages_to_install, expectation',
     [
-        (add, None),
-        (add, ['pandas'])
+        (add, None, does_not_raise()),
+        (add, ['pandas', 'pytest'], does_not_raise()),
+        (sub, None, pytest.raises(TypeError))
     ]
 )
-def test_create_component_scaffold(mocker, func, packages_to_install):
+def test_create_component_scaffold(func, packages_to_install, expectation):
     """Tests create_component_scaffold, which creates a tmp component scaffold
     which will be used by the formalize function. Code is temporarily stored in
     component_spec['implementation']['container']['command'].
@@ -68,31 +77,46 @@ def test_create_component_scaffold(mocker, func, packages_to_install):
             a plain parameter, or a path to a file).
         packages_to_install: A list of optional packages to install before
             executing func. These will always be installed at component runtime.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
     """
-    create_component_scaffold(func=func, packages_to_install=packages_to_install)
+    with expectation:
+        create_component_scaffold(func=func, packages_to_install=packages_to_install)
 
-    # Assert the yaml exists
-    func_path = f'.AutoMLOps-cache/{func.__name__}.yaml'
-    assert os.path.exists(func_path)
+        # Assert the yaml exists
+        func_path = f'.AutoMLOps-cache/{func.__name__}.yaml'
+        assert os.path.exists(func_path)
 
-    # Assert yaml contains correct keys
-    component_spec = read_yaml_file(func_path)
-    assert list(component_spec.keys()) == ['name', 'description', 'inputs', 'implementation']
-    assert list(component_spec['implementation'].keys()) == ['container']
-    assert list(component_spec['implementation']['container'].keys()) == ['image', 'command', 'args']
+        # Assert yaml contains correct keys
+        component_spec = read_yaml_file(func_path)
+        assert list(component_spec.keys()) == ['name', 'description', 'inputs', 'implementation']
+        assert list(component_spec['implementation'].keys()) == ['container']
+        assert list(component_spec['implementation']['container'].keys()) == ['image', 'command', 'args']
 
-    # Remove temporary files
-    os.remove(func_path)
-    os.rmdir('.AutoMLOps-cache')
+        # Remove temporary files
+        os.remove(func_path)
+        os.rmdir('.AutoMLOps-cache')
 
 @pytest.mark.parametrize(
     'func, packages_to_install',
     [
         (add, None),
-        (add, ['pandas'])
+        (add, ['pandas']),
+        (sub, ['pandas', 'kfp', 'pytest'])
     ]
 )
 def test_get_packages_to_install_command(func, packages_to_install):
+    """Tests get_packages_to_install_command, which returns a list of 
+    formatted list of commands, including code for tmp storage.
+
+    Args:
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        packages_to_install: A list of optional packages to install before
+            executing func. These will always be installed at component runtime.
+    """
     newline = '\n'
     if not packages_to_install:
         packages_to_install = []
@@ -119,10 +143,29 @@ def test_get_packages_to_install_command(func, packages_to_install):
             sub,
             None,
             pytest.raises(TypeError)
+        ),
+        (
+            div,
+            [
+                {'description': 'Float a', 'name': 'a', 'type': 'Float'},
+                {'description': 'Float b', 'name': 'b', 'type': 'Float'}
+            ],
+            does_not_raise()
         )
     ]
 )
 def test_get_function_parameters(func, params, expectation):
+    """Tests get_function_parameters, which returns a formatted list of parameters.
+
+    Args:
+        func: The python function to create a component from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        params: Params list with types converted to kubeflow spec.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
     with expectation:
         assert params == get_function_parameters(func=func)
 
@@ -133,16 +176,41 @@ def test_get_function_parameters(func, params, expectation):
     ]
 )
 def test_maybe_strip_optional_from_annotation(annotation, result, expectation):
+    """Tests maybe_strip_optional_from_annotation, which strips 'Optional' from 
+    'Optional[<type>]' if applicable. For example::
+        Optional[str] -> str
+        str -> str
+        List[int] -> List[int]
+
+    Args:
+        annotation: The original type annotation which may or may not has `Optional`.
+        result: The type inside Optional[] if Optional exists, otherwise the original type.
+        expectation: Any corresponding expected errors for each
+            set of parameters.
+    """
     assert True
 
 @pytest.mark.parametrize(
     'func, name, description',
     [
         (add, "Add", "This is a test"),
-        (sub, "Sub", "Test 2")
+        (sub, "Sub", "Test 2"),
+        (div, None, None)
     ]
 )
 def test_create_pipeline_scaffold(mocker, func, name, description):
+    """Tests create_pipeline_scaffold, which creates a temporary pipeline 
+    scaffold which will be used by the formalize function.
+
+    Args:
+        mocker: Mocker used to patch constants to test in tempoarary environment.
+        func: The python function to create a pipeline from. The function
+            should have type annotations for all its arguments, indicating how
+            it is intended to be used (e.g. as an input/output Artifact object,
+            a plain parameter, or a path to a file).
+        name: The name of the pipeline.
+        description: Short description of what the pipeline does.
+    """
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
     create_pipeline_scaffold(func=func, name=name, description=description)
     fold = '.AutoMLOps-cache'
@@ -155,10 +223,17 @@ def test_create_pipeline_scaffold(mocker, func, name, description):
     'name, description',
     [
         ('Name1', 'Description1'),
-        ('Name2', 'Description2')
+        ('Name2', 'Description2'),
+        (None, None),
     ]
 )
 def test_get_pipeline_decorator(name, description):
+    """Tests get_pipeline_decorator, which creates the kfp pipeline decorator.
+
+    Args:
+        name: The name of the pipeline.
+        description: Short description of what the pipeline does.
+    """
     desc_str = f'''    description='{description}',\n''' if description else ''
     decorator = (
         f'''@dsl.pipeline'''
@@ -170,12 +245,14 @@ def test_get_pipeline_decorator(name, description):
 
 @pytest.mark.parametrize(
     'func_name',
-    [
-        ('func1'),
-        ('func2')
-    ]
+    ['func1', 'func2']
 )
 def test_get_compile_step(func_name):
+    """Tests get_compile_step, which creates the compile function call.
+
+    Args:
+        func_name: The name of the pipeline function.
+    """
     assert get_compile_step(func_name=func_name) == (
         f'\n'
         f'compiler.Compiler().compile(\n'

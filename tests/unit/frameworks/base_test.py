@@ -20,7 +20,6 @@
 from AutoMLOps.frameworks.base import Component, Pipeline
 from AutoMLOps.utils.utils import write_yaml_file
 import pytest
-import os
 
 DEFAULTS1 = {
     'gcp':
@@ -55,15 +54,17 @@ def defaults_dict(request, tmpdir):
     ['test1', 'test2']
 )
 def test_Component(defaults_dict, component_spec):
-    """Tests the Component base class."""
-    # Extract path and contents from defaults dict to create Component
+    """Tests the Component base class, the parent class that defines a general abstraction of a Component.
+
+    Args:
+        component_spec (dict): Dictionary of component specs including details
+            of component image, startup command, and args.
+        defaults_file (str): Path to the default config variables yaml.
+    """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
 
-    # Instantiate component base object
     my_component = Component(component_spec=component_spec, defaults_file=path)
-
-    # Confirm all attributes were correctly assigned
     assert my_component._af_registry_location == defaults['gcp']['af_registry_location']
     assert my_component._af_registry_name == defaults['gcp']['af_registry_name']
     assert my_component._project_id == defaults['gcp']['project_id']
@@ -72,25 +73,38 @@ def test_Component(defaults_dict, component_spec):
 @pytest.mark.parametrize(
     'custom_training_job_specs',
     [
+        [{'component_spec': 'mycomp1', 'other': 'myother'}],
         [
-            {},
-            {}
+            {
+                "component_spec": "train_model",
+                "display_name": "train-model-accelerated",
+                "machine_type": "a2-highgpu-1g",
+                "accelerator_type": "NVIDIA_TESLA_A100",
+                "accelerator_count": "1",
+            }
         ],
         [
-            {},
-            {}
+            {
+                "component_spec": "train_model",
+                "display_name": "train-model-accelerated"
+            },
+            {
+                "component_spec": "test_model",
+                "display_name": "test-model-accelerated"
+            }
         ]
     ]
 )
 def test_Pipeline(defaults_dict, custom_training_job_specs):
-    """Tests the Pipeline base class."""
-    # Extract path and contents from defaults dict to create Component
+    """Tests the Pipeline base class, the parent class that defines a general abstraction of a Pipeline.
+
+    Args:
+        custom_training_job_specs (List[Dict]): Specifies the specs to run the training job with.
+        defaults_file (str): Path to the default config variables yaml.
+    """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
 
-    # Instantiate pipeline base object
     my_pipeline = Pipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
-
-    # Confirm all attributes were created as expected
     assert my_pipeline._project_id == defaults['gcp']['project_id']
     assert my_pipeline._custom_training_job_specs == custom_training_job_specs

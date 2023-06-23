@@ -17,8 +17,6 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
-import mock
-import os
 import pytest
 from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
 from AutoMLOps.utils.constants import GENERATED_LICENSE
@@ -84,21 +82,18 @@ def test_KfpPipeline(mocker, custom_training_job_specs, defaults_dict):
     # Extract path and contents from defaults dict to create KFP Component
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
-    pipe = KfpPipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
-
-    # Confirm attributes were correctly assigned
-    assert pipe._project_id == defaults['gcp']['project_id']
-    assert pipe._custom_training_job_specs == custom_training_job_specs
-
-    # Define variables needed for assertions
     gcpc_imports = (
         'from functools import partial\n'
         'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
     quote = '\''
     newline_tab = '\n    '
+
+    pipe = KfpPipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
     custom_specs = pipe.custom_specs_helper(custom_training_job_specs)
 
-    # Confirm scripts were created correctly
+    assert pipe._project_id == defaults['gcp']['project_id']
+    assert pipe._custom_training_job_specs == custom_training_job_specs
+
     assert pipe.pipeline_imports == (
         f'''import argparse\n'''
         f'''import os\n'''
