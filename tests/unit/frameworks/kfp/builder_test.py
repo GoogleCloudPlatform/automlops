@@ -26,8 +26,8 @@ from AutoMLOps.frameworks.kfp.builder import (
 import mock
 import os
 import pytest
-
-from AutoMLOps.utils.utils import write_yaml_file, read_yaml_file
+import AutoMLOps.utils.utils
+from AutoMLOps.utils.utils import write_yaml_file, read_yaml_file, make_dirs
 
 TEMP_YAML = {
     "name": "create_dataset",
@@ -77,8 +77,13 @@ def temp_yaml_dict(request, tmpdir):
     return {"path": yaml_path, "vals": request.param}
 
 @pytest.mark.parametrize("component_path", [("test.yaml")])
-def test_build_component(temp_yaml_dict, component_path):
-    build_component(component_path)
+def test_build_component(mocker, temp_yaml_dict, component_path):
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', 'tests/unit/test_data/defaults.yaml')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', 'tests/unit/test_data/')
+
+    make_dirs(['tests/unit/test_data/components/component_base/src'])
+
+    build_component(temp_yaml_dict['path'])
     assert True
 
 def test_build_pipeline():
