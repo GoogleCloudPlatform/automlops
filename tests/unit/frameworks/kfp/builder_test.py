@@ -78,13 +78,22 @@ def temp_yaml_dict(request, tmpdir):
 
 @pytest.mark.parametrize("component_path", [("test.yaml")])
 def test_build_component(mocker, temp_yaml_dict, component_path):
+
+    #Set up variable for the component name to use in assertions
+    component_name = TEMP_YAML['name']
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', 'tests/unit/test_data/defaults.yaml')
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', 'tests/unit/test_data/')
 
     make_dirs(['tests/unit/test_data/components/component_base/src'])
 
     build_component(temp_yaml_dict['path'])
-    assert True
+    assert os.path.exists(f'tests/unit/test_data/components/{component_name}/component.yaml')
+    assert os.path.exists(f'tests/unit/test_data/components/component_base/src/{component_name}.py')
+
+    #Load in the newly created component.yaml file and compare it to the expected output in test_data
+    created_component_dict = read_yaml_file(f'tests/unit/test_data/components/{component_name}/component.yaml')
+    expected_component_dict = read_yaml_file('tests/unit/test_data/component.yaml')
+    assert created_component_dict == expected_component_dict
 
 def test_build_pipeline():
     assert True
