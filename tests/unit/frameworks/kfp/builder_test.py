@@ -76,28 +76,53 @@ def temp_yaml_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, "w")
     return {"path": yaml_path, "vals": request.param}
 
-def test_build_component(mocker, temp_yaml_dict):
+# Create defaults file contents to test
+DEFAULTS = {
+    'gcp':
+        {
+            'af_registry_location': 'us-central1',
+            'project_id': 'my_project',
+            'af_registry_name': 'my_af_registry'
+        }
+    }
+
+@pytest.fixture(params=[DEFAULTS])
+def defaults_dict(request, tmpdir):
+    """Writes temporary yaml file fixture using defaults parameterized dictionaries 
+    during pytest session scope.
+
+    Returns:
+        dict: Path of yaml file and dictionary it contains.
+    """
+
+    yaml_path = tmpdir.join('defaults.yaml')
+    write_yaml_file(yaml_path, request.param, 'w')
+
+    return {'path': yaml_path, 'vals': request.param}
+
+def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict):
 
     #Set up variable for the component name to use in assertions
     component_name = TEMP_YAML['name']
 
     #Patch filepath constants to point to test path.
-    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', 'tests/unit/test_data/defaults.yaml')
-    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', 'tests/unit/test_data/')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', defaults_dict['path'])
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', tmpdir)
 
     #create the required directories for build_component to use.
-    make_dirs(['tests/unit/test_data/components/component_base/src'])
+    make_dirs([f'{tmpdir}/random/component_base/src'])
 
     #call to build_component, passing in the constructed yaml
     build_component(temp_yaml_dict['path'])
 
     #assertions to ensure that correct files were created during build_component call
-    assert os.path.exists(f'tests/unit/test_data/components/{component_name}/component.yaml')
-    assert os.path.exists(f'tests/unit/test_data/components/component_base/src/{component_name}.py')
+    assert os.path.exists(f'{tmpdir}/{component_name}/component.yaml')
+    assert os.path.exists(f'{tmpdir}/components/component_base/src/{component_name}.py')
+    assert os.path.exists(f'{tmpdir}/blah')
 
     #Load in the newly created component.yaml file and compare it to the expected output in test_data
-    created_component_dict = read_yaml_file(f'tests/unit/test_data/components/{component_name}/component.yaml')
-    expected_component_dict = read_yaml_file('tests/unit/test_data/component.yaml')
+    created_component_dict = read_yaml_file(f'{tmpdir}/components/{component_name}/component.yaml')
+    expected_component_dict = read_yaml_file(f'{tmpdir}/component.yaml')
     assert created_component_dict == expected_component_dict
 
 def test_build_pipeline():
