@@ -17,7 +17,6 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
-import os
 import pytest
 from AutoMLOps.utils.utils import write_yaml_file
 from AutoMLOps.utils.constants import (
@@ -27,6 +26,7 @@ from AutoMLOps.utils.constants import (
 )
 from AutoMLOps.frameworks.kfp.constructs.cloudrun import KfpCloudRun
 
+# Create defaults file contents to test
 DEFAULTS1 = {
     'gcp':
         {
@@ -86,18 +86,17 @@ def defaults_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
 
+
 def test_KfpCloudRun(defaults_dict):
-    """Tests the KFP Cloud Run class."""
-    # Extract path and contents from defaults dict to create KFP Component
+    """Tests the KFP Cloud Run class.
+    
+    Args:
+        defaults_file (str): Path to the default config variables yaml.
+    """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
-    print("These are the defaults")
-    print(defaults)
-
-    # Instantiate cloud run object
     my_cloudrun = KfpCloudRun(path)
 
-    # Confirm all attributes were assigned correctly
     assert my_cloudrun._project_id == defaults['gcp']['project_id']
     assert my_cloudrun._pipeline_runner_service_account == defaults['gcp']['pipeline_runner_service_account']
     assert my_cloudrun._cloud_tasks_queue_location == defaults['gcp']['cloud_tasks_queue_location']
@@ -243,7 +242,6 @@ def test_KfpCloudRun(defaults_dict):
         f'''    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))\n'''
     )
 
-    # Confirm queueing svc attribute is correct
     assert my_cloudrun.queueing_svc == (
         GENERATED_LICENSE +
         f'''"""Submit pipeline job using Cloud Tasks and create Cloud Scheduler Job."""\n'''

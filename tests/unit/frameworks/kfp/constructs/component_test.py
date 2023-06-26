@@ -17,12 +17,10 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
-import os
 import pytest
 from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent
 from AutoMLOps.utils.constants import GENERATED_LICENSE
-from AutoMLOps.utils.utils import is_using_kfp_spec
-from AutoMLOps.utils.utils import write_yaml_file
+from AutoMLOps.utils.utils import is_using_kfp_spec, write_yaml_file
 
 # Create defaults file contents to test
 DEFAULTS1 = {
@@ -84,7 +82,7 @@ def test_KfpComponent(component_spec, defaults_dict):
 
     Args:
         component_spec (dict): Dictionary of component specs including details
-                of component image, startup command, and args.
+            of component image, startup command, and args.
         defaults_file (dict): Dictionary containing the path to the default config
             variables yaml and the dictionary held within it.
     """

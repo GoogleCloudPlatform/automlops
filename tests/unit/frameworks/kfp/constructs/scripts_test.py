@@ -38,7 +38,12 @@ from AutoMLOps.utils.constants import (
         (
             'us-central1', 'my-registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
             'us-central1', 'my-queue', 'main', 'my-repo', 'us-central1', 'my-bucket', 'my-service-account@serviceaccount.com',
-            'my-project', False, 'us-central1', 'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['req1', 'req2']
+            'my-project', False, 'us-central1', 'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['pandas', 'kfp']
+        ),
+        (
+            'us-central2', 'my-123registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
+            'us-central1', 'my-queue', 'main', 'my-repo', 'us-central3', 'my-bucket', 'my-service-account@serviceaccount.com',
+            'my-project', False, 'us-central1', 'my-schedule', '0 10 * * *', 'base_dir', 'my-connector', ['numpy', 'kfp']
         )
     ]
 )
@@ -65,7 +70,33 @@ def test_init(mocker,
               base_dir,
               vpc_connector,
               reqs):
-    """Tests the initialization of the KFPScripts class."""
+    """Tests the initialization of the KFPScripts class.
+
+    Args:
+        mocker: Mocker used to patch constants to test in tempoarary environment.
+        af_registry_location: Region of the Artifact Registry.
+        af_registry_name: Artifact Registry name where components are stored.
+        base_image: The image to use in the dockerfile.
+        cb_trigger_location: The location of the cloudbuild trigger.
+        cb_trigger_name: The name of the cloudbuild trigger.
+        cloud_run_location: The location of the cloud runner service.
+        cloud_run_name: The name of the cloud runner service.
+        cloud_tasks_queue_location: The location of the cloud tasks queue.
+        cloud_tasks_queue_name: The name of the cloud tasks queue.
+        csr_branch_name: The name of the csr branch to push to to trigger cb job.
+        csr_name: The name of the cloud source repo to use.
+        gs_bucket_location: Region of the GS bucket.
+        gs_bucket_name: GS bucket name where pipeline run metadata is stored.
+        pipeline_runner_sa: Service Account to runner PipelineJobs.
+        project_id: The project ID.
+        run_local: Flag that determines whether to use Cloud Run CI/CD.
+        schedule_location: The location of the scheduler resource.
+        schedule_name: The name of the scheduler resource.
+        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
+        base_dir: Top directory name.
+        vpc_connector: The name of the vpc connector to use.
+        reqs: Package requirements to write into requirements.txt
+    """
 
     # Patch global directory variables
     temp_dir = 'test_temp_dir'
@@ -106,27 +137,27 @@ def test_init(mocker,
         )
 
         # Assert object properties were created properly
-        assert scripts._KfpScripts__af_registry_location == "us-central1"
-        assert scripts._KfpScripts__af_registry_name == af_registry_name
-        assert scripts._KfpScripts__cb_trigger_location == cb_trigger_location
-        assert scripts._KfpScripts__cb_trigger_name == cb_trigger_name
-        assert scripts._KfpScripts__cloud_run_location == cloud_run_location
-        assert scripts._KfpScripts__cloud_run_name == cloud_run_name
-        assert scripts._KfpScripts__cloud_tasks_queue_location == cloud_tasks_queue_location
-        assert scripts._KfpScripts__cloud_tasks_queue_name == cloud_tasks_queue_name
-        assert scripts._KfpScripts__cloud_source_repository_branch == csr_branch_name
-        assert scripts._KfpScripts__cloud_source_repository == csr_name
-        assert scripts._KfpScripts__base_image == base_image
-        assert scripts._KfpScripts__gs_bucket_location == gs_bucket_location
-        assert scripts._KfpScripts__gs_bucket_name == gs_bucket_name
-        assert scripts._KfpScripts__pipeline_runner_service_account == pipeline_runner_sa
-        assert scripts._KfpScripts__project_id == project_id
-        assert scripts._KfpScripts__run_local == run_local
-        assert scripts._KfpScripts__cloud_schedule_location == schedule_location
-        assert scripts._KfpScripts__cloud_schedule_name == schedule_name
-        assert scripts._KfpScripts__cloud_schedule_pattern == schedule_pattern
-        assert scripts._KfpScripts__base_dir == base_dir
-        assert scripts._KfpScripts__vpc_connector == vpc_connector
+        assert scripts._af_registry_location == af_registry_location
+        assert scripts._af_registry_name == af_registry_name
+        assert scripts._cb_trigger_location == cb_trigger_location
+        assert scripts._cb_trigger_name == cb_trigger_name
+        assert scripts._cloud_run_location == cloud_run_location
+        assert scripts._cloud_run_name == cloud_run_name
+        assert scripts._cloud_tasks_queue_location == cloud_tasks_queue_location
+        assert scripts._cloud_tasks_queue_name == cloud_tasks_queue_name
+        assert scripts._cloud_source_repository_branch == csr_branch_name
+        assert scripts._cloud_source_repository == csr_name
+        assert scripts._base_image == base_image
+        assert scripts._gs_bucket_location == gs_bucket_location
+        assert scripts._gs_bucket_name == gs_bucket_name
+        assert scripts._pipeline_runner_service_account == pipeline_runner_sa
+        assert scripts._project_id == project_id
+        assert scripts._run_local == run_local
+        assert scripts._cloud_schedule_location == schedule_location
+        assert scripts._cloud_schedule_name == schedule_name
+        assert scripts._cloud_schedule_pattern == schedule_pattern
+        assert scripts._base_dir == base_dir
+        assert scripts._vpc_connector == vpc_connector
 
         assert scripts.build_pipeline_spec == (
             '#!/bin/bash\n' + GENERATED_LICENSE +
@@ -394,41 +425,42 @@ def test_init(mocker,
             f'  pipeline_region: {gs_bucket_location}\n'
             f'  pipeline_storage_path: gs://{gs_bucket_name}/pipeline_root\n')
 
-        assert scripts.requirements == (
-            f'db_dtypes\n'
-            f'fsspec\n'
-            f'gcsfs\n'
-            f'google-cloud-aiplatform\n'
-            f'google-cloud-appengine-logging\n'
-            f'google-cloud-audit-log\n'
-            f'google-cloud-bigquery\n'
-            f'google-cloud-bigquery-storage\n'
-            f'google-cloud-bigtable\n'
-            f'google-cloud-core\n'
-            f'google-cloud-dataproc\n'
-            f'google-cloud-datastore\n'
-            f'google-cloud-dlp\n'
-            f'google-cloud-firestore\n'
-            f'google-cloud-kms\n'
-            f'google-cloud-language\n'
-            f'google-cloud-logging\n'
-            f'google-cloud-monitoring\n'
-            f'google-cloud-notebooks\n'
-            f'google-cloud-pipeline-components\n'
-            f'google-cloud-pubsub\n'
-            f'google-cloud-pubsublite\n'
-            f'google-cloud-recommendations-ai\n'
-            f'google-cloud-resource-manager\n'
-            f'google-cloud-scheduler\n'
-            f'google-cloud-spanner\n'
-            f'google-cloud-speech\n'
-            f'google-cloud-storage\n'
-            f'google-cloud-tasks\n'
-            f'google-cloud-translate\n'
-            f'google-cloud-videointelligence\n'
-            f'google-cloud-vision\n'
-            f'pyarrow\n'
-            f'{"".join(r+f"{NEWLINE}" for r in sorted(reqs))}')
+        default_reqs = [
+            'google-cloud-aiplatform',
+            'google-cloud-appengine-logging',
+            'google-cloud-audit-log',
+            'google-cloud-bigquery',
+            'google-cloud-bigquery-storage',
+            'google-cloud-bigtable',
+            'google-cloud-core',
+            'google-cloud-dataproc',
+            'google-cloud-datastore',
+            'google-cloud-dlp',
+            'google-cloud-firestore',
+            'google-cloud-kms',
+            'google-cloud-language',
+            'google-cloud-logging',
+            'google-cloud-monitoring',
+            'google-cloud-notebooks',
+            'google-cloud-pipeline-components',
+            'google-cloud-pubsub',
+            'google-cloud-pubsublite',
+            'google-cloud-recommendations-ai',
+            'google-cloud-resource-manager',
+            'google-cloud-scheduler',
+            'google-cloud-spanner',
+            'google-cloud-speech',
+            'google-cloud-storage',
+            'google-cloud-tasks',
+            'google-cloud-translate',
+            'google-cloud-videointelligence',
+            'google-cloud-vision',
+            'db_dtypes',
+            'pyarrow',
+            'gcsfs',
+            'fsspec'
+        ]
+        assert scripts.requirements == f'{"".join(r+f"{NEWLINE}" for r in sorted(reqs + default_reqs))}'
 
     # Remove temporary files
     os.remove('test_temp_dir/requirements.txt')
