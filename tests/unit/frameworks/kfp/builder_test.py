@@ -76,17 +76,22 @@ def temp_yaml_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, "w")
     return {"path": yaml_path, "vals": request.param}
 
-@pytest.mark.parametrize("component_path", [("test.yaml")])
-def test_build_component(mocker, temp_yaml_dict, component_path):
+def test_build_component(mocker, temp_yaml_dict):
 
     #Set up variable for the component name to use in assertions
     component_name = TEMP_YAML['name']
+
+    #Patch filepath constants to point to test path.
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', 'tests/unit/test_data/defaults.yaml')
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', 'tests/unit/test_data/')
 
+    #create the required directories for build_component to use.
     make_dirs(['tests/unit/test_data/components/component_base/src'])
 
+    #call to build_component, passing in the constructed yaml
     build_component(temp_yaml_dict['path'])
+
+    #assertions to ensure that correct files were created during build_component call
     assert os.path.exists(f'tests/unit/test_data/components/{component_name}/component.yaml')
     assert os.path.exists(f'tests/unit/test_data/components/component_base/src/{component_name}.py')
 
