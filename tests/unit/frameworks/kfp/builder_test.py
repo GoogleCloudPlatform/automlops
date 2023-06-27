@@ -154,8 +154,6 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
     build_component(temp_yaml_dict["path"])
 
     # assertions to ensure that correct files were created during build_component call
-    assert os.path.exists(tmpdir)
-    assert os.path.exists(f"{tmpdir}/components")
     assert os.path.exists(f"{tmpdir}/components/{component_name}/component.yaml")
     assert os.path.exists(f"{tmpdir}/components/component_base/src/{component_name}.py")
 
@@ -163,9 +161,7 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
     created_component_dict = read_yaml_file(
         f"{tmpdir}/components/{component_name}/component.yaml"
     )
-    
     assert created_component_dict == expected_component_dict
-
 
 def test_build_pipeline():
     assert True
