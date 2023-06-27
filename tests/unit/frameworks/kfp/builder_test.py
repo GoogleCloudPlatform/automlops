@@ -27,7 +27,7 @@ import mock
 import os
 import pytest
 import AutoMLOps.utils.utils
-from AutoMLOps.utils.utils import write_yaml_file, read_yaml_file, make_dirs
+from AutoMLOps.utils.utils import write_yaml_file, read_yaml_file, make_dirs, write_file
 
 TEMP_YAML = {
     "name": "create_dataset",
@@ -163,5 +163,51 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
     )
     assert created_component_dict == expected_component_dict
 
-def test_build_pipeline():
+@pytest.mark.parametrize(
+    'custom_training_job_specs, pipeline_parameter_values',
+    [
+        ([{'component_spec': 'mycomp1', 'other': 'myother'}], 
+        {
+            "bq_table": "automlops-sandbox.test_dataset.dry-beans",
+            "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
+            "data_path": "gs://automlops-sandbox-bucket/data.csv",
+            "project_id": "automlops-sandbox",
+            "region": "us-central1"
+            }
+        ),
+        ([
+            {
+                "component_spec": "train_model",
+                "display_name": "train-model-accelerated",
+                "machine_type": "a2-highgpu-1g",
+                "accelerator_type": "NVIDIA_TESLA_A100",
+                "accelerator_count": "1",
+            }
+        ], 
+        {
+            "bq_table": "automlops-sandbox.test_dataset.dry-beans",
+            "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
+            "data_path": "gs://automlops-sandbox-bucket/data.csv",
+            "project_id": "automlops-sandbox",
+            "region": "us-central1"
+            }
+        )
+    ]
+)
+def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs, pipeline_parameter_values):
+
+    #Patch consants and other functions
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "BASE_DIR", f"{tmpdir}" + "/")
+    mocker.patch.object(
+        AutoMLOps.frameworks.kfp.builder,
+        "GENERATED_DEFAULTS_FILE",
+        defaults_dict["path"],
+    )
+    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+
+    # create the required directories for build_pipeline to use.
+    make_dirs([f"{tmpdir}/pipelines/runtime_parameters"])
+
+
+    build_pipeline(custom_training_job_specs, pipeline_parameter_values)
     assert True
