@@ -196,8 +196,11 @@ def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "GENERATED_DEFAULTS_FILE", defaults_dict["path"])
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
-    # create the required directories for build_pipeline to use.
+    # create the required directories and files for build_pipeline to use.
     make_dirs([f"{tmpdir}/pipelines/runtime_parameters"])
-
+    file_path = tmpdir/"pipelines/pipeline.py"
+    file_path = file_path.open("w", encoding="utf-8")
+    file_path.close()
+    
     build_pipeline(custom_training_job_specs, pipeline_parameter_values)
     assert True
