@@ -17,17 +17,29 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
-from AutoMLOps.frameworks.kfp.builder import (
-    build,  # Does not necessarily need to be tested, a combination of other functions
-    build_component,
-    build_pipeline,
-    build_cloudrun,  # Does not necessarily need to be tested, a combination of other functions
-)
 import mock
 import os
 import pytest
 import AutoMLOps.utils.utils
-from AutoMLOps.utils.utils import write_yaml_file, read_yaml_file, make_dirs, write_file
+from AutoMLOps.frameworks.kfp.builder import (
+    build, # Does not necessarily need to be tested, a combination of other functions
+    build_component,
+    build_pipeline,
+    build_cloudrun, # Does not necessarily need to be tested, a combination of other functions
+)
+from AutoMLOps.utils.utils import (
+    write_yaml_file,
+    read_yaml_file,
+    make_dirs,
+    write_file)
+
+DEFAULTS = {
+    "gcp": {
+        "af_registry_location": "us-central1",
+        "project_id": "my_project",
+        "af_registry_name": "my_af_registry",
+    }
+}
 
 TEMP_YAML = {
     "name": "create_dataset",
@@ -64,7 +76,6 @@ TEMP_YAML = {
     },
 }
 
-
 @pytest.fixture(params=[TEMP_YAML])
 def temp_yaml_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized dictionaries
@@ -77,17 +88,6 @@ def temp_yaml_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, "w")
     return {"path": yaml_path, "vals": request.param}
 
-
-# Create defaults file contents to test
-DEFAULTS = {
-    "gcp": {
-        "af_registry_location": "us-central1",
-        "project_id": "my_project",
-        "af_registry_name": "my_af_registry",
-    }
-}
-
-
 @pytest.fixture(params=[DEFAULTS])
 def defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized dictionaries
@@ -96,12 +96,9 @@ def defaults_dict(request, tmpdir):
     Returns:
         dict: Path of yaml file and dictionary it contains.
     """
-
     yaml_path = tmpdir.join("defaults.yaml")
     write_yaml_file(yaml_path, request.param, "w")
-
     return {"path": yaml_path, "vals": request.param}
-
 
 @pytest.fixture()
 def expected_component_dict():
@@ -136,16 +133,14 @@ def expected_component_dict():
     }
 
 def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected_component_dict):
+    """_summary_
+    """
     # Set up variable for the component name to use in assertions
     component_name = TEMP_YAML["name"]
 
     # Patch filepath constants to point to test path.
-    mocker.patch.object(
-        AutoMLOps.frameworks.kfp.builder,
-        "GENERATED_DEFAULTS_FILE",
-        defaults_dict["path"],
-    )
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "BASE_DIR", f"{tmpdir}" + "/")
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "GENERATED_DEFAULTS_FILE", defaults_dict["path"])
 
     # create the required directories for build_component to use.
     make_dirs([f"{tmpdir}/components/component_base/src"])
@@ -166,7 +161,7 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
 @pytest.mark.parametrize(
     'custom_training_job_specs, pipeline_parameter_values',
     [
-        ([{'component_spec': 'mycomp1', 'other': 'myother'}], 
+        ([{'component_spec': 'mycomp1', 'other': 'myother'}],
         {
             "bq_table": "automlops-sandbox.test_dataset.dry-beans",
             "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
@@ -183,7 +178,7 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
                 "accelerator_type": "NVIDIA_TESLA_A100",
                 "accelerator_count": "1",
             }
-        ], 
+        ],
         {
             "bq_table": "automlops-sandbox.test_dataset.dry-beans",
             "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
@@ -198,16 +193,11 @@ def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs
 
     #Patch consants and other functions
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "BASE_DIR", f"{tmpdir}" + "/")
-    mocker.patch.object(
-        AutoMLOps.frameworks.kfp.builder,
-        "GENERATED_DEFAULTS_FILE",
-        defaults_dict["path"],
-    )
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "GENERATED_DEFAULTS_FILE", defaults_dict["path"])
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
     # create the required directories for build_pipeline to use.
     make_dirs([f"{tmpdir}/pipelines/runtime_parameters"])
-
 
     build_pipeline(custom_training_job_specs, pipeline_parameter_values)
     assert True

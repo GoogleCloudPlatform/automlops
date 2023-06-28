@@ -136,27 +136,27 @@ def test_init(mocker,
         )
 
         # Assert object properties were created properly
-        assert scripts._KfpScripts__af_registry_location == af_registry_location
-        assert scripts._KfpScripts__af_registry_name == af_registry_name
-        assert scripts._KfpScripts__cb_trigger_location == cb_trigger_location
-        assert scripts._KfpScripts__cb_trigger_name == cb_trigger_name
-        assert scripts._KfpScripts__cloud_run_location == cloud_run_location
-        assert scripts._KfpScripts__cloud_run_name == cloud_run_name
-        assert scripts._KfpScripts__cloud_tasks_queue_location == cloud_tasks_queue_location
-        assert scripts._KfpScripts__cloud_tasks_queue_name == cloud_tasks_queue_name
-        assert scripts._KfpScripts__cloud_source_repository_branch == csr_branch_name
-        assert scripts._KfpScripts__cloud_source_repository == csr_name
-        assert scripts._KfpScripts__base_image == base_image
-        assert scripts._KfpScripts__gs_bucket_location == gs_bucket_location
-        assert scripts._KfpScripts__gs_bucket_name == gs_bucket_name
-        assert scripts._KfpScripts__pipeline_runner_service_account == pipeline_runner_sa
-        assert scripts._KfpScripts__project_id == project_id
-        assert scripts._KfpScripts__run_local == run_local
-        assert scripts._KfpScripts__cloud_schedule_location == schedule_location
-        assert scripts._KfpScripts__cloud_schedule_name == schedule_name
-        assert scripts._KfpScripts__cloud_schedule_pattern == schedule_pattern
-        assert scripts._KfpScripts__base_dir == base_dir
-        assert scripts._KfpScripts__vpc_connector == vpc_connector
+        assert scripts._af_registry_location == af_registry_location
+        assert scripts._af_registry_name == af_registry_name
+        assert scripts._cb_trigger_location == cb_trigger_location
+        assert scripts._cb_trigger_name == cb_trigger_name
+        assert scripts._cloud_run_location == cloud_run_location
+        assert scripts._cloud_run_name == cloud_run_name
+        assert scripts._cloud_tasks_queue_location == cloud_tasks_queue_location
+        assert scripts._cloud_tasks_queue_name == cloud_tasks_queue_name
+        assert scripts._cloud_source_repository_branch == csr_branch_name
+        assert scripts._cloud_source_repository == csr_name
+        assert scripts._base_image == base_image
+        assert scripts._gs_bucket_location == gs_bucket_location
+        assert scripts._gs_bucket_name == gs_bucket_name
+        assert scripts._pipeline_runner_service_account == pipeline_runner_sa
+        assert scripts._project_id == project_id
+        assert scripts._run_local == run_local
+        assert scripts._cloud_schedule_location == schedule_location
+        assert scripts._cloud_schedule_name == schedule_name
+        assert scripts._cloud_schedule_pattern == schedule_pattern
+        assert scripts._base_dir == base_dir
+        assert scripts._vpc_connector == vpc_connector
 
         assert scripts.build_pipeline_spec == (
             '#!/bin/bash\n' + GENERATED_LICENSE +
