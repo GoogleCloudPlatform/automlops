@@ -236,6 +236,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 
 [Alex Ho](mailto:alexanderho@google.com): Engineer
 
+[Kyle Sorensen](mailto:kylesorensen@google.com): Cloud Engineer
+
 # Disclaimer
 
 **This is not an officially supported Google product.**
