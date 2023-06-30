@@ -238,15 +238,8 @@ def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs
     """
     with open(created_pipeline_file_path) as file:
         pipeline_content = file.read()
-    print(type(pipeline_content))
-
+        
     # Find the keywords in the file using a regular expression
     keywords = ["Apache License", "import kfp", "parser = argparse.ArgumentParser()"]
     for keyword in keywords:
         assert re.search(r"\b{}\b".format(keyword), pipeline_content)
-    
-
-
-
-
-

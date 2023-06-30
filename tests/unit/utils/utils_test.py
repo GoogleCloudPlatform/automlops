@@ -46,7 +46,7 @@ from AutoMLOps.utils.utils import (
     [
         (["dir1", "dir2"], [True, True], does_not_raise()),
         (["dir1", "dir1"], [True, False], does_not_raise()),
-        (["dir1", "\0"], [True, True], pytest.raises(ValueError))
+        (["\0", "dir1"], [True, True], pytest.raises(ValueError))
     ]
 )
 def test_make_dirs(directories, existance, expectation):
@@ -244,6 +244,7 @@ def test_get_components_list(mocker, comp_path, comp_name, patch_cwd, expectatio
         mocker: Mocker to patch the cache directory for component files.
         comp_path: Path(s) to component yamls.
         comp_name: Name(s) of components.
+        patch_cwd: Boolean flag indicating whether to patch the current working directory from CACHE_DIR to root
         expectation: Any corresponding expected errors for each set of parameters.
     """
     if patch_cwd:
@@ -328,18 +329,18 @@ def test_execute_process(command, expectation):
         ("Schedule", False, does_not_raise())
     ]
 )
-def test_validate_schedule(sch_pattern, run_loc, expectation):
-    """Tests execute_process, which validates the inputted schedule
+def test_validate_schedule(sch_pattern, run_local, expectation):
+    """Tests validate_schedule, which validates the inputted schedule
     parameter. There are four test cases for this function, which tests each
     combination of sch_pattern and run_loc for the expected results.
 
     Args:
         sch_pattern: Cron formatted value used to create a Scheduled retrain job.
-        run_loc: Flag that determines whether to use Cloud Run CI/CD.
+        run_local: Flag that determines whether to use Cloud Run CI/CD.
         expectation: Any corresponding expected errors for each set of parameters.
     """
     with expectation:
-        validate_schedule(schedule_pattern=sch_pattern, run_local=run_loc)
+        validate_schedule(schedule_pattern=sch_pattern, run_local=run_local)
 
 @pytest.mark.parametrize(
     "params, expected",
@@ -392,7 +393,7 @@ def func4():
     ]
 )
 def test_get_function_source_definition(func, expected):
-    """Tests execute_process, which returns a formatted string of the source code.
+    """Tests get_function_source_definition, which returns a formatted string of the source code.
 
     Args:
         func: Function to pull source definition from.
