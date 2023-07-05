@@ -97,6 +97,7 @@ def test_KfpCloudRun(defaults_dict):
     defaults = defaults_dict['vals']
     my_cloudrun = KfpCloudRun(path)
 
+    #Assert that created KfpCloudRun instance has the expected attribute values
     assert my_cloudrun._project_id == defaults['gcp']['project_id']
     assert my_cloudrun._pipeline_runner_service_account == defaults['gcp']['pipeline_runner_service_account']
     assert my_cloudrun._cloud_tasks_queue_location == defaults['gcp']['cloud_tasks_queue_location']

@@ -321,7 +321,7 @@ def test_execute_process(command, expectation):
         os.remove("test.txt")
 
 @pytest.mark.parametrize(
-    "sch_pattern, run_loc, expectation",
+    "sch_pattern, run_local, expectation",
     [
         ("No Schedule Specified", True, does_not_raise()),
         ("No Schedule Specified", False, does_not_raise()),

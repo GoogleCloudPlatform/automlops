@@ -20,7 +20,7 @@
 import pytest
 from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
 from AutoMLOps.utils.constants import GENERATED_LICENSE
-from AutoMLOps.utils.utils import format_spec_dict, get_components_list
+from AutoMLOps.utils.utils import get_components_list
 from AutoMLOps.utils.utils import write_yaml_file
 import AutoMLOps.utils.utils
 
@@ -91,6 +91,7 @@ def test_KfpPipeline(mocker, custom_training_job_specs, defaults_dict):
     pipe = KfpPipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
     custom_specs = pipe.custom_specs_helper(custom_training_job_specs)
 
+    #Assert that created Kfp Pipeline instance has the expected attributes
     assert pipe._project_id == defaults['gcp']['project_id']
     assert pipe._custom_training_job_specs == custom_training_job_specs
 

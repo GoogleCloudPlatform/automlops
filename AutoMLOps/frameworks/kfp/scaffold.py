@@ -89,7 +89,6 @@ def get_packages_to_install_command(func: Optional[Callable] = None,
         packages_to_install: A list of optional packages to install before
             executing func. These will always be installed at component runtime.
     """
-    # pylint: disable=anomalous-backslash-in-string
     newline = '\n'
     if not packages_to_install:
         packages_to_install = []
