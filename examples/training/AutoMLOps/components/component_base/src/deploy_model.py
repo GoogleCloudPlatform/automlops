@@ -22,14 +22,20 @@ from kfp.v2.dsl import *
 from typing import *
 
 def deploy_model(
-    model: Input[Model],
-    project: str,
-    region: str,
-    vertex_endpoint: Output[Artifact],
-    vertex_model: Output[Model]
+    model_directory: str,
+    project_id: str,
+    region: str
 ):
+    """Custom component that trains a decision tree on the training data.
+
+    Args:
+        model_directory: GS location of saved model.
+        project_id: Project_id.
+        region: Region.
+    """
     from google.cloud import aiplatform
-    aiplatform.init(project=project, location=region)
+
+    aiplatform.init(project=project_id, location=region)
     # Check if model exists
     models = aiplatform.Model.list()
     model_name = 'beans-model'
@@ -41,14 +47,14 @@ def deploy_model(
         version_description='challenger version'
     else:
         parent_model = None
-        model_id=model_name
+        model_id = model_name
         is_default_version=True
         version_aliases=['champion', 'custom-training', 'decision-tree']
         version_description='first version'
 
     serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest'
     uploaded_model = aiplatform.Model.upload(
-        artifact_uri=model.uri,
+        artifact_uri=model_directory,
         model_id=model_id,
         display_name=model_name,
         parent_model=parent_model,
@@ -63,9 +69,6 @@ def deploy_model(
     endpoint = uploaded_model.deploy(
         machine_type='n1-standard-4',
         deployed_model_display_name='deployed-beans-model')
-    vertex_endpoint.uri = endpoint.resource_name
-    vertex_model.uri = endpoint.resource_name
-
 
 def main():
     """Main executor."""

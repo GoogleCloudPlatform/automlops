@@ -215,6 +215,7 @@ def _push_to_csr():
        then pushes to the specified branch and triggers the cloudbuild job.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    csr_remote_origin_url = f'''https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}'''
 
     if not os.path.exists('.git'):
 
@@ -223,7 +224,7 @@ def _push_to_csr():
         execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
 
         # Add repo and branch
-        execute_process(f'''git remote add origin https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['cloud_source_repository']}''', to_null=False)
+        execute_process(f'''git remote add origin {csr_remote_origin_url}''', to_null=False)
         execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
         has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
@@ -233,6 +234,11 @@ def _push_to_csr():
             execute_process('git add .gitkeep', to_null=False)
             execute_process('''git commit -m 'init' ''', to_null=False)
             execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+
+    # Check for remote origin url mismatch
+    actual_remote = subprocess.check_output(['git config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+    if actual_remote != csr_remote_origin_url:
+        raise RuntimeError(f'Expected remote origin url {csr_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
 
     # Add, commit, and push changes to CSR
     execute_process(f'touch {BASE_DIR}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
