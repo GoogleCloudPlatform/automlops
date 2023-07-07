@@ -16,6 +16,7 @@
 
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 from AutoMLOps.frameworks.base import Component, Pipeline
 from AutoMLOps.utils.utils import write_yaml_file

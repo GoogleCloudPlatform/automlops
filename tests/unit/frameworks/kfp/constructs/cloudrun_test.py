@@ -16,6 +16,7 @@
 
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 import pytest
 from AutoMLOps.utils.utils import write_yaml_file
