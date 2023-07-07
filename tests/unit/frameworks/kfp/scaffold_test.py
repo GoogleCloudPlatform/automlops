@@ -15,20 +15,19 @@
 """Unit tests for kfp scaffold module."""
 
 # pylint: disable=anomalous-backslash-in-string
-# pylint: disable=line-too-long
-# pylint: disable=missing-function-docstring
+# dpylint: disable=line-too-long
+# dpylint: disable=missing-function-docstring
 
 from contextlib import nullcontext as does_not_raise
 import os
 import pytest
 from AutoMLOps.frameworks.kfp.scaffold import (
     create_component_scaffold,
+    create_pipeline_scaffold,
     get_packages_to_install_command,
     get_compile_step,
     get_function_parameters,
     get_pipeline_decorator,
-    maybe_strip_optional_from_annotation,
-    create_pipeline_scaffold
 )
 import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import get_function_source_definition, read_yaml_file
@@ -82,7 +81,8 @@ def test_create_component_scaffold(func, packages_to_install, expectation):
             set of parameters.
     """
     with expectation:
-        create_component_scaffold(func=func, packages_to_install=packages_to_install)
+        create_component_scaffold(func=func,
+                                  packages_to_install=packages_to_install)
 
         # Assert the yaml exists
         func_path = f'.AutoMLOps-cache/{func.__name__}.yaml'
@@ -156,7 +156,8 @@ def test_get_packages_to_install_command(func, packages_to_install):
     ]
 )
 def test_get_function_parameters(func, params, expectation):
-    """Tests get_function_parameters, which returns a formatted list of parameters.
+    """Tests get_function_parameters, which returns a formatted list of
+    parameters.
 
     Args:
         func: The python function to create a component from. The function
@@ -184,10 +185,12 @@ def test_maybe_strip_optional_from_annotation(annotation, result, expectation):
         List[int] -> List[int]
 
     Args:
-        annotation: The original type annotation which may or may not has `Optional`.
-        result: The type inside Optional[] if Optional exists, otherwise the original type.
-        expectation: Any corresponding expected errors for each
-            set of parameters.
+        annotation: The original type annotation which may or may not has
+            `Optional`.
+        result: The type inside Optional[] if Optional exists, otherwise the
+            original type.
+        expectation: Any corresponding expected errors for each set of
+            parameters.
     """
     assert True
 
@@ -204,11 +207,12 @@ def test_create_pipeline_scaffold(mocker, func, name, description):
     scaffold which will be used by the formalize function.
 
     Args:
-        mocker: Mocker used to patch constants to test in tempoarary environment.
-        func: The python function to create a pipeline from. The function
-            should have type annotations for all its arguments, indicating how
-            it is intended to be used (e.g. as an input/output Artifact object,
-            a plain parameter, or a path to a file).
+        mocker: Mocker used to patch constants to test in tempoarary
+            environment.
+        func: The python function to create a pipeline from. The function should
+            have type annotations for all its arguments, indicating how it is
+            intended to be used (e.g. as an input/output Artifact object, a
+            plain parameter, or a path to a file).
         name: The name of the pipeline.
         description: Short description of what the pipeline does.
     """

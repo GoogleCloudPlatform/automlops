@@ -14,6 +14,7 @@
 
 """Unit tests for frameworks base module."""
 
+# pylint: disable=C0103
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
@@ -41,7 +42,8 @@ DEFAULTS2 = {
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
 def fixture_defaults_dict(request, tmpdir):
-    """Writes temporary yaml file fixture using defaults parameterized dictionaries during pytest session scope.
+    """Writes temporary yaml file fixture using defaults parameterized
+    dictionaries during pytest session scope.
 
     Returns:
         str: Path of yaml file.
@@ -54,13 +56,15 @@ def fixture_defaults_dict(request, tmpdir):
     'component_spec',
     ['test1', 'test2']
 )
-def test_component(defaults_dict, component_spec):
-    """Tests the Component base class, the parent class that defines a general abstraction of a Component.
+def test_Component(defaults_dict, component_spec):
+    """Tests the Component base class, the parent class that defines a general
+    abstraction of a Component.
 
     Args:
+        defaults_dict (str): Dictionary containing the path to the default config
+            variables yaml and the dictionary held within it.
         component_spec (dict): Dictionary of component specs including details
             of component image, startup command, and args.
-        defaults_file (str): Path to the default config variables yaml.
     """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
@@ -96,16 +100,20 @@ def test_component(defaults_dict, component_spec):
         ]
     ]
 )
-def test_pipeline(defaults_dict, custom_training_job_specs):
-    """Tests the Pipeline base class, the parent class that defines a general abstraction of a Pipeline.
+def test_Pipeline(defaults_dict, custom_training_job_specs):
+    """Tests the Pipeline base class, the parent class that defines a general
+    abstraction of a Pipeline.
 
     Args:
-        custom_training_job_specs (List[Dict]): Specifies the specs to run the training job with.
-        defaults_file (str): Path to the default config variables yaml.
+        defaults_dict (str): Dictionary containing the path to the default config
+            variables yaml and the dictionary held within it.
+        custom_training_job_specs (List[Dict]): Specifies the specs to run the
+            training job with.
     """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
 
-    my_pipeline = Pipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
+    my_pipeline = Pipeline(custom_training_job_specs=custom_training_job_specs, 
+                           defaults_file=path)
     assert my_pipeline._project_id == defaults['gcp']['project_id']
     assert my_pipeline._custom_training_job_specs == custom_training_job_specs

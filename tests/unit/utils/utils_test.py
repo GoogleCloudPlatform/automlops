@@ -17,11 +17,11 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
+from contextlib import nullcontext as does_not_raise
 import os
 import pandas as pd
 import pytest
 import yaml
-from contextlib import nullcontext as does_not_raise
 
 import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import (
@@ -50,19 +50,17 @@ from AutoMLOps.utils.utils import (
     ]
 )
 def test_make_dirs(directories, existance, expectation):
-    """Tests make_dirs, which creates a list of directories if they do 
-    not already exist. There are three test cases for this function:
+    """Tests make_dirs, which creates a list of directories if they do not
+    already exist. There are three test cases for this function:
         1. Expected outcome, folders created as expected.
         2. Duplicate folder names given, expecting only one folder created.
         3. Invalid folder name given, expects an error.
 
     Args:
         directories: List of directories to be created.
-        existance: List of booleans indicating whether the
-            listed directories to be created are expected to
-            exist after invoking make_dirs.
-        expectation: Any corresponding expected errors for each
-            set of parameters.
+        existance: List of booleans indicating whether the listed directories to
+            be created are expected to exist after invoking make_dirs.
+        expectation: Any corresponding expected errors for each set of parameters.
     """
     with expectation:
         make_dirs(directories=directories)
@@ -74,8 +72,18 @@ def test_make_dirs(directories, existance, expectation):
 @pytest.mark.parametrize(
     "filepath, content1, content2, expectation",
     [
-        ("test.yaml", {"key1": "value1", "key2": "value2"}, None, does_not_raise()),
-        ("test.yaml", {"key1": "value1", False: "random stuff"}, r"-A fails", pytest.raises(yaml.YAMLError))
+        (
+            "test.yaml",
+            {"key1": "value1", "key2": "value2"},
+            None,
+            does_not_raise()
+        ),
+        (
+            "test.yaml",
+            {"key1": "value1", False: "random stuff"},
+            r"-A fails",
+            pytest.raises(yaml.YAMLError)
+        )
     ]
 )
 def test_read_yaml_file(filepath, content1, content2, expectation):
@@ -86,12 +94,12 @@ def test_read_yaml_file(filepath, content1, content2, expectation):
 
     Args:
         filepath: Path to yaml file to be read.
-        content1: First set of content to be included in the yaml
-            at the given file path.
-        content2: Second set of content to be included in the yaml
-            at the given file path.
-        expectation: Any corresponding expected errors for each
-            set of parameters.
+        content1: First set of content to be included in the yaml at the given
+            file path.
+        content2: Second set of content to be included in the yaml at the given
+            file path.
+        expectation: Any corresponding expected errors for each set of
+            parameters.
     """
     with open(file=filepath, mode="w", encoding="utf-8") as file:
         if content1:
@@ -111,17 +119,17 @@ def test_read_yaml_file(filepath, content1, content2, expectation):
     ]
 )
 def test_write_yaml(filepath, mode, expectation):
-    """Tests write_yaml_file, which writes a yaml file. There are three
-    sets of test cases for this function:
-            1. Expected outcome, yaml is written correctly.
-            2. Invalid file path given, expecting a FileNotFoundError.
-            3. Invalid mode given, expecting an IOError.
+    """Tests write_yaml_file, which writes a yaml file. There are three sets of
+    test cases for this function:
+        1. Expected outcome, yaml is written correctly.
+        2. Invalid file path given, expecting a FileNotFoundError.
+        3. Invalid mode given, expecting an IOError.
 
     Args:
         filepath: Path for yaml file to be written.
         mode: Read/write mode to be used.
-        expectation: Any corresponding expected errors for each
-            set of parameters.
+        expectation: Any corresponding expected errors for each set of
+            parameters.
     """
     contents = {"key1": "value1", "key2": "value2"}
     with expectation:
@@ -131,32 +139,32 @@ def test_write_yaml(filepath, mode, expectation):
             mode=mode
         )
         with open(file=filepath, mode="r", encoding="utf-8") as file:
-            yaml.safe_load(filepath) == contents
+            assert yaml.safe_load(filepath) == contents
         os.remove(path=filepath)
 
 @pytest.mark.parametrize(
-    "filepath, text, write_file, expectation",
+    "filepath, text, write_file_bool, expectation",
     [
         ("test.txt", "This is a text file.", True, does_not_raise()),
         ("fail", "", False, pytest.raises(FileNotFoundError))
     ]
 )
-def test_read_file(filepath, text, write_file, expectation):
-    """Tests read_file, which reads a text file in as a string. There
-    are two sets of test cases for this function:
+def test_read_file(filepath, text, write_file_bool, expectation):
+    """Tests read_file, which reads a text file in as a string. There are two
+    sets of test cases for this function:
         1. Expected outcome, file is read correctly.
-        2. Invalid file path given (file was not written), expecting
-            a FileNotFoundError.
+        2. Invalid file path given (file was not written), expecting a
+            FileNotFoundError.
 
     Args:
         filepath: Path for file to be read from.
         text: Text expected to be read from the given file.
-        write_file: Whether or not the file should be written for this
+        write_file_bool: Whether or not the file should be written for this
             test case.
-        expectation: Any corresponding expected errors for each set
-            of parameters.
+        expectation: Any corresponding expected errors for each set of
+            parameters.
     """
-    if write_file:
+    if write_file_bool:
         with open(file=filepath, mode="w", encoding="utf-8") as file:
             file.write(text)
     with expectation:
@@ -172,8 +180,8 @@ def test_read_file(filepath, text, write_file, expectation):
     ]
 )
 def test_write_file(filepath, text, mode, expectation):
-    """Tests write_file, which writes a string to a text file. There
-    are two test cases for this function:
+    """Tests write_file, which writes a string to a text file. There are two
+    test cases for this function:
         1. Expected outcome, file is written as expected.
         2. Invalid file path given (file was not written), expecting
             an OSError.
@@ -182,8 +190,8 @@ def test_write_file(filepath, text, mode, expectation):
         filepath: Path for file to be written.
         text: Content to be written to the file at the given filepath.
         mode: Read/write mode to be used.
-        expectation: Any corresponding expected errors for each
-            set of parameters.
+        expectation: Any corresponding expected errors for each set of
+            parameters.
     """
     with expectation:
         write_file(
@@ -232,10 +240,14 @@ def test_delete_file():
         (["component.yaml"], ["component"], False, pytest.raises(FileNotFoundError))
     ]
 )
-def test_get_components_list(mocker, comp_path, comp_name, patch_cwd, expectation):
+def test_get_components_list(mocker,
+                             comp_path,
+                             comp_name,
+                             patch_cwd,
+                             expectation):
     """Tests get_components_list, which reads yamls in tmpfiles directory,
-    verifies they are component yamls, and returns the name of the files.
-    There are three test cases for this function:
+    verifies they are component yamls, and returns the name of the files. There
+    are three test cases for this function:
         1. Expected outcome, component list is pulled as expected.
         2. Verifies an empty list comes back if no YAMLs are present.
         3. Call function with a nonexistent dir, expecting OSError.
@@ -244,15 +256,23 @@ def test_get_components_list(mocker, comp_path, comp_name, patch_cwd, expectatio
         mocker: Mocker to patch the cache directory for component files.
         comp_path: Path(s) to component yamls.
         comp_name: Name(s) of components.
-        patch_cwd: Boolean flag indicating whether to patch the current working directory from CACHE_DIR to root
-        expectation: Any corresponding expected errors for each set of parameters.
+        patch_cwd: Boolean flag indicating whether to patch the current working
+            directory from CACHE_DIR to root
+        expectation: Any corresponding expected errors for each set of
+            parameters.
     """
     if patch_cwd:
         mocker.patch.object(AutoMLOps.utils.utils, "CACHE_DIR", ".")
     if comp_path:
         for file in comp_path:
             with open(file, "w") as f:
-                yaml.dump({"name": "value1", "inputs": "value2", "implementation": "value3"}, f)
+                yaml.dump(
+                    {
+                        "name": "value1", 
+                        "inputs": "value2",
+                        "implementation": "value3"
+                    },
+                    f)
     with expectation:
         assert get_components_list(full_path=False) == comp_name
         assert get_components_list(full_path=True) == [os.path.join(".", file) for file in comp_path]
@@ -281,8 +301,8 @@ def test_get_components_list(mocker, comp_path, comp_name, patch_cwd, expectatio
     ]
 )
 def test_is_component_config(yaml_contents, expected):
-    """Tests is_component_config, which which checks to see if the given
-    file is a component yaml. There are two test cases for this function:
+    """Tests is_component_config, which which checks to see if the given file is
+    a component yaml. There are two test cases for this function:
         1. A valid component is given, expecting return value True.
         2. An invalid component is given, expecting return value False.
 
@@ -303,8 +323,8 @@ def test_is_component_config(yaml_contents, expected):
     ]
 )
 def test_execute_process(command, expectation):
-    """Tests execute_process, which executes an external shell process. There are two
-    test cases for this function:
+    """Tests execute_process, which executes an external shell process. There
+    are two test cases for this function:
         1. A valid command to create a file, which is expected to run successfully.
         2. An invalid command, which is expected to raise a RunTime Error.
 
@@ -381,6 +401,7 @@ def func3(x, y, z):
 def func4():
     def inner_func():
         res = 1 + 1
+        return res
     return inner_func()
 
 @pytest.mark.parametrize(
@@ -393,7 +414,8 @@ def func4():
     ]
 )
 def test_get_function_source_definition(func, expected):
-    """Tests get_function_source_definition, which returns a formatted string of the source code.
+    """Tests get_function_source_definition, which returns a formatted string of
+    the source code.
 
     Args:
         func: Function to pull source definition from.
@@ -404,15 +426,27 @@ def test_get_function_source_definition(func, expected):
 @pytest.mark.parametrize(
     "job_spec, expected",
     [
-        ({"component_spec": "train_model"}, "{\n       'component_spec': train_model,\n    }\n"),
-        ({"component_spec": "train_model", "other_spec": "other_value"}, "{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n"),
-        ({}, "{\n    \n    }\n"),
-        ({"{": "}"},"{\n       '{': '}',\n    }\n" )
+        (
+            {"component_spec": "train_model"},
+            "{\n       'component_spec': train_model,\n    }\n"
+        ),
+        (
+            {"component_spec": "train_model", "other_spec": "other_value"},
+            "{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n"
+        ),
+        (
+            {},
+            "{\n    \n    }\n"
+        ),
+        (
+            {"{": "}"},
+            "{\n       '{': '}',\n    }\n"
+        )
     ]
 )
 def test_format_spec_dict(job_spec, expected):
-    """Tests format_spec_dict, which takes in a spec dictionary and
-    removes the quotes around the component op name.
+    """Tests format_spec_dict, which takes in a spec dictionary and removes
+    the quotes around the component op name.
 
     Args:
         job_spec: Component spec dictionary.

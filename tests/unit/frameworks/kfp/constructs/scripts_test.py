@@ -17,38 +17,37 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
 
-from mock import patch
 import mock
 import pytest
-import os
 import AutoMLOps.utils.constants
 from AutoMLOps.frameworks.kfp.constructs.scripts import KfpScripts
-from AutoMLOps.utils.utils import execute_process, make_dirs
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
     NEWLINE,
     LEFT_BRACKET,
-    RIGHT_BRACKET,
-    GENERATED_COMPONENT_BASE,
-    CACHE_DIR,
-    GENERATED_PARAMETER_VALUES_PATH,
-    GENERATED_PIPELINE_JOB_SPEC_PATH
+    RIGHT_BRACKET
 )
 
 @pytest.mark.parametrize(
-    '''af_registry_location, af_registry_name, base_image, cb_trigger_location, cb_trigger_name, cloud_run_location, cloud_run_name,'''
-    '''cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name, csr_name, gs_bucket_location, gs_bucket_name, pipeline_runner_sa,'''
-    '''project_id, run_local, schedule_location, schedule_name, schedule_pattern, base_dir, vpc_connector, reqs''',
+    '''af_registry_location, af_registry_name, base_image, cb_trigger_location,'''
+    '''cb_trigger_name, cloud_run_location, cloud_run_name, cloud_tasks_queue_location,'''
+    '''cloud_tasks_queue_name, csr_branch_name, csr_name, gs_bucket_location,'''
+    '''gs_bucket_name, pipeline_runner_sa, project_id, run_local, schedule_location'''
+    '''schedule_name, schedule_pattern, base_dir, vpc_connector, reqs''',
     [
         (
-            'us-central1', 'my-registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
-            'us-central1', 'my-queue', 'main', 'my-repo', 'us-central1', 'my-bucket', 'my-service-account@serviceaccount.com',
-            'my-project', False, 'us-central1', 'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['pandas', 'kfp']
+            'us-central1', 'my-registry', 'us-central1', 'gcr.io/my-project/my-image',
+            'my-trigger', 'us-central1', 'my-run', 'us-central1',
+            'my-queue', 'main', 'my-repo', 'us-central1',
+            'my-bucket', 'my-service-account@serviceaccount.com', 'my-project', False, 'us-central1',
+            'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['pandas', 'kfp<2.0.0']
         ),
         (
-            'us-central2', 'my-123registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
-            'us-central1', 'my-queue', 'main', 'my-repo', 'us-central3', 'my-bucket', 'my-service-account@serviceaccount.com',
-            'my-project', False, 'us-central1', 'my-schedule', '0 10 * * *', 'base_dir', 'my-connector', ['numpy', 'kfp']
+            'us-central2', 'my-123registry', 'us-central1', 'gcr.io/my-project/my-image',
+            'my-trigger', 'us-central1', 'my-run', 'us-central1',
+            'my-queue', 'main', 'my-repo', 'us-central3',
+            'my-bucket', 'my-service-account@serviceaccount.com', 'my-project', False, 'us-central1',
+            'my-schedule', '0 10 * * *', 'base_dir', 'my-connector', ['numpy', 'kfp<2.0.0']
         )
     ]
 )
@@ -98,24 +97,33 @@ def test_init(mocker,
         run_local: Flag that determines whether to use Cloud Run CI/CD.
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
-        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
+        schedule_pattern: Cron formatted value used to create a scheduled retrain job.
         base_dir: Top directory name.
         vpc_connector: The name of the vpc connector to use.
         reqs: Package requirements to write into requirements.txt
     """
 
     # Patch global directory variables
-    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts, 'GENERATED_COMPONENT_BASE', tmpdir)
-    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts, 'GENERATED_PARAMETER_VALUES_PATH', tmpdir)
-    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts, 'GENERATED_PIPELINE_JOB_SPEC_PATH', tmpdir)
-    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts,
+                        'GENERATED_COMPONENT_BASE',
+                        tmpdir)
+    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts,
+                        'GENERATED_PARAMETER_VALUES_PATH',
+                        tmpdir)
+    mocker.patch.object(AutoMLOps.frameworks.kfp.constructs.scripts,
+                        'GENERATED_PIPELINE_JOB_SPEC_PATH',
+                        tmpdir)
+    mocker.patch.object(AutoMLOps.utils.utils,
+                        'CACHE_DIR',
+                        '.')
 
     # Create requirements file
     with open(f'{tmpdir}/requirements.txt', 'w') as f:
         f.write(''.join(r+'\n' for r in reqs))
 
     # Create scripts object
-    with mock.patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process', return_value=''):
+    with mock.patch('AutoMLOps.frameworks.kfp.constructs.scripts.execute_process',
+                    return_value=''):
         scripts = KfpScripts(
             af_registry_location=af_registry_location,
             af_registry_name=af_registry_name,

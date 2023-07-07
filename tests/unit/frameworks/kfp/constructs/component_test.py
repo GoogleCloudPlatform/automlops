@@ -14,9 +14,10 @@
 
 """Unit tests for component constructs kfp module."""
 
-# pylint: disable=line-too-long
-# pylint: disable=missing-function-docstring
-# pylint: disable=protected-access
+# pylint: disable=C0103
+# 2pylint: disable=line-too-long
+# 2pylint: disable=missing-function-docstring
+# 2pylint: disable=protected-access
 
 import pytest
 from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent
@@ -65,7 +66,8 @@ COMPONENT_SPEC2 = {
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
 def fixture_defaults_dict(request, tmpdir):
-    """Writes temporary yaml file fixture using defaults parameterized dictionaries during pytest session scope.
+    """Writes temporary yaml file fixture using defaults parameterized
+    dictionaries during pytest session scope.
 
     Returns:
         dict: Path of yaml file and dictionary it contains
@@ -84,7 +86,7 @@ def test_KfpComponent(component_spec, defaults_dict):
     Args:
         component_spec (dict): Dictionary of component specs including details
             of component image, startup command, and args.
-        defaults_file (dict): Dictionary containing the path to the default config
+        defaults_dict (dict): Dictionary containing the path to the default config
             variables yaml and the dictionary held within it.
     """
     # Extract path and contents from defaults dict to create KFP Component

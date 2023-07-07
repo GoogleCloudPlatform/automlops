@@ -14,6 +14,7 @@
 
 """Unit tests for cloudrun constructs kfp module."""
 
+# pylint: disable=C0103
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
@@ -49,7 +50,7 @@ DEFAULTS1 = {
             'pipeline_runner_service_account': 'vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com',
             'project_id': 'automlops-sandbox',
             'vpc_connector': 'No VPC Specified'
-        }   
+        }
     }
 DEFAULTS2 = {
     'gcp':
@@ -72,13 +73,13 @@ DEFAULTS2 = {
             'pipeline_runner_service_account': 'vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com',
             'project_id': 'automlops-sandbox',
             'vpc_connector': 'No VPC Specified'
-        }  
+        }
     }
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
 def fixture_defaults_dict(request, tmpdir):
-    """Writes temporary yaml file fixture using defaults parameterized dictionaries
-    during pytest session scope.
+    """Writes temporary yaml file fixture using defaults parameterized
+    dictionaries during pytest session scope.
 
     Returns:
         dict: Path of yaml file and dictionary it contains.
@@ -91,7 +92,8 @@ def test_KfpCloudRun(defaults_dict):
     """Tests the KFP Cloud Run class.
     
     Args:
-        defaults_file (str): Path to the default config variables yaml.
+        defaults_dict (dict): Dictionary containing the path to the default config
+            variables yaml and the dictionary held within it.
     """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']

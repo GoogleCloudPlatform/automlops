@@ -14,6 +14,7 @@
 
 """Unit tests for component constructs kfp module."""
 
+# pylint: disable=C0103
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
@@ -45,8 +46,8 @@ DEFAULTS2 = {
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
 def fixture_defaults_dict(request, tmpdir):
-    """Writes temporary yaml file fixture using defaults parameterized dictionaries 
-    during pytest session scope.
+    """Writes temporary yaml file fixture using defaults parameterized
+    dictionaries during pytest session scope.
 
     Returns:
         dict: Path of yaml file and dictionary it contains.
@@ -74,9 +75,10 @@ def test_KfpPipeline(mocker, custom_training_job_specs, defaults_dict):
     """Tests the KFP child class that generates files related to KFP pipelines.
 
     Args:
-        custom_training_job_specs (List[Dict]): Specifies the specs to run the training job with.
-        defaults_file (dict): Dictionary containing the path to the default config
-            variables yaml and the dictionary held within it.
+        custom_training_job_specs (List[Dict]): Specifies the specs to run the
+            training job with.
+        defaults_file (dict): Dictionary containing the path to the default
+            config variables yaml and the dictionary held within it.
     """
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
@@ -89,7 +91,8 @@ def test_KfpPipeline(mocker, custom_training_job_specs, defaults_dict):
     quote = '\''
     newline_tab = '\n    '
 
-    pipe = KfpPipeline(custom_training_job_specs=custom_training_job_specs, defaults_file=path)
+    pipe = KfpPipeline(custom_training_job_specs=custom_training_job_specs,
+                       defaults_file=path)
     custom_specs = pipe.custom_specs_helper(custom_training_job_specs)
 
     #Assert that created Kfp Pipeline instance has the expected attributes

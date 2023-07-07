@@ -20,7 +20,6 @@
 import json
 import os
 import pytest
-import re
 import AutoMLOps.utils.utils
 from AutoMLOps.frameworks.kfp.builder import (
     build_component,
@@ -29,7 +28,7 @@ from AutoMLOps.frameworks.kfp.builder import (
 from AutoMLOps.utils.utils import (
     write_yaml_file,
     read_yaml_file,
-    make_dirs, write_file
+    make_dirs
 )
 
 DEFAULTS = {
@@ -54,7 +53,10 @@ TEMP_YAML = {
             'description': 'The gcs location to write the csv.',
             'type': 'String',
         },
-        {'name': 'project_id', 'description': 'The project ID.', 'type': 'String'},
+        {
+            'name': 'project_id',
+            'description': 'The project ID.',
+            'type': 'String'},
     ],
     'implementation': {
         'container': {
@@ -77,8 +79,8 @@ TEMP_YAML = {
 
 @pytest.fixture(name='temp_yaml_dict', params=[TEMP_YAML])
 def fixture_temp_yaml_dict(request, tmpdir):
-    """Writes temporary yaml file fixture using defaults parameterized dictionaries
-    during pytest session scope.
+    """Writes temporary yaml file fixture using defaults parameterized
+    dictionaries during pytest session scope.
 
     Returns:
         dict: Path of yaml file and dictionary it contains.
@@ -89,8 +91,8 @@ def fixture_temp_yaml_dict(request, tmpdir):
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS])
 def fixture_defaults_dict(request, tmpdir):
-    """Writes temporary yaml file fixture using defaults parameterized dictionaries
-    during pytest session scope.
+    """Writes temporary yaml file fixture using defaults parameterized
+    dictionaries during pytest session scope.
 
     Returns:
         dict: Path of yaml file and dictionary it contains.
@@ -99,13 +101,14 @@ def fixture_defaults_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
 
-@pytest.fixture()
-def expected_component_dict():
-    """Creates the expected component dictionary, which is the temporary yaml file with
-    a change to the implementation key.
+@pytest.fixture(name='expected_component_dict')
+def fixture_expected_component_dict():
+    """Creates the expected component dictionary, which is the temporary yaml
+    file with a change to the implementation key.
 
     Returns:
-        dict: Expected component dictionary generated from the component builder.
+        dict: Expected component dictionary generated from the component
+            builder.
     """
     expected = TEMP_YAML
     expected['implementation'] = {
@@ -122,14 +125,23 @@ def expected_component_dict():
     }
     return expected
 
-def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected_component_dict):
-    """Tests build_component, which Constructs and writes component.yaml and {component_name}.py files.
+def test_build_component(mocker,
+                         tmpdir,
+                         temp_yaml_dict,
+                         defaults_dict,
+                         expected_component_dict):
+    """Tests build_component, which Constructs and writes component.yaml and
+    {component_name}.py files.
     """
     # Patch filepath constants to point to test path.
-    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', f'{tmpdir}' + '/')
-    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', defaults_dict['path'])
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder,
+                        'BASE_DIR', 
+                        f'{tmpdir}' + '/')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder,
+                        'GENERATED_DEFAULTS_FILE',
+                        defaults_dict['path'])
 
-    # Extract component name, create required directories, and run build_component
+    # Extract component name, create required directories, run build_component
     component_name = TEMP_YAML['name']
     make_dirs([f'{tmpdir}/components/component_base/src'])
     build_component(temp_yaml_dict['path'])
@@ -138,7 +150,7 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
     assert os.path.exists(f'{tmpdir}/components/{component_name}/component.yaml')
     assert os.path.exists(f'{tmpdir}/components/component_base/src/{component_name}.py')
 
-    # Load in the newly created component.yaml file and compare it to the expected output in test_data
+    # Load component.yaml file and compare to the expected output in test_data
     created_component_dict = read_yaml_file(f'{tmpdir}/components/{component_name}/component.yaml')
     assert created_component_dict == expected_component_dict
 
@@ -193,16 +205,26 @@ def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected
         )
     ]
 )
-def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs, pipeline_parameter_values):
-    """Tests build_pipeline, which constructs and writes pipeline.py, pipeline_runner.py, and
-    pipeline_parameter_values.json files.
+def test_build_pipeline(mocker,
+                        tmpdir,
+                        defaults_dict,
+                        custom_training_job_specs,
+                        pipeline_parameter_values):
+    """Tests build_pipeline, which constructs and writes pipeline.py,
+    pipeline_runner.py, and pipeline_parameter_values.json files.
     """
     # Patch constants and other functions
-    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'BASE_DIR', f'{tmpdir}' + '/')
-    mocker.patch.object(AutoMLOps.frameworks.kfp.builder, 'GENERATED_DEFAULTS_FILE', defaults_dict['path'])
-    mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder,
+                        'BASE_DIR',
+                        f'{tmpdir}' + '/')
+    mocker.patch.object(AutoMLOps.frameworks.kfp.builder,
+                        'GENERATED_DEFAULTS_FILE',
+                        defaults_dict['path'])
+    mocker.patch.object(AutoMLOps.utils.utils,
+                        'CACHE_DIR',
+                        '.')
 
-    # Create the required directory and file for build_pipeline to use and run the function
+    # Create required directory and file for build_pipeline
     make_dirs([f'{tmpdir}/pipelines/runtime_parameters'])
     os.system(f'touch {tmpdir}/pipelines/pipeline.py')
     build_pipeline(custom_training_job_specs, pipeline_parameter_values)
@@ -217,7 +239,7 @@ def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs
         pipeline_params_dict = json.load(f)
     assert pipeline_params_dict == pipeline_parameter_values
 
-    # Fetch pipeline.py created by build_pipeline and assert that it contains expected keywords
+    # Fetch pipeline.py and assert that it contains expected keywords
     keywords = [
         'Apache License',
         'import kfp',
