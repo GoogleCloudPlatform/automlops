@@ -17,23 +17,20 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
-import mock
 import json
-import re
 import os
 import pytest
+import re
 import AutoMLOps.utils.utils
 from AutoMLOps.frameworks.kfp.builder import (
-    build, # Does not necessarily need to be tested, a combination of other functions
     build_component,
-    build_pipeline,
-    build_cloudrun, # Does not necessarily need to be tested, a combination of other functions
+    build_pipeline
 )
 from AutoMLOps.utils.utils import (
     write_yaml_file,
     read_yaml_file,
-    make_dirs,
-    write_file)
+    make_dirs, write_file
+)
 
 DEFAULTS = {
     "gcp": {
@@ -104,142 +101,131 @@ def defaults_dict(request, tmpdir):
 
 @pytest.fixture()
 def expected_component_dict():
-    return {
-        "name": "create_dataset",
-        "description": "Custom component that takes in a BQ table and writes it to GCS.",
-        "inputs": [
-            {
-                "name": "bq_table",
-                "description": "The source biquery table.",
-                "type": "String",
-            },
-            {
-                "name": "data_path",
-                "description": "The gcs location to write the csv.",
-                "type": "String",
-            },
-            {"name": "project_id", "description": "The project ID.", "type": "String"},
-        ],
-        "implementation": {
-            "container": {
-                "image": "us-central1-docker.pkg.dev/my_project/my_af_registry/components/component_base:latest",
-                "command": ["python3", "/pipelines/component/src/create_dataset.py"],
-                "args": [
-                    "--executor_input",
-                    {"executorInput": None},
-                    "--function_to_execute",
-                    "create_dataset",
-                ],
-            }
-        },
+    """Creates the expected component dictionary, which is the temporary yaml file with
+    a change to the implementation key.
+
+    Returns:
+        dict: Expected component dictionary generated from the component builder.
+    """
+    expected = TEMP_YAML
+    expected['implementation'] = {
+        "container": {
+            "image": "us-central1-docker.pkg.dev/my_project/my_af_registry/components/component_base:latest",
+            "command": ["python3", "/pipelines/component/src/create_dataset.py"],
+            "args": [
+                "--executor_input",
+                {"executorInput": None},
+                "--function_to_execute",
+                "create_dataset",
+            ],
+        }
     }
+    return expected
 
 def test_build_component(mocker, tmpdir, temp_yaml_dict, defaults_dict, expected_component_dict):
-    """_summary_
+    """Tests build_component, which Constructs and writes component.yaml and {component_name}.py files.
     """
-    # Set up variable for the component name to use in assertions
-    component_name = TEMP_YAML["name"]
-
     # Patch filepath constants to point to test path.
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "BASE_DIR", f"{tmpdir}" + "/")
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "GENERATED_DEFAULTS_FILE", defaults_dict["path"])
 
-    # create the required directories for build_component to use.
+    # Extract component name, create required directories, and run build_component
+    component_name = TEMP_YAML["name"]
     make_dirs([f"{tmpdir}/components/component_base/src"])
-
-    # call to build_component, passing in the constructed yaml
     build_component(temp_yaml_dict["path"])
 
-    # assertions to ensure that correct files were created during build_component call
+    # Ensure correct files are created with build_component call
     assert os.path.exists(f"{tmpdir}/components/{component_name}/component.yaml")
     assert os.path.exists(f"{tmpdir}/components/component_base/src/{component_name}.py")
 
     # Load in the newly created component.yaml file and compare it to the expected output in test_data
-    created_component_dict = read_yaml_file(
-        f"{tmpdir}/components/{component_name}/component.yaml"
-    )
+    created_component_dict = read_yaml_file(f"{tmpdir}/components/{component_name}/component.yaml")
     assert created_component_dict == expected_component_dict
 
 @pytest.mark.parametrize(
     'custom_training_job_specs, pipeline_parameter_values',
     [
-        ([{'component_spec': 'mycomp1', 'other': 'myother'}],
-        {
-            "bq_table": "automlops-sandbox.test_dataset.dry-beans",
-            "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
-            "data_path": "gs://automlops-sandbox-bucket/data.csv",
-            "project_id": "automlops-sandbox",
-            "region": "us-central1"
-            }
-        ),
-        ([
+        (
+            [{'component_spec': 'mycomp1', 'other': 'myother'}],
             {
-                "component_spec": "train_model",
-                "display_name": "train-model-accelerated",
-                "machine_type": "a2-highgpu-1g",
-                "accelerator_type": "NVIDIA_TESLA_A100",
-                "accelerator_count": "1",
-            }
-        ],
-        {
-            "bq_table": "automlops-sandbox.test_dataset.dry-beans",
-            "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
-            "data_path": "gs://automlops-sandbox-bucket/data.csv",
-            "project_id": "automlops-sandbox",
-            "region": "us-central1"
-            }
+                "bq_table": "automlops-sandbox.test_dataset.dry-beans",
+                "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
+                "data_path": "gs://automlops-sandbox-bucket/data.csv",
+                "project_id": "automlops-sandbox",
+                "region": "us-central1"
+            },
+        ),
+        (
+            [
+                {
+                    "component_spec": "train_model",
+                    "display_name": "train-model-accelerated",
+                    "machine_type": "a2-highgpu-1g",
+                    "accelerator_type": "NVIDIA_TESLA_A100",
+                    "accelerator_count": "1",
+                }
+            ],
+            {
+                "bq_table": "automlops-sandbox.test_dataset.dry-beans",
+                "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
+                "data_path": "gs://automlops-sandbox-bucket/data.csv",
+                "project_id": "automlops-sandbox",
+                "region": "us-central1"
+            },
+        ),
+        (
+            [
+                {
+                    "component_spec": "test_model",
+                    "display_name": "test-model-accelerated",
+                    "machine_type": "a2-highgpu-1g",
+                    "accelerator_type": "NVIDIA_TESLA_A100",
+                    "accelerator_count": "1",
+                }
+            ],
+            {
+                "bq_table": "automlops-sandbox.test_dataset.dry-beans2",
+                "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 14:00:41.379753",
+                "data_path": "gs://automlops-sandbox-bucket/data2.csv",
+                "project_id": "automlops-sandbox",
+                "region": "us-central1"
+            },
         )
     ]
 )
 def test_build_pipeline(mocker, tmpdir, defaults_dict, custom_training_job_specs, pipeline_parameter_values):
-
-    #Patch consants and other functions
+    """Tests build_pipeline, which constructs and writes pipeline.py, pipeline_runner.py, and
+    pipeline_parameter_values.json files.
+    """
+    # Patch constants and other functions
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "BASE_DIR", f"{tmpdir}" + "/")
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder, "GENERATED_DEFAULTS_FILE", defaults_dict["path"])
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
 
-    # create the required directories and files for build_pipeline to use.
+    # Create the required directory and file for build_pipeline to use and run the function
     make_dirs([f"{tmpdir}/pipelines/runtime_parameters"])
-    file_path = tmpdir/"pipelines/pipeline.py"
-    file_path = file_path.open("w", encoding="utf-8")
-    file_path.close()
-    
+    os.system(f"touch {tmpdir}/pipelines/pipeline.py")
     build_pipeline(custom_training_job_specs, pipeline_parameter_values)
 
-    # assertions to ensure that correct files were created during build_pipeline call
+    # Ensure correct files were created
     assert os.path.exists(f"{tmpdir}/pipelines/pipeline.py")
     assert os.path.exists(f"{tmpdir}/pipelines/pipeline_runner.py")
     assert os.path.exists(f"{tmpdir}/pipelines/runtime_parameters/pipeline_parameter_values.json")
 
-    # Fetch pipeline_parameter_values.json and compare its contents to expected value
-
+    # Ensure pipeline_parameter_values.json was created as expected
     with open(f"{tmpdir}/pipelines/runtime_parameters/pipeline_parameter_values.json", "r") as f:
         pipeline_params_dict = json.load(f)
-    
-    expected_pipeline_params_dict = {
-        "bq_table": "automlops-sandbox.test_dataset.dry-beans",
-        "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-05-31 13:00:41.379753",
-        "data_path": "gs://automlops-sandbox-bucket/data.csv",
-        "project_id": "automlops-sandbox",
-        "region": "us-central1"
-        }
+    assert pipeline_params_dict == pipeline_parameter_values
 
-    assert pipeline_params_dict == expected_pipeline_params_dict
-
-    #Fetch expected pipeline.py file from test data directory and compare to file created by build_pipeline
-
-    expected_pipeline_file_path = "tests/unit/test_data/builder_build_pipeline_pipeline.py"
-    created_pipeline_file_path = f"{tmpdir}/pipelines/pipeline.py"
-
-    """Fetch pipeline.py file created by build_pipeline call and assert that a set of keywords are present in the file. 
-    
-    Criteria for the keywords includes an expected phrase from each section of the file generated by a different function call in build_pipeline.
-    This includes a phrase from the GENERATED_LICENSE component, pipeline_imports, pipeline_scaffold, and pipeline_argparse.
-    """
-    with open(created_pipeline_file_path) as file:
+    # Fetch pipeline.py created by build_pipeline and assert that it contains expected keywords
+    keywords = [
+        "Apache License",
+        "import kfp",
+        "parser = argparse.ArgumentParser()",
+        "args = parser.parse_args",
+        "pipeline = create_training_pipeline"]
+    keywords += json.dumps(custom_training_job_specs, indent=4)
+    with open(f"{tmpdir}/pipelines/pipeline.py") as file:
         pipeline_content = file.read()
-        
-    # Find the keywords in the file using a regular expression
-    keywords = ["Apache License", "import kfp", "parser = argparse.ArgumentParser()"]
     for keyword in keywords:
-        assert re.search(r"\b{}\b".format(keyword), pipeline_content)
+        assert keyword in pipeline_content
