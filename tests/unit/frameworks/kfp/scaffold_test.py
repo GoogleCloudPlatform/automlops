@@ -172,32 +172,6 @@ def test_get_function_parameters(func, params, expectation):
         assert params == get_function_parameters(func=func)
 
 @pytest.mark.parametrize(
-    'annotation, result, expectation',
-    [
-        ('Optional[str]', 'str', does_not_raise())
-    ]
-)
-def test_maybe_strip_optional_from_annotation(annotation, result, expectation):
-    """Tests maybe_strip_optional_from_annotation, which strips 'Optional' from 
-    'Optional[<type>]' if applicable. For example::
-        Optional[str] -> str
-        str -> str
-        List[int] -> List[int]
-
-    Args:
-        annotation: The original type annotation which may or may not has
-            `Optional`.
-        result: The type inside Optional[] if Optional exists, otherwise the
-            original type.
-        expectation: Any corresponding expected errors for each set of
-            parameters.
-    """
-    assert annotation == annotation
-    assert result == result
-    assert expectation == expectation
-    assert True
-
-@pytest.mark.parametrize(
     'func, name, description',
     [
         (add, 'Add', 'This is a test'),

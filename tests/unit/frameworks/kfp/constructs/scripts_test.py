@@ -15,6 +15,7 @@
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
+# pylint: disable=missing-module-docstring
 # pylint: disable=protected-access
 
 import mock
