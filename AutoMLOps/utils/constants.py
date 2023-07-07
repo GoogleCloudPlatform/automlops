@@ -80,3 +80,6 @@ DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
 LEFT_BRACKET = '{'
 RIGHT_BRACKET = '}'
 NEWLINE = '\n'
+
+# KFP v2 Migration constant
+PINNED_KFP_VERSION = 'kfp<2.0.0'

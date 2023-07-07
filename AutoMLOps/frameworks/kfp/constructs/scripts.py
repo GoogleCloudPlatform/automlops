@@ -26,13 +26,14 @@ from AutoMLOps.utils.utils import (
     read_yaml_file
 )
 from AutoMLOps.utils.constants import (
-    GENERATED_LICENSE,
-    NEWLINE,
-    LEFT_BRACKET,
-    RIGHT_BRACKET,
     GENERATED_COMPONENT_BASE,
+    GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH,
-    GENERATED_PIPELINE_JOB_SPEC_PATH
+    GENERATED_PIPELINE_JOB_SPEC_PATH,
+    LEFT_BRACKET,
+    NEWLINE,
+    PINNED_KFP_VERSION,
+    RIGHT_BRACKET
 )
 
 class KfpScripts():
@@ -492,5 +493,13 @@ class KfpScripts():
             user_inp_reqs.extend(formatted_reqs)
         # Remove duplicates
         set_of_requirements = set(user_inp_reqs) if user_inp_reqs else set(pipreqs + default_gcp_reqs)
+        # Remove empty string
+        if '' in set_of_requirements:
+            set_of_requirements.remove('')
+        # Pin kfp version
+        if 'kfp' in set_of_requirements:
+            set_of_requirements.remove('kfp')
+        set_of_requirements.add(PINNED_KFP_VERSION)
+        # Stringify and sort
         reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
         return reqs_str
