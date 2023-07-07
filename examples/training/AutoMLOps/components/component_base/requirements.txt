@@ -30,7 +30,7 @@ google-cloud-tasks
 google-cloud-translate
 google-cloud-videointelligence
 google-cloud-vision
-kfp
+kfp<2.0.0
 kfp_pipeline_spec
 pandas
 protobuf
