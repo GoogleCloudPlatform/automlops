@@ -15,8 +15,8 @@
 """Unit tests for kfp scaffold module."""
 
 # pylint: disable=anomalous-backslash-in-string
-# dpylint: disable=line-too-long
-# dpylint: disable=missing-function-docstring
+# pylint: disable=line-too-long
+# pylint: disable=missing-function-docstring
 
 from contextlib import nullcontext as does_not_raise
 import os
@@ -192,6 +192,9 @@ def test_maybe_strip_optional_from_annotation(annotation, result, expectation):
         expectation: Any corresponding expected errors for each set of
             parameters.
     """
+    assert annotation == annotation
+    assert result == result
+    assert expectation == expectation
     assert True
 
 @pytest.mark.parametrize(

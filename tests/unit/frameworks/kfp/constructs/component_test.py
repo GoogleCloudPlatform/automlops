@@ -15,9 +15,9 @@
 """Unit tests for component constructs kfp module."""
 
 # pylint: disable=C0103
-# 2pylint: disable=line-too-long
-# 2pylint: disable=missing-function-docstring
-# 2pylint: disable=protected-access
+# pylint: disable=line-too-long
+# pylint: disable=missing-function-docstring
+# pylint: disable=protected-access
 
 import pytest
 from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent

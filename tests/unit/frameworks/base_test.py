@@ -113,7 +113,7 @@ def test_Pipeline(defaults_dict, custom_training_job_specs):
     path = defaults_dict['path']
     defaults = defaults_dict['vals']
 
-    my_pipeline = Pipeline(custom_training_job_specs=custom_training_job_specs, 
+    my_pipeline = Pipeline(custom_training_job_specs=custom_training_job_specs,
                            defaults_file=path)
     assert my_pipeline._project_id == defaults['gcp']['project_id']
     assert my_pipeline._custom_training_job_specs == custom_training_job_specs

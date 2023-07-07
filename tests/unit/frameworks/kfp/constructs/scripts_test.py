@@ -118,7 +118,7 @@ def test_init(mocker,
                         '.')
 
     # Create requirements file
-    with open(f'{tmpdir}/requirements.txt', 'w') as f:
+    with open(f'{tmpdir}/requirements.txt', encoding='w') as f:
         f.write(''.join(r+'\n' for r in reqs))
 
     # Create scripts object

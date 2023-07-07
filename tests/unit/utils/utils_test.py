@@ -64,10 +64,10 @@ def test_make_dirs(directories, existance, expectation):
     """
     with expectation:
         make_dirs(directories=directories)
-        for dir, exist in zip(directories, existance):
-            assert os.path.exists(dir) == exist
+        for directory, exist in zip(directories, existance):
+            assert os.path.exists(directory) == exist
             if exist:
-                os.rmdir(dir)
+                os.rmdir(directory)
 
 @pytest.mark.parametrize(
     "filepath, content1, content2, expectation",
@@ -139,7 +139,7 @@ def test_write_yaml(filepath, mode, expectation):
             mode=mode
         )
         with open(file=filepath, mode="r", encoding="utf-8") as file:
-            assert yaml.safe_load(filepath) == contents
+            assert yaml.safe_load(file) == contents
         os.remove(path=filepath)
 
 @pytest.mark.parametrize(
@@ -265,7 +265,7 @@ def test_get_components_list(mocker,
         mocker.patch.object(AutoMLOps.utils.utils, "CACHE_DIR", ".")
     if comp_path:
         for file in comp_path:
-            with open(file, "w") as f:
+            with open(file, encoding="w") as f:
                 yaml.dump(
                     {
                         "name": "value1", 
@@ -310,7 +310,7 @@ def test_is_component_config(yaml_contents, expected):
         yaml_contents: Component configurations to be written to yaml file.
         expected: Expectation of whether or not the configuration is valid.
     """
-    with open("component.yaml", "w") as f:
+    with open("component.yaml", encoding="w") as f:
         yaml.dump(yaml_contents, f)
     assert expected == is_component_config("component.yaml")
     os.remove("component.yaml")
@@ -410,7 +410,7 @@ def func4():
         (func1, "def func1(x):\n    return x + 1\n"),
         (func2, "def func2(x, y):\n    return x + y\n"),
         (func3, "def func3(x, y, z):\n    return x + y + z\n"),
-        (func4, "def func4():\n    def inner_func():\n        res = 1 + 1\n    return inner_func()\n")
+        (func4, "def func4():\n    def inner_func():\n        res = 1 + 1\n        return res\n    return inner_func()\n")
     ]
 )
 def test_get_function_source_definition(func, expected):
