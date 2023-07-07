@@ -28,7 +28,7 @@ PARAMETER_VALUES_PATH = 'queueing_svc/pipeline_parameter_values.json'
 PIPELINE_RUNNER_SA = 'vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com'
 PROJECT_ID = 'automlops-sandbox'
 SCHEDULE_LOCATION = 'us-central1'
-SCHEDULE_PATTERN = '0 */12 * * *'
+SCHEDULE_PATTERN = '59 11 * * 0'
 SCHEDULE_NAME = 'AutoMLOps-schedule'
 
 def get_runner_svc_uri(

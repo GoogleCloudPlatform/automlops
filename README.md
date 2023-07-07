@@ -21,6 +21,8 @@ gcloud auth application-default login
 gcloud config set account <account@example.com>
 ```
 
+AutoMLOps generates code that is compatible with `kfp<2.0.0`.
+
 # Install
 
 Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/): `pip install google-cloud-automlops` 
@@ -235,6 +237,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 [Erin Horning](mailto:ehorning@google.com): Infrastructure Engineer
 
 [Alex Ho](mailto:alexanderho@google.com): Engineer
+
+[Kyle Sorensen](mailto:kylesorensen@google.com): Cloud Engineer
 
 # Disclaimer
 
