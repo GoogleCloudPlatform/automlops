@@ -42,12 +42,12 @@ from AutoMLOps.utils.constants import (
         (
             'us-central1', 'my-registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
             'us-central1', 'my-queue', 'main', 'my-repo', 'us-central1', 'my-bucket', 'my-service-account@serviceaccount.com',
-            'my-project', False, 'us-central1', 'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['pandas', 'kfp']
+            'my-project', False, 'us-central1', 'my-schedule', '0 12 * * *', 'base_dir', 'my-connector', ['pandas', 'kfp<2.0.0']
         ),
         (
             'us-central2', 'my-123registry', 'us-central1', 'gcr.io/my-project/my-image', 'my-trigger', 'us-central1', 'my-run',
             'us-central1', 'my-queue', 'main', 'my-repo', 'us-central3', 'my-bucket', 'my-service-account@serviceaccount.com',
-            'my-project', False, 'us-central1', 'my-schedule', '0 10 * * *', 'base_dir', 'my-connector', ['numpy', 'kfp']
+            'my-project', False, 'us-central1', 'my-schedule', '0 10 * * *', 'base_dir', 'my-connector', ['numpy', 'kfp<2.0.0']
         )
     ]
 )
