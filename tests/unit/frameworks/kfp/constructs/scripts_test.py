@@ -33,7 +33,7 @@ from AutoMLOps.utils.constants import (
     '''af_registry_location, af_registry_name, base_image, cb_trigger_location,'''
     '''cb_trigger_name, cloud_run_location, cloud_run_name, cloud_tasks_queue_location,'''
     '''cloud_tasks_queue_name, csr_branch_name, csr_name, gs_bucket_location,'''
-    '''gs_bucket_name, pipeline_runner_sa, project_id, run_local, schedule_location'''
+    '''gs_bucket_name, pipeline_runner_sa, project_id, run_local, schedule_location,'''
     '''schedule_name, schedule_pattern, base_dir, vpc_connector, reqs''',
     [
         (
@@ -119,7 +119,7 @@ def test_init(mocker,
                         '.')
 
     # Create requirements file
-    with open(f'{tmpdir}/requirements.txt', encoding='w') as f:
+    with open(file=f'{tmpdir}/requirements.txt', mode='w') as f:
         f.write(''.join(r+'\n' for r in reqs))
 
     # Create scripts object

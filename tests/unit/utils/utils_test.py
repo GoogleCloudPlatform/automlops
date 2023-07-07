@@ -200,7 +200,7 @@ def test_write_file(filepath, text, mode, expectation):
             mode=mode
         )
         assert os.path.exists(filepath)
-        with open(filepath, "r", encoding="utf-8") as file:
+        with open(file=filepath, mode="r", encoding="utf-8") as file:
             assert text == file.read()
         os.remove(filepath)
 
@@ -209,7 +209,7 @@ def test_write_and_chmod():
     and chmods the file to allow for execution.
     """
     # Create a file.
-    with open("test.txt", "w", encoding="utf-8") as file:
+    with open(file="test.txt", mode="w", encoding="utf-8") as file:
         file.write("This is a test file.")
 
     # Call the `write_and_chmod` function.
@@ -220,14 +220,14 @@ def test_write_and_chmod():
     assert os.access("test.txt", os.X_OK)
 
     # Assert that the contents of the file are correct.
-    with open("test.txt", "r", encoding="utf-8") as file:
+    with open(file="test.txt", mode="r", encoding="utf-8") as file:
         contents = file.read()
     assert contents == "This is a test file."
     os.remove("test.txt")
 
 def test_delete_file():
     """Tests delete_file, which deletes a file at the specified path."""
-    with open("test.txt", "w", encoding="utf-8") as file:
+    with open(file="test.txt", mode="w", encoding="utf-8") as file:
         file.write("This is a test file.")
     delete_file("test.txt")
     assert not os.path.exists("test.txt")
@@ -265,7 +265,7 @@ def test_get_components_list(mocker,
         mocker.patch.object(AutoMLOps.utils.utils, "CACHE_DIR", ".")
     if comp_path:
         for file in comp_path:
-            with open(file, encoding="w") as f:
+            with open(file=file, mode="w", encoding="utf-8") as f:
                 yaml.dump(
                     {
                         "name": "value1", 
@@ -310,7 +310,7 @@ def test_is_component_config(yaml_contents, expected):
         yaml_contents: Component configurations to be written to yaml file.
         expected: Expectation of whether or not the configuration is valid.
     """
-    with open("component.yaml", encoding="w") as f:
+    with open(file="component.yaml", mode="w", encoding="utf-8") as f:
         yaml.dump(yaml_contents, f)
     assert expected == is_component_config("component.yaml")
     os.remove("component.yaml")
