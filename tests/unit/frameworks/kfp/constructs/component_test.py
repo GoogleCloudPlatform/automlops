@@ -63,8 +63,8 @@ COMPONENT_SPEC2 = {
         }
 }
 
-@pytest.fixture(params=[DEFAULTS1, DEFAULTS2])
-def defaults_dict(request, tmpdir):
+@pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
+def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized dictionaries during pytest session scope.
 
     Returns:

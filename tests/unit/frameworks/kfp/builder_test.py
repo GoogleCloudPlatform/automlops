@@ -75,8 +75,8 @@ TEMP_YAML = {
     },
 }
 
-@pytest.fixture(params=[TEMP_YAML])
-def temp_yaml_dict(request, tmpdir):
+@pytest.fixture(name='temp_yaml_dict', params=[TEMP_YAML])
+def fixture_temp_yaml_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized dictionaries
     during pytest session scope.
 
@@ -87,8 +87,8 @@ def temp_yaml_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
 
-@pytest.fixture(params=[DEFAULTS])
-def defaults_dict(request, tmpdir):
+@pytest.fixture(name='defaults_dict', params=[DEFAULTS])
+def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized dictionaries
     during pytest session scope.
 
