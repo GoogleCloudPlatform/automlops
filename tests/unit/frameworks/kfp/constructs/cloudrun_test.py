@@ -134,7 +134,7 @@ def test_KfpCloudRun(defaults_dict):
     )
 
     assert my_cloudrun.cloudrun_base_reqs == (
-        'kfp\n'
+        'kfp<2.0.0\n'
         'google-cloud-aiplatform\n'
         'google-cloud-pipeline-components\n'
         'Flask\n'
