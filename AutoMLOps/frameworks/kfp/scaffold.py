@@ -41,9 +41,8 @@ T = TypeVar('T')
 def create_component_scaffold(func: Optional[Callable] = None,
                               *,
                               packages_to_install: Optional[List[str]] = None):
-    """Creates a tmp component scaffold which will be used by
-       the formalize function. Code is temporarily stored in
-       component_spec['implementation']['container']['command'].
+    """Creates a tmp component scaffold which will be used by the formalize function.
+    Code is temporarily stored in component_spec['implementation']['container']['command'].
 
     Args:
         func: The python function to create a component from. The function
@@ -158,7 +157,7 @@ def create_pipeline_scaffold(func: Optional[Callable] = None,
                              name: Optional[str] = None,
                              description: Optional[str] = None):
     """Creates a temporary pipeline scaffold which will
-       be used by the formalize function.
+    be used by the formalize function.
 
     Args:
         func: The python function to create a pipeline from. The function

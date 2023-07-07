@@ -76,21 +76,21 @@ def test_Component(defaults_dict, component_spec):
         [{'component_spec': 'mycomp1', 'other': 'myother'}],
         [
             {
-                "component_spec": "train_model",
-                "display_name": "train-model-accelerated",
-                "machine_type": "a2-highgpu-1g",
-                "accelerator_type": "NVIDIA_TESLA_A100",
-                "accelerator_count": "1",
+                'component_spec': 'train_model',
+                'display_name': 'train-model-accelerated',
+                'machine_type': 'a2-highgpu-1g',
+                'accelerator_type': 'NVIDIA_TESLA_A100',
+                'accelerator_count': '1',
             }
         ],
         [
             {
-                "component_spec": "train_model",
-                "display_name": "train-model-accelerated"
+                'component_spec': 'train_model',
+                'display_name': 'train-model-accelerated'
             },
             {
-                "component_spec": "test_model",
-                "display_name": "test-model-accelerated"
+                'component_spec': 'test_model',
+                'display_name': 'test-model-accelerated'
             }
         ]
     ]

@@ -35,8 +35,8 @@ class KfpPipeline(Pipeline):
         self.pipeline_imports = self._get_pipeline_imports()
         self.pipeline_argparse = self._get_pipeline_argparse()
         self.pipeline_runner = self._get_pipeline_runner()
-    
-    def custom_specs_helper(self, custom_training_job_specs): 
+
+    def custom_specs_helper(self, custom_training_job_specs):
         """Helper function that generates custom specs string.
 
         Returns:
