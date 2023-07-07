@@ -14,6 +14,7 @@
 
 """Unit tests for kfp scaffold module."""
 
+# pylint: disable=anomalous-backslash-in-string
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
 
