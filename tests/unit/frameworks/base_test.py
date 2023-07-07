@@ -18,9 +18,9 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
 
+import pytest
 from AutoMLOps.frameworks.base import Component, Pipeline
 from AutoMLOps.utils.utils import write_yaml_file
-import pytest
 
 DEFAULTS1 = {
     'gcp':
@@ -54,7 +54,7 @@ def defaults_dict(request, tmpdir):
     'component_spec',
     ['test1', 'test2']
 )
-def test_Component(defaults_dict, component_spec):
+def test_component(defaults_dict, component_spec):
     """Tests the Component base class, the parent class that defines a general abstraction of a Component.
 
     Args:
@@ -96,7 +96,7 @@ def test_Component(defaults_dict, component_spec):
         ]
     ]
 )
-def test_Pipeline(defaults_dict, custom_training_job_specs):
+def test_pipeline(defaults_dict, custom_training_job_specs):
     """Tests the Pipeline base class, the parent class that defines a general abstraction of a Pipeline.
 
     Args:

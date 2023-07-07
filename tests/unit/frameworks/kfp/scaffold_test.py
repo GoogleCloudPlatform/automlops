@@ -193,8 +193,8 @@ def test_maybe_strip_optional_from_annotation(annotation, result, expectation):
 @pytest.mark.parametrize(
     'func, name, description',
     [
-        (add, "Add", "This is a test"),
-        (sub, "Sub", "Test 2"),
+        (add, 'Add', 'This is a test'),
+        (sub, 'Sub', 'Test 2'),
         (div, None, None)
     ]
 )
