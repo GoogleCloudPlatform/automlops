@@ -19,7 +19,9 @@
 from AutoMLOps.utils.utils import read_yaml_file
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
+    GENERATED_PIPELINE_JOB_SPEC_PATH,
     LEFT_BRACKET,
+    PINNED_KFP_VERSION,
     RIGHT_BRACKET
 )
 
@@ -88,7 +90,7 @@ class KfpCloudRun():
             str: Package requirements for cloudrun base.
         """
         return (
-            'kfp\n'
+            f'{PINNED_KFP_VERSION}\n'
             'google-cloud-aiplatform\n'
             'google-cloud-pipeline-components\n'
             'Flask\n'
@@ -136,7 +138,7 @@ class KfpCloudRun():
             f'''logger.setLevel(log_level)\n'''
             f'\n'
             f'''CONFIG_FILE = '../../configs/defaults.yaml'\n'''
-            f'''PIPELINE_SPEC_PATH_LOCAL = '../../scripts/pipeline_spec/pipeline_job.json'\n'''
+            f'''PIPELINE_SPEC_PATH_LOCAL = '../../{GENERATED_PIPELINE_JOB_SPEC_PATH}'\n'''
             f'\n'
             f'''@app.route('/', methods=['POST'])\n'''
             f'''def process_request() -> flask.Response:\n'''
