@@ -235,7 +235,7 @@ def test_build_pipeline(mocker,
     assert os.path.exists(f'{tmpdir}/pipelines/runtime_parameters/pipeline_parameter_values.json')
 
     # Ensure pipeline_parameter_values.json was created as expected
-    with open(f'{tmpdir}/pipelines/runtime_parameters/pipeline_parameter_values.json', encoding='r') as f:
+    with open(f'{tmpdir}/pipelines/runtime_parameters/pipeline_parameter_values.json', mode='r', encoding='utf-8') as f:
         pipeline_params_dict = json.load(f)
     assert pipeline_params_dict == pipeline_parameter_values
 
@@ -247,7 +247,7 @@ def test_build_pipeline(mocker,
         'args = parser.parse_args',
         'pipeline = create_training_pipeline']
     keywords += json.dumps(custom_training_job_specs, indent=4)
-    with open(f'{tmpdir}/pipelines/pipeline.py', encoding='r') as file:
+    with open(f'{tmpdir}/pipelines/pipeline.py', mode='r', encoding='utf-8') as file:
         pipeline_content = file.read()
     for keyword in keywords:
         assert keyword in pipeline_content
