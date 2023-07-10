@@ -441,7 +441,7 @@ def test_get_function_source_definition(func, expected):
         ),
         (
             {'{': '}'},
-            '{\n       '{': '}',\n    }\n'
+            '''{\n       '{': '}',\n    }\n'''
         )
     ]
 )
