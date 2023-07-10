@@ -429,11 +429,11 @@ def test_get_function_source_definition(func, expected):
     [
         (
             {'component_spec': 'train_model'},
-            '{\n       'component_spec': train_model,\n    }\n'
+            '''{\n       'component_spec': train_model,\n    }\n'''
         ),
         (
             {'component_spec': 'train_model', 'other_spec': 'other_value'},
-            '{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n'
+            '''{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n'''
         ),
         (
             {},
