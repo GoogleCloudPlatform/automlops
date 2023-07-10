@@ -19,9 +19,10 @@
 
 from contextlib import nullcontext as does_not_raise
 import os
+from typing import Callable, List
+
 import pandas as pd
 import pytest
-from typing import Callable, List
 import yaml
 
 import AutoMLOps.utils.utils

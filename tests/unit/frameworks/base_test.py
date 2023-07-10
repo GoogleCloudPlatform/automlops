@@ -19,8 +19,9 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
 
-import pytest
 from typing import List
+
+import pytest
 
 from AutoMLOps.frameworks.base import Component, Pipeline
 from AutoMLOps.utils.utils import write_yaml_file

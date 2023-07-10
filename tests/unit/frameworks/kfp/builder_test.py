@@ -19,8 +19,9 @@
 
 import json
 import os
-import pytest
 from typing import List
+
+import pytest
 
 from AutoMLOps.frameworks.kfp.builder import (
     build_component,

@@ -19,8 +19,9 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=protected-access
 
-import pytest
 from typing import List
+
+import pytest
 
 from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
 from AutoMLOps.utils.constants import GENERATED_LICENSE

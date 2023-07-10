@@ -20,8 +20,9 @@
 
 from contextlib import nullcontext as does_not_raise
 import os
-import pytest
 from typing import Callable, List
+
+import pytest
 
 from AutoMLOps.frameworks.kfp.scaffold import (
     create_component_scaffold,
