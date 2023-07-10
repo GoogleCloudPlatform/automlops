@@ -19,6 +19,7 @@
 
 from contextlib import nullcontext as does_not_raise
 import os
+
 import pandas as pd
 import pytest
 import yaml
@@ -26,27 +27,27 @@ import yaml
 import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import (
     delete_file,
+    execute_process,
+    format_spec_dict,
+    get_components_list,
+    get_function_source_definition,
+    is_component_config,
     make_dirs,
     read_file,
     read_yaml_file,
+    update_params,
+    validate_schedule,
     write_and_chmod,
     write_file,
-    write_yaml_file,
-    get_components_list,
-    is_component_config,
-    execute_process,
-    validate_schedule,
-    update_params,
-    get_function_source_definition,
-    format_spec_dict
+    write_yaml_file
 )
 
 @pytest.mark.parametrize(
-    "directories, existance, expectation",
+    'directories, existance, expectation',
     [
-        (["dir1", "dir2"], [True, True], does_not_raise()),
-        (["dir1", "dir1"], [True, False], does_not_raise()),
-        (["\0", "dir1"], [True, True], pytest.raises(ValueError))
+        (['dir1', 'dir2'], [True, True], does_not_raise()),
+        (['dir1', 'dir1'], [True, False], does_not_raise()),
+        (['\0', 'dir1'], [True, True], pytest.raises(ValueError))
     ]
 )
 def test_make_dirs(directories, existance, expectation):
@@ -70,18 +71,18 @@ def test_make_dirs(directories, existance, expectation):
                 os.rmdir(directory)
 
 @pytest.mark.parametrize(
-    "filepath, content1, content2, expectation",
+    'filepath, content1, content2, expectation',
     [
         (
-            "test.yaml",
-            {"key1": "value1", "key2": "value2"},
+            'test.yaml',
+            {'key1': 'value1', 'key2': 'value2'},
             None,
             does_not_raise()
         ),
         (
-            "test.yaml",
-            {"key1": "value1", False: "random stuff"},
-            r"-A fails",
+            'test.yaml',
+            {'key1': 'value1', False: 'random stuff'},
+            r'-A fails',
             pytest.raises(yaml.YAMLError)
         )
     ]
@@ -101,7 +102,7 @@ def test_read_yaml_file(filepath, content1, content2, expectation):
         expectation: Any corresponding expected errors for each set of
             parameters.
     """
-    with open(file=filepath, mode="w", encoding="utf-8") as file:
+    with open(file=filepath, mode='w', encoding='utf-8') as file:
         if content1:
             yaml.dump(content1, file)
         if content2:
@@ -111,11 +112,11 @@ def test_read_yaml_file(filepath, content1, content2, expectation):
     os.remove(path=filepath)
 
 @pytest.mark.parametrize(
-    "filepath, mode, expectation",
+    'filepath, mode, expectation',
     [
-        ("test.yaml", "w", does_not_raise()),
-        ("/nonexistent/directory", "w",  pytest.raises(FileNotFoundError)),
-        ("test.yaml", "r", pytest.raises(IOError))
+        ('test.yaml', 'w', does_not_raise()),
+        ('/nonexistent/directory', 'w',  pytest.raises(FileNotFoundError)),
+        ('test.yaml', 'r', pytest.raises(IOError))
     ]
 )
 def test_write_yaml(filepath, mode, expectation):
@@ -131,22 +132,22 @@ def test_write_yaml(filepath, mode, expectation):
         expectation: Any corresponding expected errors for each set of
             parameters.
     """
-    contents = {"key1": "value1", "key2": "value2"}
+    contents = {'key1': 'value1', 'key2': 'value2'}
     with expectation:
         write_yaml_file(
             filepath=filepath,
             contents=contents,
             mode=mode
         )
-        with open(file=filepath, mode="r", encoding="utf-8") as file:
+        with open(file=filepath, mode='r', encoding='utf-8') as file:
             assert yaml.safe_load(file) == contents
         os.remove(path=filepath)
 
 @pytest.mark.parametrize(
-    "filepath, text, write_file_bool, expectation",
+    'filepath, text, write_file_bool, expectation',
     [
-        ("test.txt", "This is a text file.", True, does_not_raise()),
-        ("fail", "", False, pytest.raises(FileNotFoundError))
+        ('test.txt', 'This is a text file.', True, does_not_raise()),
+        ('fail', '', False, pytest.raises(FileNotFoundError))
     ]
 )
 def test_read_file(filepath, text, write_file_bool, expectation):
@@ -165,7 +166,7 @@ def test_read_file(filepath, text, write_file_bool, expectation):
             parameters.
     """
     if write_file_bool:
-        with open(file=filepath, mode="w", encoding="utf-8") as file:
+        with open(file=filepath, mode='w', encoding='utf-8') as file:
             file.write(text)
     with expectation:
         assert read_file(filepath=filepath) == text
@@ -173,10 +174,10 @@ def test_read_file(filepath, text, write_file_bool, expectation):
         os.remove(filepath)
 
 @pytest.mark.parametrize(
-    "filepath, text, mode, expectation",
+    'filepath, text, mode, expectation',
     [
-        ("test.txt", "This is a test file.", "w", does_not_raise()),
-        (15, "This is a test file.", "w", pytest.raises(OSError))
+        ('test.txt', 'This is a test file.', 'w', does_not_raise()),
+        (15, 'This is a test file.', 'w', pytest.raises(OSError))
     ]
 )
 def test_write_file(filepath, text, mode, expectation):
@@ -200,7 +201,7 @@ def test_write_file(filepath, text, mode, expectation):
             mode=mode
         )
         assert os.path.exists(filepath)
-        with open(file=filepath, mode="r", encoding="utf-8") as file:
+        with open(file=filepath, mode='r', encoding='utf-8') as file:
             assert text == file.read()
         os.remove(filepath)
 
@@ -209,35 +210,35 @@ def test_write_and_chmod():
     and chmods the file to allow for execution.
     """
     # Create a file.
-    with open(file="test.txt", mode="w", encoding="utf-8") as file:
-        file.write("This is a test file.")
+    with open(file='test.txt', mode='w', encoding='utf-8') as file:
+        file.write('This is a test file.')
 
     # Call the `write_and_chmod` function.
-    write_and_chmod("test.txt", "This is a test file.")
+    write_and_chmod('test.txt', 'This is a test file.')
 
     # Assert that the file exists and is executable.
-    assert os.path.exists("test.txt")
-    assert os.access("test.txt", os.X_OK)
+    assert os.path.exists('test.txt')
+    assert os.access('test.txt', os.X_OK)
 
     # Assert that the contents of the file are correct.
-    with open(file="test.txt", mode="r", encoding="utf-8") as file:
+    with open(file='test.txt', mode='r', encoding='utf-8') as file:
         contents = file.read()
-    assert contents == "This is a test file."
-    os.remove("test.txt")
+    assert contents == 'This is a test file.'
+    os.remove('test.txt')
 
 def test_delete_file():
     """Tests delete_file, which deletes a file at the specified path."""
-    with open(file="test.txt", mode="w", encoding="utf-8") as file:
-        file.write("This is a test file.")
-    delete_file("test.txt")
-    assert not os.path.exists("test.txt")
+    with open(file='test.txt', mode='w', encoding='utf-8') as file:
+        file.write('This is a test file.')
+    delete_file('test.txt')
+    assert not os.path.exists('test.txt')
 
 @pytest.mark.parametrize(
-    "comp_path, comp_name, patch_cwd, expectation",
+    'comp_path, comp_name, patch_cwd, expectation',
     [
-        (["component.yaml"], ["component"], True, does_not_raise()),
+        (['component.yaml'], ['component'], True, does_not_raise()),
         ([], [], True, does_not_raise()),
-        (["component.yaml"], ["component"], False, pytest.raises(FileNotFoundError))
+        (['component.yaml'], ['component'], False, pytest.raises(FileNotFoundError))
     ]
 )
 def test_get_components_list(mocker,
@@ -262,39 +263,39 @@ def test_get_components_list(mocker,
             parameters.
     """
     if patch_cwd:
-        mocker.patch.object(AutoMLOps.utils.utils, "CACHE_DIR", ".")
+        mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
     if comp_path:
         for file in comp_path:
-            with open(file=file, mode="w", encoding="utf-8") as f:
+            with open(file=file, mode='w', encoding='utf-8') as f:
                 yaml.dump(
                     {
-                        "name": "value1", 
-                        "inputs": "value2",
-                        "implementation": "value3"
+                        'name': 'value1', 
+                        'inputs': 'value2',
+                        'implementation': 'value3'
                     },
                     f)
     with expectation:
         assert get_components_list(full_path=False) == comp_name
-        assert get_components_list(full_path=True) == [os.path.join(".", file) for file in comp_path]
+        assert get_components_list(full_path=True) == [os.path.join('.', file) for file in comp_path]
     for file in comp_path:
         if os.path.exists(file):
             os.remove(file)
 
 @pytest.mark.parametrize(
-    "yaml_contents, expected",
+    'yaml_contents, expected',
     [
         (
             {
-                "name": "value1",
-                "inputs": "value2",
-                "implementation": "value3"
+                'name': 'value1',
+                'inputs': 'value2',
+                'implementation': 'value3'
             },
             True
         ),
         (
             {
-                "name": "value1",
-                "inputs": "value2"
+                'name': 'value1',
+                'inputs': 'value2'
             },
             False
         )
@@ -310,16 +311,16 @@ def test_is_component_config(yaml_contents, expected):
         yaml_contents: Component configurations to be written to yaml file.
         expected: Expectation of whether or not the configuration is valid.
     """
-    with open(file="component.yaml", mode="w", encoding="utf-8") as f:
+    with open(file='component.yaml', mode='w', encoding='utf-8') as f:
         yaml.dump(yaml_contents, f)
-    assert expected == is_component_config("component.yaml")
-    os.remove("component.yaml")
+    assert expected == is_component_config('component.yaml')
+    os.remove('component.yaml')
 
 @pytest.mark.parametrize(
-    "command, expectation",
+    'command, expectation',
     [
-        ("touch test.txt", False),
-        ("not a real command", True)
+        ('touch test.txt', False),
+        ('not a real command', True)
     ]
 )
 def test_execute_process(command, expectation):
@@ -337,16 +338,16 @@ def test_execute_process(command, expectation):
             execute_process(command=command, to_null=False)
     else:
         execute_process(command=command, to_null=False)
-        assert os.path.exists("test.txt")
-        os.remove("test.txt")
+        assert os.path.exists('test.txt')
+        os.remove('test.txt')
 
 @pytest.mark.parametrize(
-    "sch_pattern, run_local, expectation",
+    'sch_pattern, run_local, expectation',
     [
-        ("No Schedule Specified", True, does_not_raise()),
-        ("No Schedule Specified", False, does_not_raise()),
-        ("Schedule", True, pytest.raises(ValueError)),
-        ("Schedule", False, does_not_raise())
+        ('No Schedule Specified', True, does_not_raise()),
+        ('No Schedule Specified', False, does_not_raise()),
+        ('Schedule', True, pytest.raises(ValueError)),
+        ('Schedule', False, does_not_raise())
     ]
 )
 def test_validate_schedule(sch_pattern, run_local, expectation):
@@ -363,15 +364,15 @@ def test_validate_schedule(sch_pattern, run_local, expectation):
         validate_schedule(schedule_pattern=sch_pattern, run_local=run_local)
 
 @pytest.mark.parametrize(
-    "params, expected",
+    'params, expected',
     [
-        ([{"name": "param1", "type": int}], [{"name": "param1", "type": "Integer"}]),
-        ([{"name": "param2", "type": str}], [{"name": "param2", "type": "String"}]),
-        ([{"name": "param3", "type": float}], [{"name": "param3", "type": "Float"}]),
-        ([{"name": "param4", "type": bool}], [{"name": "param4", "type": "Bool"}]),
-        ([{"name": "param5", "type": list}], [{"name": "param5", "type": "List"}]),
-        ([{"name": "param6", "type": dict}], [{"name": "param6", "type": "Dict"}]),
-        ([{"name": "param6", "type": pd.DataFrame}], None)
+        ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
+        ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
+        ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
+        ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Bool'}]),
+        ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'List'}]),
+        ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'Dict'}]),
+        ([{'name': 'param6', 'type': pd.DataFrame}], None)
     ]
 )
 def test_update_params(params, expected):
@@ -405,12 +406,12 @@ def func4():
     return inner_func()
 
 @pytest.mark.parametrize(
-    "func, expected",
+    'func, expected',
     [
-        (func1, "def func1(x):\n    return x + 1\n"),
-        (func2, "def func2(x, y):\n    return x + y\n"),
-        (func3, "def func3(x, y, z):\n    return x + y + z\n"),
-        (func4, "def func4():\n    def inner_func():\n        res = 1 + 1\n        return res\n    return inner_func()\n")
+        (func1, 'def func1(x):\n    return x + 1\n'),
+        (func2, 'def func2(x, y):\n    return x + y\n'),
+        (func3, 'def func3(x, y, z):\n    return x + y + z\n'),
+        (func4, 'def func4():\n    def inner_func():\n        res = 1 + 1\n        return res\n    return inner_func()\n')
     ]
 )
 def test_get_function_source_definition(func, expected):
@@ -424,23 +425,23 @@ def test_get_function_source_definition(func, expected):
     assert expected == get_function_source_definition(func=func)
 
 @pytest.mark.parametrize(
-    "job_spec, expected",
+    'job_spec, expected',
     [
         (
-            {"component_spec": "train_model"},
-            "{\n       'component_spec': train_model,\n    }\n"
+            {'component_spec': 'train_model'},
+            '{\n       'component_spec': train_model,\n    }\n'
         ),
         (
-            {"component_spec": "train_model", "other_spec": "other_value"},
-            "{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n"
+            {'component_spec': 'train_model', 'other_spec': 'other_value'},
+            '{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n'
         ),
         (
             {},
-            "{\n    \n    }\n"
+            '{\n    \n    }\n'
         ),
         (
-            {"{": "}"},
-            "{\n       '{': '}',\n    }\n"
+            {'{': '}'},
+            '{\n       '{': '}',\n    }\n'
         )
     ]
 )
