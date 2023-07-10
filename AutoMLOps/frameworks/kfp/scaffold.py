@@ -14,7 +14,6 @@
 
 """Builds temporary component scaffold yaml files."""
 
-
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103
 # pylint: disable=line-too-long
