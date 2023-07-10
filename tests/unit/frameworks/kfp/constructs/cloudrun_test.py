@@ -20,13 +20,14 @@
 # pylint: disable=protected-access
 
 import pytest
-from AutoMLOps.utils.utils import write_yaml_file
+
+from AutoMLOps.frameworks.kfp.constructs.cloudrun import KfpCloudRun
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
     LEFT_BRACKET,
     RIGHT_BRACKET
 )
-from AutoMLOps.frameworks.kfp.constructs.cloudrun import KfpCloudRun
+from AutoMLOps.utils.utils import write_yaml_file
 
 # Create defaults file contents to test
 DEFAULTS1 = {
@@ -81,6 +82,12 @@ def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
+    Args:
+        request: Pytest fixture special object that provides information
+            about the fixture.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+
     Returns:
         dict: Path of yaml file and dictionary it contains.
     """
@@ -92,8 +99,7 @@ def test_KfpCloudRun(defaults_dict):
     """Tests the KFP Cloud Run class.
     
     Args:
-        defaults_dict (dict): Dictionary containing the path to the default config
-            variables yaml and the dictionary held within it.
+        defaults_dict: Locally defined defaults_dict Pytest fixture.
     """
     path = defaults_dict['path']
     defaults = defaults_dict['vals']

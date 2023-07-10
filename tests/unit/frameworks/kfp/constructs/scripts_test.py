@@ -20,12 +20,13 @@
 
 import mock
 import pytest
-import AutoMLOps.utils.constants
+
 from AutoMLOps.frameworks.kfp.constructs.scripts import KfpScripts
+import AutoMLOps.utils.constants
 from AutoMLOps.utils.constants import (
     GENERATED_LICENSE,
-    NEWLINE,
     LEFT_BRACKET,
+    NEWLINE,
     RIGHT_BRACKET
 )
 
@@ -54,54 +55,56 @@ from AutoMLOps.utils.constants import (
 )
 def test_init(mocker,
               tmpdir,
-              af_registry_location,
-              af_registry_name,
-              base_image,
-              cb_trigger_location,
-              cb_trigger_name,
-              cloud_run_location,
-              cloud_run_name,
-              cloud_tasks_queue_location,
-              cloud_tasks_queue_name,
-              csr_branch_name,
-              csr_name,
-              gs_bucket_location,
-              gs_bucket_name,
-              pipeline_runner_sa,
-              project_id,
-              run_local,
-              schedule_location,
-              schedule_name,
-              schedule_pattern,
-              base_dir,
-              vpc_connector,
-              reqs):
+              af_registry_location: str,
+              af_registry_name: str,
+              base_image: str,
+              cb_trigger_location: str,
+              cb_trigger_name: str,
+              cloud_run_location: str,
+              cloud_run_name: str,
+              cloud_tasks_queue_location: str,
+              cloud_tasks_queue_name: str,
+              csr_branch_name: str,
+              csr_name: str,
+              gs_bucket_location: str,
+              gs_bucket_name: str,
+              pipeline_runner_sa: str,
+              project_id: str,
+              run_local: bool,
+              schedule_location: str,
+              schedule_name: str,
+              schedule_pattern: str,
+              base_dir: str,
+              vpc_connector: str,
+              reqs: list):
     """Tests the initialization of the KFPScripts class.
 
     Args:
         mocker: Mocker used to patch constants to test in tempoarary environment.
-        af_registry_location: Region of the Artifact Registry.
-        af_registry_name: Artifact Registry name where components are stored.
-        base_image: The image to use in the dockerfile.
-        cb_trigger_location: The location of the cloudbuild trigger.
-        cb_trigger_name: The name of the cloudbuild trigger.
-        cloud_run_location: The location of the cloud runner service.
-        cloud_run_name: The name of the cloud runner service.
-        cloud_tasks_queue_location: The location of the cloud tasks queue.
-        cloud_tasks_queue_name: The name of the cloud tasks queue.
-        csr_branch_name: The name of the csr branch to push to to trigger cb job.
-        csr_name: The name of the cloud source repo to use.
-        gs_bucket_location: Region of the GS bucket.
-        gs_bucket_name: GS bucket name where pipeline run metadata is stored.
-        pipeline_runner_sa: Service Account to runner PipelineJobs.
-        project_id: The project ID.
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
-        schedule_location: The location of the scheduler resource.
-        schedule_name: The name of the scheduler resource.
-        schedule_pattern: Cron formatted value used to create a scheduled retrain job.
-        base_dir: Top directory name.
-        vpc_connector: The name of the vpc connector to use.
-        reqs: Package requirements to write into requirements.txt
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+        af_registry_location (str): Region of the Artifact Registry.
+        af_registry_name (str): Artifact Registry name where components are stored.
+        base_image (str): The image to use in the dockerfile.
+        cb_trigger_location (str): The location of the cloudbuild trigger.
+        cb_trigger_name (str): The name of the cloudbuild trigger.
+        cloud_run_location (str): The location of the cloud runner service.
+        cloud_run_name (str): The name of the cloud runner service.
+        cloud_tasks_queue_location (str): The location of the cloud tasks queue.
+        cloud_tasks_queue_name (str): The name of the cloud tasks queue.
+        csr_branch_name (str): The name of the csr branch to push to to trigger cb job.
+        csr_name (str): The name of the cloud source repo to use.
+        gs_bucket_location (str): Region of the GS bucket.
+        gs_bucket_name (str): GS bucket name where pipeline run metadata is stored.
+        pipeline_runner_sa (str): Service Account to runner PipelineJobs.
+        project_id (str): The project ID.
+        run_local (bool): Flag that determines whether to use Cloud Run CI/CD.
+        schedule_location (str): The location of the scheduler resource.
+        schedule_name (str): The name of the scheduler resource.
+        schedule_pattern (str): Cron formatted value used to create a scheduled retrain job.
+        base_dir (str): Top directory name.
+        vpc_connector (str): The name of the vpc connector to use.
+        reqs (list): Package requirements to write into requirements.txt
     """
 
     # Patch global directory variables

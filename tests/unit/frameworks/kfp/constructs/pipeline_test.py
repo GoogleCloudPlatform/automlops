@@ -20,11 +20,12 @@
 # pylint: disable=protected-access
 
 import pytest
+from typing import List
+
 from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
 from AutoMLOps.utils.constants import GENERATED_LICENSE
-from AutoMLOps.utils.utils import get_components_list
-from AutoMLOps.utils.utils import write_yaml_file
 import AutoMLOps.utils.utils
+from AutoMLOps.utils.utils import get_components_list, write_yaml_file
 
 # Create defaults file contents to test
 DEFAULTS1 = {
@@ -49,6 +50,12 @@ def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
+    Args:
+        request: Pytest fixture special object that provides information
+            about the fixture.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+
     Returns:
         dict: Path of yaml file and dictionary it contains.
     """
@@ -71,10 +78,11 @@ def fixture_defaults_dict(request, tmpdir):
         ]
     ]
 )
-def test_KfpPipeline(mocker, custom_training_job_specs, defaults_dict):
+def test_KfpPipeline(mocker, custom_training_job_specs: List[dict], defaults_dict: dict):
     """Tests the KFP child class that generates files related to KFP pipelines.
 
     Args:
+        mocker: Mocker to patch directories.
         custom_training_job_specs (List[Dict]): Specifies the specs to run the
             training job with.
         defaults_file (dict): Dictionary containing the path to the default

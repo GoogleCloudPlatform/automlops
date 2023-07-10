@@ -20,6 +20,8 @@
 # pylint: disable=protected-access
 
 import pytest
+from typing import List
+
 from AutoMLOps.frameworks.base import Component, Pipeline
 from AutoMLOps.utils.utils import write_yaml_file
 
@@ -45,6 +47,12 @@ def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
+    Args:
+        request: Pytest fixture special object that provides information
+            about the fixture.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+
     Returns:
         str: Path of yaml file.
     """
@@ -54,15 +62,14 @@ def fixture_defaults_dict(request, tmpdir):
 
 @pytest.mark.parametrize(
     'component_spec',
-    ['test1', 'test2']
+    [{'test1': 'val1'}, {'test2': 'val2'}]
 )
-def test_Component(defaults_dict, component_spec):
+def test_Component(defaults_dict, component_spec: dict):
     """Tests the Component base class, the parent class that defines a general
     abstraction of a Component.
 
     Args:
-        defaults_dict (str): Dictionary containing the path to the default config
-            variables yaml and the dictionary held within it.
+        defaults_dict: Locally defined defaults_dict Pytest fixture.
         component_spec (dict): Dictionary of component specs including details
             of component image, startup command, and args.
     """
@@ -100,13 +107,12 @@ def test_Component(defaults_dict, component_spec):
         ]
     ]
 )
-def test_Pipeline(defaults_dict, custom_training_job_specs):
+def test_Pipeline(defaults_dict, custom_training_job_specs: List[dict]):
     """Tests the Pipeline base class, the parent class that defines a general
     abstraction of a Pipeline.
 
     Args:
-        defaults_dict (str): Dictionary containing the path to the default config
-            variables yaml and the dictionary held within it.
+        defaults_dict: Pytest defaults yaml file fixture.
         custom_training_job_specs (List[Dict]): Specifies the specs to run the
             training job with.
     """

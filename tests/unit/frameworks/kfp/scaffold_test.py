@@ -21,6 +21,8 @@
 from contextlib import nullcontext as does_not_raise
 import os
 import pytest
+from typing import Callable, List
+
 from AutoMLOps.frameworks.kfp.scaffold import (
     create_component_scaffold,
     create_pipeline_scaffold,
@@ -29,9 +31,9 @@ from AutoMLOps.frameworks.kfp.scaffold import (
     get_function_parameters,
     get_pipeline_decorator,
 )
+from AutoMLOps.utils.constants import DEFAULT_PIPELINE_NAME
 import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import get_function_source_definition, read_yaml_file
-from AutoMLOps.utils.constants import DEFAULT_PIPELINE_NAME
 
 def add(a: int, b: int):
     """Testing
@@ -65,17 +67,17 @@ def div(a: float, b: float):
         (sub, None, pytest.raises(TypeError))
     ]
 )
-def test_create_component_scaffold(func, packages_to_install, expectation):
+def test_create_component_scaffold(func: Callable, packages_to_install: list, expectation):
     """Tests create_component_scaffold, which creates a tmp component scaffold
     which will be used by the formalize function. Code is temporarily stored in
     component_spec['implementation']['container']['command'].
 
     Args:
-        func: The python function to create a component from. The function
+        func (Callable): The python function to create a component from. The function
             should have type annotations for all its arguments, indicating how
             it is intended to be used (e.g. as an input/output Artifact object,
             a plain parameter, or a path to a file).
-        packages_to_install: A list of optional packages to install before
+        packages_to_install (list): A list of optional packages to install before
             executing func. These will always be installed at component runtime.
         expectation: Any corresponding expected errors for each
             set of parameters.
@@ -106,16 +108,16 @@ def test_create_component_scaffold(func, packages_to_install, expectation):
         (sub, ['pandas', 'kfp', 'pytest'])
     ]
 )
-def test_get_packages_to_install_command(func, packages_to_install):
+def test_get_packages_to_install_command(func: Callable, packages_to_install: list):
     """Tests get_packages_to_install_command, which returns a list of 
     formatted list of commands, including code for tmp storage.
 
     Args:
-        func: The python function to create a component from. The function
+        func (Callable): The python function to create a component from. The function
             should have type annotations for all its arguments, indicating how
             it is intended to be used (e.g. as an input/output Artifact object,
             a plain parameter, or a path to a file).
-        packages_to_install: A list of optional packages to install before
+        packages_to_install (list): A list of optional packages to install before
             executing func. These will always be installed at component runtime.
     """
     newline = '\n'
@@ -137,7 +139,8 @@ def test_get_packages_to_install_command(func, packages_to_install):
             add,
             [
                 {'description': 'Integer a', 'name': 'a', 'type': 'Integer'},
-                {'description': 'Integer b', 'name': 'b', 'type': 'Integer'}],
+                {'description': 'Integer b', 'name': 'b', 'type': 'Integer'}
+            ],
             does_not_raise()
         ),
         (
@@ -155,16 +158,16 @@ def test_get_packages_to_install_command(func, packages_to_install):
         )
     ]
 )
-def test_get_function_parameters(func, params, expectation):
+def test_get_function_parameters(func: Callable, params: List[dict], expectation):
     """Tests get_function_parameters, which returns a formatted list of
     parameters.
 
     Args:
-        func: The python function to create a component from. The function
+        func (Callable): The python function to create a component from. The function
             should have type annotations for all its arguments, indicating how
             it is intended to be used (e.g. as an input/output Artifact object,
             a plain parameter, or a path to a file).
-        params: Params list with types converted to kubeflow spec.
+        params (List[dict]): Params list with types converted to kubeflow spec.
         expectation: Any corresponding expected errors for each
             set of parameters.
     """
@@ -179,19 +182,19 @@ def test_get_function_parameters(func, params, expectation):
         (div, None, None)
     ]
 )
-def test_create_pipeline_scaffold(mocker, func, name, description):
+def test_create_pipeline_scaffold(mocker, func: Callable, name: str, description: str):
     """Tests create_pipeline_scaffold, which creates a temporary pipeline 
     scaffold which will be used by the formalize function.
 
     Args:
         mocker: Mocker used to patch constants to test in tempoarary
             environment.
-        func: The python function to create a pipeline from. The function should
-            have type annotations for all its arguments, indicating how it is
-            intended to be used (e.g. as an input/output Artifact object, a
-            plain parameter, or a path to a file).
-        name: The name of the pipeline.
-        description: Short description of what the pipeline does.
+        func (Callable): The python function to create a pipeline from. The 
+            function should have type annotations for all its arguments,
+            indicating how it is intended to be used (e.g. as an input/output
+            Artifact object, a plain parameter, or a path to a file).
+        name (str): The name of the pipeline.
+        description (str): Short description of what the pipeline does.
     """
     mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
     create_pipeline_scaffold(func=func, name=name, description=description)
@@ -209,12 +212,12 @@ def test_create_pipeline_scaffold(mocker, func, name, description):
         (None, None),
     ]
 )
-def test_get_pipeline_decorator(name, description):
+def test_get_pipeline_decorator(name: str, description: str):
     """Tests get_pipeline_decorator, which creates the kfp pipeline decorator.
 
     Args:
-        name: The name of the pipeline.
-        description: Short description of what the pipeline does.
+        name (str): The name of the pipeline.
+        description (str): Short description of what the pipeline does.
     """
     desc_str = f'''    description='{description}',\n''' if description else ''
     decorator = (
@@ -229,11 +232,11 @@ def test_get_pipeline_decorator(name, description):
     'func_name',
     ['func1', 'func2']
 )
-def test_get_compile_step(func_name):
+def test_get_compile_step(func_name: str):
     """Tests get_compile_step, which creates the compile function call.
 
     Args:
-        func_name: The name of the pipeline function.
+        func_name (str): The name of the pipeline function.
     """
     assert get_compile_step(func_name=func_name) == (
         f'\n'

@@ -20,6 +20,7 @@
 # pylint: disable=protected-access
 
 import pytest
+
 from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent
 from AutoMLOps.utils.constants import GENERATED_LICENSE
 from AutoMLOps.utils.utils import is_using_kfp_spec, write_yaml_file
@@ -69,6 +70,12 @@ def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
+    Args:
+        request: Pytest fixture special object that provides information
+            about the fixture.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+
     Returns:
         dict: Path of yaml file and dictionary it contains
     """
@@ -80,7 +87,7 @@ def fixture_defaults_dict(request, tmpdir):
     'component_spec',
     [COMPONENT_SPEC1, COMPONENT_SPEC2]
 )
-def test_KfpComponent(component_spec, defaults_dict):
+def test_KfpComponent(component_spec: dict, defaults_dict: dict):
     """Tests the KFP child class that generates files related to KFP components.
 
     Args:

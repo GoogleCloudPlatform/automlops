@@ -20,15 +20,17 @@
 import json
 import os
 import pytest
-import AutoMLOps.utils.utils
+from typing import List
+
 from AutoMLOps.frameworks.kfp.builder import (
     build_component,
     build_pipeline
 )
+import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import (
-    write_yaml_file,
+    make_dirs,
     read_yaml_file,
-    make_dirs
+    write_yaml_file
 )
 
 DEFAULTS = {
@@ -82,6 +84,12 @@ def fixture_temp_yaml_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
+    Args:
+        request: Pytest fixture special object that provides information
+            about the fixture.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+
     Returns:
         dict: Path of yaml file and dictionary it contains.
     """
@@ -93,6 +101,12 @@ def fixture_temp_yaml_dict(request, tmpdir):
 def fixture_defaults_dict(request, tmpdir):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
+
+    Args:
+        request: Pytest fixture special object that provides information
+            about the fixture.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
 
     Returns:
         dict: Path of yaml file and dictionary it contains.
@@ -132,6 +146,15 @@ def test_build_component(mocker,
                          expected_component_dict):
     """Tests build_component, which Constructs and writes component.yaml and
     {component_name}.py files.
+
+    Args:
+        mocker: Mocker to patch directories.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+        temp_yaml_dict: Locally defined temp_yaml_file Pytest fixture.
+        defaults_dict: Locally defined defaults_dict Pytest fixture.
+        expected_component_dict: Locally defined expected_component_dict
+            Pytest fixture.
     """
     # Patch filepath constants to point to test path.
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder,
@@ -208,10 +231,18 @@ def test_build_component(mocker,
 def test_build_pipeline(mocker,
                         tmpdir,
                         defaults_dict,
-                        custom_training_job_specs,
-                        pipeline_parameter_values):
+                        custom_training_job_specs: List[dict],
+                        pipeline_parameter_values: dict):
     """Tests build_pipeline, which constructs and writes pipeline.py,
     pipeline_runner.py, and pipeline_parameter_values.json files.
+
+    Args:
+        mocker: Mocker to patch directories.
+        tmpdir: Pytest fixture that provides a temporary directory unique
+            to the test invocation.
+        defaults_dict: Locally defined defaults_dict Pytest fixture.
+        custom_training_job_specs (List[dict]): Specifies the specs to run the training job with.
+        pipeline_parameter_values (dict): Dictionary of runtime parameters for the PipelineJob.
     """
     # Patch constants and other functions
     mocker.patch.object(AutoMLOps.frameworks.kfp.builder,
