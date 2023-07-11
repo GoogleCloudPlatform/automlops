@@ -179,7 +179,7 @@ AutoMLOps.iac_generate(
     project_id=PROJECT_ID,
     model_name='retail_model_bundle_together',
     pipeline_params=pipeline_params,
-    provider=Provider.TERRAFORM,
+    provider=Provider.PULUMI,
     pulumi_runtime=PulumiRuntime.PYTHON,
 )
 ```
