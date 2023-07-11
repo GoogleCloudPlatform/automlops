@@ -11,17 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-IaC 
 
-# IaC is a service that generates a production-style MLOps pipeline
-# from Jupyter Notebooks. The tool currently operates as a local package
-# import, with the end goal of becoming a Jupyter plugin to Vertex
-# Workbench managed notebooks. The tool will generate pulumi yaml and python
-# config files for all components defined in a notebook. It will also generate a
-# series of directories to support the creation of Vertex Pipelines.
-"""
-# pylint: disable=invalid-name
-__version__ = '1.0.0'
-__author__ = 'Askar/Lex'
-__credits__ = 'OPS Angels'
+"""Sets global enums."""
+
+# pylint: disable=C0103
+# pylint: disable=line-too-long
+
+from enum import Enum
+
+
+class Provider(Enum):
+    """Enum representing the available providers for infrastructure management."""
+
+    TERRAFORM = 'terraform'
+    PULUMI = 'pulumi'
+
+
+class PulumiRuntime(Enum):
+    """Enum representing the available pulumi runtimes."""
+
+    PYTHON = 'python'
+    TYPESCRIPT = 'typescript'
+    GO = 'go'

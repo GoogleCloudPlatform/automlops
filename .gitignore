@@ -1,6 +1,8 @@
 .tmpfiles/
 .AutoMLOps-cache/
 .DS_Store
+.vscode/
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -12,6 +14,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+.vscode
 build/
 build/*
 develop-eggs/
