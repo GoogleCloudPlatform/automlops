@@ -95,7 +95,7 @@ def fixture_defaults_dict(request, tmpdir):
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
 
-def test_KfpCloudRun(defaults_dict):
+def test_KfpCloudRun(defaults_dict: dict):
     """Tests the KFP Cloud Run class.
     
     Args:
