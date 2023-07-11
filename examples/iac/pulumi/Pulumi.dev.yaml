@@ -4,7 +4,8 @@ config:
     environment: dev
     default_region: us-central1
   devops_plm_automlops:project:
-    child_folder: folders/1023461421444
+    billing_account: ?????-?????-?????
+    child_folder: folders/??????????
     disable_dependent_services: true
     enable_apis:
       - aiplatform.googleapis.com
@@ -33,4 +34,4 @@ config:
       - recommendationengine.googleapis.com
       - notebooks.googleapis.com
   devops_plm_automlops:container_registry:
-    - location: US
+    location: US

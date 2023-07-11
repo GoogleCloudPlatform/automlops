@@ -43,15 +43,16 @@ common_labels = {
 project_cfg = config.require_object("project")
 
 child_folder = project_cfg.get("child_folder")
+billing_account = project_cfg.get("billing_account")
 disable_dependent_services = project_cfg.get("disable_dependent_services")
 enable_apis = project_cfg.get("enable_apis") or []
 
 #######################################################################
 # Container Registry Config
 #######################################################################
-registries = config.require_object("container_registry")
+registrie = config.require_object("container_registry")
 
-registries = list(registries) if registries else []
+registrie_location = registrie.get("location")
 
 #######################################################################
 # Init
@@ -62,6 +63,7 @@ try:
         name=stack_infra,
         project_id=stack_infra,
         folder_id=child_folder,
+        billing_account=billing_account,
         auto_create_network=True,
         labels=common_labels,
         opts=ResourceOptions(
@@ -86,23 +88,18 @@ try:
             )
         )
 
-    # projectInit = Project(
-    #     resource_name=stack_infra,
-    #     args=ProjectArgs(
-    #         name=stack_infra,
-    #         project_id=stack_infra,
-    #         folder_id=child_folder,
-    #         disable_dependent_services=disable_dependent_services,
-    #         enable_apis=enable_apis,
-    #         billing_account=billing_account,
-    #         labels=common_labels
-    #     ),
-    #     opts=ResourceOptions(
-    #         providers=None,
-    #         protect=True,
-    #         depends_on=[]
-    #     ),
-    # )
+    registry_init = gcp.container.Registry(
+        resource_name=f"{stack_infra}-registry",
+        project=project_init.project_id,
+        location=registrie_location,
+        opts=ResourceOptions(
+            providers=None,
+            protect=False,
+            depends_on=[
+                project_init
+            ]
+        )
+    )
 
     export("project", project_init)
 
