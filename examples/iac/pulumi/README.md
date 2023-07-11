@@ -46,3 +46,7 @@ Once stack is create you should be up the environment.
 $ gcloud auth application-default login
 ```
 
+Last step would be runnng the apply, which can be done via `make dev`(added for convenience) or via command `export GOOGLE_PROJECT="gcp-lab-automlops-dev"; pulumi up -s opsangels/dev`
+
+![image](https://github.com/lexopsangels/automlops/assets/54945914/e131cb84-bae0-425d-ba3f-964513befe79)
+
