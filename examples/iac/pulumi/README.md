@@ -35,3 +35,5 @@ python3 -m venv .venv
 $ pulumi stack init opsangels/dev
 Created stack 'opsangels/dev'
 ```
+Checking stack:
+![image](https://github.com/lexopsangels/automlops/assets/54945914/574ae1a7-9629-4533-b673-b78de22a0863)
