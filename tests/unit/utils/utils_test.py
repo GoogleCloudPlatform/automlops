@@ -240,12 +240,30 @@ def test_write_and_chmod():
     assert contents == 'This is a test file.'
     os.remove('test.txt')
 
-def test_delete_file():
-    """Tests delete_file, which deletes a file at the specified path."""
-    with open(file='test.txt', mode='w', encoding='utf-8') as file:
-        file.write('This is a test file.')
-    delete_file('test.txt')
-    assert not os.path.exists('test.txt')
+@pytest.mark.parametrize(
+    'file_to_delete, valid_file',
+    [
+        ('test.txt', True),
+        ('fake.txt', False)
+    ]
+)
+def test_delete_file(file_to_delete: str, valid_file: bool):
+    """Tests delete_file, which deletes a file at the specified path.
+    There are two test cases for this function:
+        1. Create a valid file and call delete_file, which is expected to successfully delete the file.
+        2. Pass in a nonexistent file and call delete_file, which is expected to pass.
+
+    Args:
+        file_to_delete (str): Name of file to delete.
+        valid_file (bool): Whether or not the file to delete actually exists."""
+    if not valid_file: 
+        with does_not_raise():
+            delete_file(file_to_delete)
+    else:
+        with open(file=file_to_delete, mode='w', encoding='utf-8') as file:
+            file.write('This is a test file.')
+            delete_file(file_to_delete)
+            assert not os.path.exists(file_to_delete)
 
 @pytest.mark.parametrize(
     'comp_path, comp_name, patch_cwd, expectation',
@@ -331,17 +349,19 @@ def test_is_component_config(yaml_contents: dict, expectation: bool):
     os.remove('component.yaml')
 
 @pytest.mark.parametrize(
-    'command, expectation',
+    'command, to_null, expectation',
     [
-        ('touch test.txt', False),
-        ('not a real command', True)
+        ('touch test.txt', False, False),
+        ('not a real command', False, True), 
+        ('echo "howdy"', True, False)
     ]
 )
-def test_execute_process(command: str, expectation: bool):
+def test_execute_process(command: str, to_null: bool, expectation: bool):
     """Tests execute_process, which executes an external shell process. There
     are two test cases for this function:
         1. A valid command to create a file, which is expected to run successfully.
         2. An invalid command, which is expected to raise a RunTime Error.
+        3. A valid command to output a string, which is expected to send output to null
 
     Args:
         command (str): Command that is to be executed.
@@ -349,9 +369,12 @@ def test_execute_process(command: str, expectation: bool):
     """
     if expectation:
         with pytest.raises(RuntimeError):
-            execute_process(command=command, to_null=False)
+            execute_process(command=command, to_null=to_null)
+    elif to_null: 
+        output = execute_process(command=command, to_null=to_null)
+        assert output == None
     else:
-        execute_process(command=command, to_null=False)
+        execute_process(command=command, to_null=to_null)
         assert os.path.exists('test.txt')
         os.remove('test.txt')
 
