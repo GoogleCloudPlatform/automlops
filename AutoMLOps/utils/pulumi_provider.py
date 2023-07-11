@@ -40,12 +40,17 @@ def builder(
     pipeline_params: Dict,
     pulumi_runtime: PulumiRuntime,
     model_name: str = 'not_specified',
+    region: str = 'us-central1',
+    artifact_repo_name: str = 'automlops_artifact_repo',
+    source_repo_name: str = 'automlops_source_repo',
+    cloudtasks_queue: str = 'automlops_cloudtasks_queue'
 ):
     """Constructs and writes pulumi scripts: Generates infrastructure using pulumi resource management style.
 
     Args:
         top_lvl_name: Top directory name.
         model_name: Name of the model.
+        ##extend arguments descriptions
     """
 
     # create pulumi folder
@@ -61,11 +66,15 @@ def builder(
     write_file(pulumi_folder + 'Pulumi.dev.yaml', _create_pulumi_dev_yaml(
         project_id=project_id,
         model_name=model_name,
-        pipeline_params=pipeline_params), 'w+')
+        pipeline_params=pipeline_params,
+        region=region), 'w+')
 
     # create __main__.py
     if pulumi_runtime == PulumiRuntime.PYTHON:
         write_file(pulumi_folder + '__main__.py', _create_main_python(
+            artifact_repo_name,
+            source_repo_name,
+            cloudtasks_queue,
         ), 'w+')
 
 
@@ -90,7 +99,8 @@ def _create_pulumi_yaml(
 def _create_pulumi_dev_yaml(
         project_id: str,
         model_name: str,
-        pipeline_params: Dict
+        pipeline_params: Dict,
+        region: str,
 ) -> str:
     """Generates code for Pulumi.dev.yaml, the pulumi script that contains details to deploy dev environment config.
 
@@ -107,10 +117,10 @@ def _create_pulumi_dev_yaml(
         f'    project_id: {project_id}\{NEWLINE}'
         f'    model_name: {model_name}{NEWLINE}'
         f'    environment: dev{NEWLINE}'
-        f'    default_region: us-central1{NEWLINE}'
+        f'    default_region: {region}{NEWLINE}'
         f'  devops_plm_automlops_{model_name}:buckets:{NEWLINE}'
         f'    - name: {bucket_name}{NEWLINE}'
-        f'      location: us-central1{NEWLINE}'
+        f'      location: {region}{NEWLINE}'
         f'      labels:{NEWLINE}'
         f'        provider: {model_name}{NEWLINE}'
         f'  devops_plm_automlops_{model_name}:service_accounts:{NEWLINE}'
@@ -133,10 +143,33 @@ def _create_pulumi_dev_yaml(
         f'        - roles/iam.serviceAccountUser{NEWLINE}'
         f'        - roles/cloudtasks.enqueuer{NEWLINE}'
         f'        - roles/cloudscheduler.admin{NEWLINE}'
+        f'  devops_plm_automlops_:service_accounts_iam:{NEWLINE}'
+        f'    - name: pipeline_runner_sa{NEWLINE}'
+        f'      account_id: serviceAccount:pipeline_runner_sa@{project_id}.iam.gserviceaccount.com"{NEWLINE}'
+        f'      description: IAM roles for submitting PipelineJobs{NEWLINE}'
+        f'      role_bindings:{NEWLINE}'
+        f'        - roles/aiplatform.user{NEWLINE}'
+        f'        - roles/artifactregistry.reader{NEWLINE}'
+        f'        - roles/bigquery.user{NEWLINE}'
+        f'        - roles/bigquery.dataEditor{NEWLINE}'
+        f'        - roles/iam.serviceAccountUser{NEWLINE}'
+        f'        - roles/storage.admin{NEWLINE}'
+        f'        - roles/run.admin{NEWLINE}'
+        f'    - name: cloudbuild_runner_sa{NEWLINE}'
+        f'      account_id: serviceAccount:cloudbuild_runner_sa@{project_id}.iam.gserviceaccount.com{NEWLINE}'
+        f'      description: IAM roles for submitting Cloud Build Jobs{NEWLINE}'
+        f'      role_bindings:{NEWLINE}'
+        f'        - roles/run.admin{NEWLINE}'
+        f'        - roles/iam.serviceAccountUser{NEWLINE}'
+        f'        - roles/cloudtasks.enqueuer{NEWLINE}'
+        f'        - roles/cloudscheduler.admin{NEWLINE}'
     )
 
 
 def _create_main_python(
+    artifact_repo_name,
+    source_repo_name,
+    cloudtasks_queue,
 ) -> str:
     """Generates code for __main__.py, the pulumi script that creates the primary resources.
 
@@ -172,14 +205,19 @@ def _create_main_python(
         f'#######################################################################################{NEWLINE}'
         f'# Service Accounts Config{NEWLINE}'
         f'#######################################################################################{NEWLINE}'
-        f'sas_cfg = config.require_object("service_accounts"){NEWLINE}'
+        f'service_accounts = config.require_object("service_accounts") or []{NEWLINE}'
         f'{NEWLINE}'
-        f'sas_cfg = list(sas_cfg) if sas_cfg else []{NEWLINE}'
+        # f'sas_cfg = list(sas_cfg) if sas_cfg else []{NEWLINE}'
         f'{NEWLINE}'
         f'#######################################################################################{NEWLINE}'
         f'# Storage Config{NEWLINE}'
         f'#######################################################################################{NEWLINE}'
         f'buckets = config.require_object("buckets") or []{NEWLINE}'
+        f'{NEWLINE}'
+        f'#######################################################################################{NEWLINE}'
+        f'# IAMMember Bindings Config{NEWLINE}'
+        f'#######################################################################################{NEWLINE}'
+        f'iam_cfgs = config.require_object("service_accounts_iam") or []{NEWLINE}'
         f'{NEWLINE}'
         f'#######################################################################################{NEWLINE}'
         f'# Init{NEWLINE}'
@@ -188,7 +226,8 @@ def _create_main_python(
         f'    if buckets:{NEWLINE}'
         f'        for i, bucket in enumerate(buckets):{NEWLINE}'
         f'            gcp.storage.Bucket({NEWLINE}'
-        f'                resource_name=f"{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}-bucket-{LEFT_BRACKET}i{RIGHT_BRACKET}",{NEWLINE}'
+        f'                resource_name=f"{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}-{LEFT_BRACKET}bucket[\"name\"]{RIGHT_BRACKET}-{LEFT_BRACKET}i{RIGHT_BRACKET}",{NEWLINE}'
+        f'                project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
         f'                name=bucket["name"],{NEWLINE}'
         f'                location=bucket["location"],{NEWLINE}'
         f'                labels=bucket["labels"],{NEWLINE}'
@@ -197,64 +236,86 @@ def _create_main_python(
         f'                ){NEWLINE}'
         f'            ){NEWLINE}'
         f'{NEWLINE}'
+        f'    if service_accounts:{NEWLINE}'
+        f'        for i, service_account in enumerate(service_accounts):{NEWLINE}'
+        f'            gcp.service_account.Account({NEWLINE}'
+        f'                resource_name=f"{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}-{LEFT_BRACKET}service_account[\"account_id\"]{RIGHT_BRACKET}-{LEFT_BRACKET}i{RIGHT_BRACKET}",{NEWLINE}'
+        f'                project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'                account_id=service_account["account_id"],{NEWLINE}'
+        f'                display_name=service_account["display_name"],{NEWLINE}'
+        f'                description=service_account["description"],{NEWLINE}'
+        f'                opts=ResourceOptions({NEWLINE}'
+        f'                    depends_on=[]{NEWLINE}'
+        f'                ){NEWLINE}'
+        f'            ){NEWLINE}'
+        f'{NEWLINE}'
+        f'##################################################################################{NEWLINE}'
+        f'## Google Ads IAMMember - devops_plm_env_bronze_datalake_google_ads:google_ads_iam{NEWLINE}'
+        f'##################################################################################{NEWLINE}'
+        f'    if iam_cfgs:{NEWLINE}'
+        f'        for iam_role, iam_obj in enumerate(iam_cfgs):{NEWLINE}'
+        f'            gcp.projects.IAMMember({NEWLINE}'
+        f'                resource_name=f"{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}-{LEFT_BRACKET}iam_obj[\"name\"]{RIGHT_BRACKET}-{LEFT_BRACKET}iam_obj[\"role_bindings\"].index(iam_role){RIGHT_BRACKET}",{NEWLINE}'
+        f'                member=iam_obj["account_id"],{NEWLINE}'
+        f'                project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'                role={LEFT_BRACKET}iam_role{RIGHT_BRACKET},{NEWLINE}'
+        f'                opts=ResourceOptions({NEWLINE}'
+        f'                    depends_on=[{NEWLINE}'
+        f'                    ]{NEWLINE}'
+        f'                ),{NEWLINE}'
+        f'            ){NEWLINE}'
+        f'{NEWLINE}'
+        f'    artifactregistry_repo = gcp.artifactregistry.Repository({NEWLINE}'
+        f'        resource_name=f"{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}_{LEFT_BRACKET}artifact_repo_name{RIGHT_BRACKET}",{NEWLINE}'
+        f'        project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'        description="Docker artifact repository",{NEWLINE}'
+        f'        format="DOCKER",{NEWLINE}'
+        f'        location=f"{LEFT_BRACKET}default_region{RIGHT_BRACKET}",{NEWLINE}'
+        f'        repository_id=f"{LEFT_BRACKET}artifact_repo_name{RIGHT_BRACKET}",{NEWLINE}'
+        f'        opts=ResourceOptions({NEWLINE}'
+        f'            depends_on=[]{NEWLINE}'
+        f'        ){NEWLINE}'
+        f'    ){NEWLINE}'
+        f'{NEWLINE}'
+        f'    source_repo = gcp.sourcerepo.Repository({NEWLINE}'
+        f'        resource_name=f"{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}_{LEFT_BRACKET}source_repo_name{RIGHT_BRACKET}",{NEWLINE}'
+        f'        name={LEFT_BRACKET}source_repo_name{RIGHT_BRACKET},{NEWLINE}'
+        f'        project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'        opts=ResourceOptions({NEWLINE}'
+        f'            depends_on=[]{NEWLINE}'
+        f'        ){NEWLINE}'
+        f'    ){NEWLINE}'
+        f'{NEWLINE}'
+        f'    cloudtasks_queue = gcp.cloudtasks.Queue({NEWLINE}'
+        f'        resource_name="{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}_{LEFT_BRACKET}cloudtasks_queue{RIGHT_BRACKET}",{NEWLINE}'
+        f'        name=f"{LEFT_BRACKET}cloudtasks_queue{RIGHT_BRACKET}"{NEWLINE}'
+        f'        project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'        location=f"{LEFT_BRACKET}default_region{RIGHT_BRACKET}",{NEWLINE}'
+        f'        opts=ResourceOptions({NEWLINE}'
+        f'            depends_on=[]{NEWLINE}'
+        f'        ){NEWLINE}'
+        f'    ){NEWLINE}'
+        f'{NEWLINE}'
+        f'    cloudbuild_trigger = gcp.cloudbuild.Trigger({NEWLINE}'
+        f'        resource_name="{LEFT_BRACKET}stack_infra{RIGHT_BRACKET}_cloud_build_trigger",{NEWLINE}'
+        f'        project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'        filename="cloudbuild.yaml",{NEWLINE}'
+        f'        service_account=f"cloudbuild_runner_sa@{LEFT_BRACKET}project_id{RIGHT_BRACKET}.iam.gserviceaccount.com",{NEWLINE}'
+        f'        location=f"{LEFT_BRACKET}default_region{RIGHT_BRACKET}",{NEWLINE}'
+            # substitutions={
+            # "_BAZ": "qux",
+            # "_FOO": "bar",
+            # },
+        f'        trigger_template=gcp.cloudbuild.TriggerTriggerTemplateArgs({NEWLINE}'
+        f'            project={LEFT_BRACKET}project_id{RIGHT_BRACKET},{NEWLINE}'
+        f'            branch_name="main",{NEWLINE}'
+        f'            repo_name=f"{LEFT_BRACKET}source_repo.name{RIGHT_BRACKET}",{NEWLINE}'
+        f'        ){NEWLINE}'
+        f'    ){NEWLINE}'
+        f'{NEWLINE}'
         f'#######################################################################################{NEWLINE}'
         f'except Exception as ex:{NEWLINE}'
         f'    log.error(f"Environment {LEFT_BRACKET}environment{RIGHT_BRACKET} -> {LEFT_BRACKET}ex{RIGHT_BRACKET}"){NEWLINE}'
         f'    raise ex{NEWLINE}'
         f'#######################################################################################{NEWLINE}'
-
-        # saInit = ServiceAccount(
-        #     resource_name=stack_infra,
-        #     project=stack_infra,
-        #     service_accounts=sas_cfg,
-        #     opts=ResourceOptions(
-        #         provider=None,
-        #         protect=False,
-        #         depends_on=[]
-        #     )
-        # )
-
-        # artifactregistry_repo = gcp.artifactregistry.Repository(
-        #     resource_name="my-repo",
-        #     project=stack_infra,
-        #     description="example docker repository",
-        #     format="DOCKER",
-        #     location="us-central1",
-        #     repository_id="my-repository",
-        #     opts=ResourceOptions(
-        #         depends_on=[]
-        #     )
-        # )
-
-        # source_repo = gcp.sourcerepo.Repository(
-        #     resource_name="my-repo",
-        #     project=stack_infra,
-        #     opts=ResourceOptions(
-        #         depends_on=[]
-        #     )
-        # )
-
-        # cloudtasks_queue = gcp.cloudtasks.Queue(
-        #     resource_name="cloudtasks_queue",
-        #     project=stack_infra,
-        #     location="us-central1",
-        #     opts=ResourceOptions(
-        #         depends_on=[]
-        #     )
-        # )
-
-        # filename_trigger = gcp.cloudbuild.Trigger(
-        #     resource_name="filename-trigger",
-        #     project=stack_infra,
-        #     filename="cloudbuild.yaml",
-        #     service_account=saInit.created_service_accounts[1].email
-        #     location="us-central1",
-        #     substitutions={
-        #     "_BAZ": "qux",
-        #     "_FOO": "bar",
-        # },
-        # trigger_template=gcp.cloudbuild.TriggerTriggerTemplateArgs(
-        #     branch_name="main",
-        #     repo_name="my-repo",
-        # ))
     )
