@@ -278,7 +278,7 @@ def test_get_components_list(mocker,
                              comp_name: List[str],
                              patch_cwd: bool,
                              expectation):
-    """Tests get_components_list, which reads yamls in tmpfiles directory,
+    """Tests get_components_list, which reads yamls in .AutoMLOps-cache directory,
     verifies they are component yamls, and returns the name of the files. There
     are three test cases for this function:
         1. Expected outcome, component list is pulled as expected.
