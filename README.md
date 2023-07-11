@@ -25,7 +25,7 @@ AutoMLOps generates code that is compatible with `kfp<2.0.0`.
 
 # Install
 
-Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/): `pip install google-cloud-automlops` 
+Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/): `pip install google-cloud-automlops`
 
 Or Install locally by cloning the repo and running `pip install .`
 
@@ -140,18 +140,18 @@ custom_training_job_specs = [{
 
 **Use a VPC connector:**
 
-Use the `vpc_connector` parameter to specify a vpc connector. 
+Use the `vpc_connector` parameter to specify a vpc connector.
 ```
 vpc_connector = 'example-vpc'
 ```
 
 **Specify package versions:**
 
-Use the `packages_to_install` parameter of `@AutoMLOps.component` to explicitly specify packages and versions. 
+Use the `packages_to_install` parameter of `@AutoMLOps.component` to explicitly specify packages and versions.
 ```
 @AutoMLOps.component(
     packages_to_install=[
-        "google-cloud-bigquery==2.34.4", 
+        "google-cloud-bigquery==2.34.4",
         "pandas",
         "pyarrow",
         "db_dtypes"
@@ -164,6 +164,27 @@ def create_dataset(
 ):
 ...
 ```
+
+# IaC Terraform/Pulumi
+
+Once your model has been tested and is ready for production deployment, you can provide configuration details to your DevOps or DataOps team for setting up the deployment environment. These initial configurations serve as a starting point and can be customized to match your specific environment. We acknowledge that each infrastructure is unique and may require modifications to align with your specific needs.
+
+```python
+from AutoMLOps import AutoMLOps
+from AutoMLOps.utils.enums import (Provider, PulumiRuntime)
+...
+...
+...
+AutoMLOps.iac_generate(
+    project_id=PROJECT_ID,
+    model_name='retail_model_bundle_together',
+    pipeline_params=pipeline_params,
+    provider=Provider.PULUMI,
+    pulumi_runtime=PulumiRuntime.PYTHON,
+)
+```
+
+**IMPORTANT**: Few examples covered under `examples/iac/` folder.
 
 # Layout
 
@@ -184,7 +205,7 @@ Included in the repository is an [example notebook](./examples/training/00_train
     ├── pipeline.py                                : Full pipeline definition.
     ├── pipeline_runner.py                         : Sends a PipelineJob to Vertex AI.
     ├── runtime_parameters                         : Variables to be used in a PipelineJob.
-        ├── pipeline_parameter_values.json         : Json containing pipeline parameters.    
+        ├── pipeline_parameter_values.json         : Json containing pipeline parameters.
 ├── configs                                        : Configurations for defining vertex ai pipeline.
     ├── defaults.yaml                              : PipelineJob configuration variables.
 ├── scripts                                        : Scripts for manually triggering the cloud run service.
