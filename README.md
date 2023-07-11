@@ -184,6 +184,8 @@ AutoMLOps.iac_generate(
 )
 ```
 
+Few examples covered under `examples/iac/` folder.
+
 # Layout
 
 Included in the repository is an [example notebook](./examples/training/00_training_example.ipynb) that demonstrates the usage of AutoMLOps. Upon running `AutoMLOps.go(project_id='automlops-sandbox',pipeline_params=pipeline_params)`, a series of directories will be generated automatically, and a pipelineJob will be submitted using the setup below:
