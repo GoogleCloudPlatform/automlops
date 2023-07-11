@@ -13,6 +13,6 @@
 # limitations under the License.
 
 dev:
-	export GOOGLE_PROJECT="dl-datalake-bronze-dev"; pulumi up -s opsangels/dev
+	export GOOGLE_PROJECT="gcp-lab-automlops-dev"; pulumi up -s opsangels/dev
 
 .PHONY: dev
