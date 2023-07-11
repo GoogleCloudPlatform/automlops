@@ -184,7 +184,7 @@ AutoMLOps.iac_generate(
 )
 ```
 
-Few examples covered under `examples/iac/` folder.
+**IMPORTANT**: Few examples covered under `examples/iac/` folder.
 
 # Layout
 
