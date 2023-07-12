@@ -256,7 +256,7 @@ def test_delete_file(file_to_delete: str, valid_file: bool):
     Args:
         file_to_delete (str): Name of file to delete.
         valid_file (bool): Whether or not the file to delete actually exists."""
-    if not valid_file: 
+    if not valid_file:
         with does_not_raise():
             delete_file(file_to_delete)
     else:
@@ -352,7 +352,7 @@ def test_is_component_config(yaml_contents: dict, expectation: bool):
     'command, to_null, expectation',
     [
         ('touch test.txt', False, False),
-        ('not a real command', False, True), 
+        ('not a real command', False, True),
         ('echo "howdy"', True, False)
     ]
 )
@@ -370,9 +370,8 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
     if expectation:
         with pytest.raises(RuntimeError):
             execute_process(command=command, to_null=to_null)
-    elif to_null: 
-        output = execute_process(command=command, to_null=to_null)
-        assert output == None
+    elif to_null:
+        assert execute_process(command=command, to_null=to_null) is None
     else:
         execute_process(command=command, to_null=to_null)
         assert os.path.exists('test.txt')
