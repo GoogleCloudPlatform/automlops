@@ -168,10 +168,11 @@ def iac_generate(
     project_id: str,
     model_name: str,
     region: str,
+    gcs_bucket_name: str,
     artifact_repo_name: str,
     source_repo_name: str,
-    cloudtasks_queue: str,
-    pipeline_params: Dict,
+    cloudtasks_queue_name: str,
+    cloud_build_trigger_name: str,
     provider: Provider = Provider.TERRAFORM,
     pulumi_runtime: PulumiRuntime = PulumiRuntime.PYTHON,
 ):
@@ -181,22 +182,51 @@ def iac_generate(
 
     Args:
         project_id: The project ID.
+        model_name: Name of the model being deployed.
+        region: region used in gcs infrastructure config.
+        gcs_bucket_name: gcs bucket name to use as part of the model infrastructure
+        artifact_repo_name: name of the artifact registry for the model infrastructure
+        source_repo_name: source repository used as part of the the model infra
+        cloudtasks_queue_name: name of the task queue used for model scheduling
+        cloud_build_trigger_name: name of the cloud build trigger for the model infra
         provider: The provider option (default: Provider.TERRAFORM).
         pulumi_runtime: The pulumi runtime option (default: PulumiRuntime.PYTHON).
+
     """
 
     # Define the model name for the IaC configurations
     # remove special characters and spaces
     model_name = ''.join(
         ['_' if c in ['.', '-', '/', ' '] else c for c in model_name]).lower()
+    
+    gcs_bucket_name = ''.join(
+        ['_' if c in ['.', '/', ' '] else c for c in gcs_bucket_name]).lower()
+
+    artifact_repo_name = ''.join(
+        ['-' if c in ['.', '_', '/', ' '] else c for c in artifact_repo_name]).lower()
+    
+    source_repo_name = ''.join(
+        ['-' if c in ['.', '_', '/', ' '] else c for c in source_repo_name]).lower()
+    
+    cloudtasks_queue_name = ''.join(
+        ['-' if c in ['.', '_', '/', ' '] else c for c in cloudtasks_queue_name]).lower()
+    
+    cloud_build_trigger_name = ''.join(
+        ['-' if c in ['.', '_', '/', ' '] else c for c in cloud_build_trigger_name]).lower()
 
     # Generate Pulumi IaC configurations
     if provider == Provider.PULUMI:
         PulumiBuilder(
             project_id=project_id,
-            pipeline_params=pipeline_params,
-            pulumi_runtime=pulumi_runtime,
             model_name=model_name,
+            region=region,
+            gcs_bucket_name=gcs_bucket_name,
+            artifact_repo_name=artifact_repo_name,
+            source_repo_name=source_repo_name,
+            cloudtasks_queue_name=cloudtasks_queue_name,
+            cloud_build_trigger_name=cloud_build_trigger_name,
+            pulumi_runtime=pulumi_runtime,
+
         )
 
     # Generate Terraform IaC configurations

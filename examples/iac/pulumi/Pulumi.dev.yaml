@@ -4,8 +4,8 @@ config:
     environment: dev
     default_region: us-central1
   devops_plm_automlops:project:
-    billing_account: ?????-?????-?????
-    child_folder: folders/??????????
+    billing_account: *** ## provided by customer
+    child_folder: folders/*** ## provided by customer
     disable_dependent_services: true
     enable_apis:
       - aiplatform.googleapis.com

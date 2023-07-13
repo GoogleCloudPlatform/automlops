@@ -3,6 +3,7 @@
 .DS_Store
 .vscode/
 .idea/
+.test_venv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
