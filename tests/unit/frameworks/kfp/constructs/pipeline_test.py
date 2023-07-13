@@ -80,7 +80,7 @@ def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.Fixture
         ]
     ]
 )
-def test_KfpPipeline(mocker: pytest_mock.MockerFixture, custom_training_job_specs: List[dict], defaults_dict: dict):
+def test_KfpPipeline(mocker: pytest_mock.MockerFixture, custom_training_job_specs: List[dict], defaults_dict: pytest.FixtureRequest):
     """Tests the KFP child class that generates files related to KFP pipelines.
 
     Args:
