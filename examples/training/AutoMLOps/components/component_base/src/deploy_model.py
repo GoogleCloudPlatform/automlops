@@ -52,7 +52,7 @@ def deploy_model(
         version_aliases=['champion', 'custom-training', 'decision-tree']
         version_description='first version'
 
-    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest'
+    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-2:latest'
     uploaded_model = aiplatform.Model.upload(
         artifact_uri=model_directory,
         model_id=model_id,
