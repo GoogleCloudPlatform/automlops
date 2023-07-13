@@ -23,6 +23,7 @@ from typing import Callable, List
 
 import pandas as pd
 import pytest
+import pytest_mock
 import yaml
 
 import AutoMLOps.utils.utils
@@ -273,7 +274,7 @@ def test_delete_file(file_to_delete: str, valid_file: bool):
         (['component.yaml'], ['component'], False, pytest.raises(FileNotFoundError))
     ]
 )
-def test_get_components_list(mocker,
+def test_get_components_list(mocker: pytest_mock.MockerFixture,
                              comp_path: List[str],
                              comp_name: List[str],
                              patch_cwd: bool,

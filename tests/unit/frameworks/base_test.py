@@ -44,7 +44,7 @@ DEFAULTS2 = {
     }
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
-def fixture_defaults_dict(request, tmpdir):
+def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
@@ -65,7 +65,7 @@ def fixture_defaults_dict(request, tmpdir):
     'component_spec',
     [{'test1': 'val1'}, {'test2': 'val2'}]
 )
-def test_Component(defaults_dict, component_spec: dict):
+def test_Component(defaults_dict: pytest.FixtureRequest, component_spec: dict):
     """Tests the Component base class, the parent class that defines a general
     abstraction of a Component.
 
@@ -108,7 +108,7 @@ def test_Component(defaults_dict, component_spec: dict):
         ]
     ]
 )
-def test_Pipeline(defaults_dict, custom_training_job_specs: List[dict]):
+def test_Pipeline(defaults_dict: pytest.FixtureRequest, custom_training_job_specs: List[dict]):
     """Tests the Pipeline base class, the parent class that defines a general
     abstraction of a Pipeline.
 

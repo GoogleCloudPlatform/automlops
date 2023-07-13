@@ -22,6 +22,7 @@ import os
 from typing import List
 
 import pytest
+import pytest_mock
 
 from AutoMLOps.frameworks.kfp.builder import (
     build_component,
@@ -81,7 +82,7 @@ TEMP_YAML = {
 }
 
 @pytest.fixture(name='temp_yaml_dict', params=[TEMP_YAML])
-def fixture_temp_yaml_dict(request, tmpdir):
+def fixture_temp_yaml_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
@@ -99,7 +100,7 @@ def fixture_temp_yaml_dict(request, tmpdir):
     return {'path': yaml_path, 'vals': request.param}
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS])
-def fixture_defaults_dict(request, tmpdir):
+def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
@@ -140,11 +141,11 @@ def fixture_expected_component_dict():
     }
     return expected
 
-def test_build_component(mocker,
-                         tmpdir,
-                         temp_yaml_dict,
-                         defaults_dict,
-                         expected_component_dict):
+def test_build_component(mocker: pytest_mock.MockerFixture,
+                         tmpdir: pytest.FixtureRequest,
+                         temp_yaml_dict: pytest.FixtureRequest,
+                         defaults_dict: pytest.FixtureRequest,
+                         expected_component_dict: pytest.FixtureRequest):
     """Tests build_component, which Constructs and writes component.yaml and
     {component_name}.py files.
 
@@ -229,9 +230,9 @@ def test_build_component(mocker,
         )
     ]
 )
-def test_build_pipeline(mocker,
-                        tmpdir,
-                        defaults_dict,
+def test_build_pipeline(mocker: pytest_mock.MockerFixture,
+                        tmpdir: pytest.FixtureRequest,
+                        defaults_dict: pytest.FixtureRequest,
                         custom_training_job_specs: List[dict],
                         pipeline_parameter_values: dict):
     """Tests build_pipeline, which constructs and writes pipeline.py,

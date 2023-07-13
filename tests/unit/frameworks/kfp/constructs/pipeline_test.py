@@ -22,6 +22,7 @@
 from typing import List
 
 import pytest
+import pytest_mock
 
 from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
 from AutoMLOps.utils.constants import GENERATED_LICENSE
@@ -47,7 +48,7 @@ DEFAULTS2 = {
     }
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
-def fixture_defaults_dict(request, tmpdir):
+def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
@@ -79,7 +80,7 @@ def fixture_defaults_dict(request, tmpdir):
         ]
     ]
 )
-def test_KfpPipeline(mocker, custom_training_job_specs: List[dict], defaults_dict: dict):
+def test_KfpPipeline(mocker: pytest_mock.MockerFixture, custom_training_job_specs: List[dict], defaults_dict: dict):
     """Tests the KFP child class that generates files related to KFP pipelines.
 
     Args:

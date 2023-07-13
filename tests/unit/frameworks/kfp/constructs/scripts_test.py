@@ -20,6 +20,7 @@
 
 import mock
 import pytest
+import pytest_mock
 
 from AutoMLOps.frameworks.kfp.constructs.scripts import KfpScripts
 import AutoMLOps.utils.constants
@@ -53,8 +54,8 @@ from AutoMLOps.utils.constants import (
         )
     ]
 )
-def test_init(mocker,
-              tmpdir,
+def test_init(mocker: pytest_mock.MockerFixture,
+              tmpdir: pytest.FixtureRequest,
               af_registry_location: str,
               af_registry_name: str,
               base_image: str,
