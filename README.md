@@ -170,17 +170,49 @@ def create_dataset(
 Once your model has been tested and is ready for production deployment, you can provide configuration details to your DevOps or DataOps team for setting up the deployment environment. These initial configurations serve as a starting point and can be customized to match your specific environment. We acknowledge that each infrastructure is unique and may require modifications to align with your specific needs.
 
 ```python
+######################################
+# PULUMI example
+######################################
 from AutoMLOps import AutoMLOps
-from AutoMLOps.utils.enums import (Provider, PulumiRuntime)
+from AutoMLOps.iac.enums import (Provider, PulumiRuntime)
+from AutoMLOps.iac.configs import PulumiConfig
+
+pulumi_config=PulumiConfig(
+    pipeline_model_name="ads-customers-automl",
+    region="us-central1",
+    gcs_bucket_name="automlops.bucket",
+    artifact_repo_name="automlops_artifact_repo",
+    source_repo_name="automlops_source.repo",
+    cloudtasks_queue_name="automlops_cloudtasks_queue",
+    cloud_build_trigger_name="automlops.build_trigger",
+    pulumi_runtime=PulumiRuntime.PYTHON
+)
 ...
 ...
 ...
 AutoMLOps.iac_generate(
     project_id=PROJECT_ID,
-    model_name='retail_model_bundle_together',
-    pipeline_params=pipeline_params,
     provider=Provider.PULUMI,
-    pulumi_runtime=PulumiRuntime.PYTHON,
+    provider_config=pulumi_config
+)
+```
+
+```python
+######################################
+# TERRAFORM example
+######################################
+terraform_config=TerraformConfig(
+    pipeline_model_name="ads-customers-automl",
+    ...
+    ...
+)
+...
+...
+...
+AutoMLOps.iac_generate(
+    project_id=PROJECT_ID,
+    provider=Provider.TERRAFORM,
+    provider_config=terraform_config
 )
 ```
 

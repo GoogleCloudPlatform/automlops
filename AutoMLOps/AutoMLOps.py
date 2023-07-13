@@ -43,8 +43,14 @@ from AutoMLOps.frameworks.kfp import builder as KfpBuilder
 from AutoMLOps.frameworks.kfp import scaffold as KfpScaffold
 from AutoMLOps.deployments.cloudbuild import builder as CloudBuildBuilder
 
-from AutoMLOps.utils.pulumi_provider import builder as PulumiBuilder
-from AutoMLOps.utils.enums import (Provider, PulumiRuntime)
+# IaC imports
+from AutoMLOps.iac.pulumi_provider import builder as PulumiBuilder
+from AutoMLOps.iac.terraform_provider import builder as TerraformBuilder
+from AutoMLOps.iac.enums import Provider
+from AutoMLOps.iac.configs import (
+    PulumiConfig,
+    TerraformConfig
+)
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format='%(message)s')
@@ -166,15 +172,8 @@ def generate(project_id: str,
 
 def iac_generate(
     project_id: str,
-    model_name: str,
-    region: str,
-    gcs_bucket_name: str,
-    artifact_repo_name: str,
-    source_repo_name: str,
-    cloudtasks_queue_name: str,
-    cloud_build_trigger_name: str,
     provider: Provider = Provider.TERRAFORM,
-    pulumi_runtime: PulumiRuntime = PulumiRuntime.PYTHON,
+    provider_config: Optional[PulumiConfig or TerraformConfig] = TerraformConfig
 ):
     """Generates relevant IaC configurations.
        Follows the IaC provider and runtime specified.
@@ -182,61 +181,23 @@ def iac_generate(
 
     Args:
         project_id: The project ID.
-        model_name: Name of the model being deployed.
-        region: region used in gcs infrastructure config.
-        gcs_bucket_name: gcs bucket name to use as part of the model infrastructure
-        artifact_repo_name: name of the artifact registry for the model infrastructure
-        source_repo_name: source repository used as part of the the model infra
-        cloudtasks_queue_name: name of the task queue used for model scheduling
-        cloud_build_trigger_name: name of the cloud build trigger for the model infra
-        provider: The provider option (default: Provider.TERRAFORM).
-        pulumi_runtime: The pulumi runtime option (default: PulumiRuntime.PYTHON).
-
+        provider: The provider options: TERRAFORM or PULUMI (default: Provider.TERRAFORM).
+        provider_config: The provider config (default: TerraformConfig).
     """
-
-    # Define the model name for the IaC configurations
-    # remove special characters and spaces
-    model_name = ''.join(
-        ['_' if c in ['.', '-', '/', ' '] else c for c in model_name]).lower()
-    
-    gcs_bucket_name = ''.join(
-        ['_' if c in ['.', '/', ' '] else c for c in gcs_bucket_name]).lower()
-
-    artifact_repo_name = ''.join(
-        ['-' if c in ['.', '_', '/', ' '] else c for c in artifact_repo_name]).lower()
-    
-    source_repo_name = ''.join(
-        ['-' if c in ['.', '_', '/', ' '] else c for c in source_repo_name]).lower()
-    
-    cloudtasks_queue_name = ''.join(
-        ['-' if c in ['.', '_', '/', ' '] else c for c in cloudtasks_queue_name]).lower()
-    
-    cloud_build_trigger_name = ''.join(
-        ['-' if c in ['.', '_', '/', ' '] else c for c in cloud_build_trigger_name]).lower()
 
     # Generate Pulumi IaC configurations
     if provider == Provider.PULUMI:
         PulumiBuilder(
             project_id=project_id,
-            model_name=model_name,
-            region=region,
-            gcs_bucket_name=gcs_bucket_name,
-            artifact_repo_name=artifact_repo_name,
-            source_repo_name=source_repo_name,
-            cloudtasks_queue_name=cloudtasks_queue_name,
-            cloud_build_trigger_name=cloud_build_trigger_name,
-            pulumi_runtime=pulumi_runtime,
-
+            config=provider_config
         )
 
     # Generate Terraform IaC configurations
     if provider == Provider.TERRAFORM:
-        print('Terraform is not yet supported.')
-        # TerraformBuilder(
-        #     project_id=project_id,
-        #     top_lvl_name='iac_provider',
-        #     model_name=model_name,
-        # )
+        TerraformBuilder(
+            project_id=project_id,
+            config=provider_config,
+        )
 
 
 def run(run_local: bool):
