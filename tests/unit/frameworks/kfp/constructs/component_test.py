@@ -87,7 +87,7 @@ def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.Fixture
     'component_spec',
     [COMPONENT_SPEC1, COMPONENT_SPEC2]
 )
-def test_KfpComponent(component_spec: dict, defaults_dict: dict):
+def test_KfpComponent(component_spec: dict, defaults_dict: pytest.FixtureRequest):
     """Tests the KFP child class that generates files related to KFP components.
 
     Args:

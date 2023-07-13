@@ -78,7 +78,7 @@ DEFAULTS2 = {
     }
 
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
-def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: str):
+def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
     dictionaries during pytest session scope.
 
@@ -95,7 +95,7 @@ def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: str):
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
 
-def test_KfpCloudRun(defaults_dict: dict):
+def test_KfpCloudRun(defaults_dict: pytest.FixtureRequest):
     """Tests the KFP Cloud Run class.
     
     Args:
