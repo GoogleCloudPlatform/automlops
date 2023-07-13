@@ -21,7 +21,7 @@ from typing import Dict, List
 from AutoMLOps.utils.utils import read_yaml_file
 
 class Component():
-    """Parent class that defined a general abstraction of a Component."""
+    """Parent class that defines a general abstraction of a Component."""
     def __init__(self, component_spec: dict, defaults_file: str):
         """Instantiate Component scripts object with all necessary attributes.
 
@@ -39,7 +39,7 @@ class Component():
         self._af_registry_name = defaults['gcp']['af_registry_name']
 
 class Pipeline():
-    """Parent class that defined a general abstraction of a Pipeline """
+    """Parent class that defines a general abstraction of a Pipeline """
     def __init__(self, custom_training_job_specs: List[Dict], defaults_file: str):
         """Instantiate Pipeline scripts object with all necessary attributes.
 

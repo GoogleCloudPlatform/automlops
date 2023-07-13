@@ -42,7 +42,6 @@ class KfpComponent(Component):
         Returns:
             str: Contents of component base source code.
         """
-        custom_code = self._component_spec['implementation']['container']['command'][-1]
         default_imports = (GENERATED_LICENSE +
             'import argparse\n'
             'import json\n'
@@ -56,6 +55,7 @@ class KfpComponent(Component):
             '\n')
         else:
             custom_imports = '' # the above is already included as part of the kfp spec
+        custom_code = self._component_spec['implementation']['container']['command'][-1]
         main_func = (
             '\n'
             '''def main():\n'''

@@ -36,15 +36,15 @@ class KfpCloudRun():
 
         # Parse defaults file for hidden class attributes
         defaults = read_yaml_file(defaults_file)
-        self.__project_id = defaults['gcp']['project_id']
-        self.__pipeline_runner_service_account = defaults['gcp']['pipeline_runner_service_account']
-        self.__cloud_tasks_queue_location = defaults['gcp']['cloud_tasks_queue_location']
-        self.__cloud_tasks_queue_name = defaults['gcp']['cloud_tasks_queue_name']
-        self.__cloud_run_name = defaults['gcp']['cloud_run_name']
-        self.__cloud_run_location = defaults['gcp']['cloud_run_location']
-        self.__cloud_schedule_pattern = defaults['gcp']['cloud_schedule_pattern']
-        self.__cloud_schedule_location = defaults['gcp']['cloud_schedule_location']
-        self.__cloud_schedule_name = defaults['gcp']['cloud_schedule_name']
+        self._project_id = defaults['gcp']['project_id']
+        self._pipeline_runner_service_account = defaults['gcp']['pipeline_runner_service_account']
+        self._cloud_tasks_queue_location = defaults['gcp']['cloud_tasks_queue_location']
+        self._cloud_tasks_queue_name = defaults['gcp']['cloud_tasks_queue_name']
+        self._cloud_run_name = defaults['gcp']['cloud_run_name']
+        self._cloud_run_location = defaults['gcp']['cloud_run_location']
+        self._cloud_schedule_pattern = defaults['gcp']['cloud_schedule_pattern']
+        self._cloud_schedule_location = defaults['gcp']['cloud_schedule_location']
+        self._cloud_schedule_name = defaults['gcp']['cloud_schedule_name']
 
         # Set generated scripts as public attributes
         self.dockerfile = self._create_dockerfile()
@@ -232,16 +232,16 @@ class KfpCloudRun():
             f'''from google.cloud import scheduler_v1\n'''
             f'''from google.cloud import tasks_v2\n'''
             f'\n'
-            f'''CLOUD_RUN_LOCATION = '{self.__cloud_run_location}'\n'''
-            f'''CLOUD_RUN_NAME = '{self.__cloud_run_name}'\n'''
-            f'''CLOUD_TASKS_QUEUE_LOCATION = '{self.__cloud_tasks_queue_location}'\n'''
-            f'''CLOUD_TASKS_QUEUE_NAME = '{self.__cloud_tasks_queue_name}'\n'''
+            f'''CLOUD_RUN_LOCATION = '{self._cloud_run_location}'\n'''
+            f'''CLOUD_RUN_NAME = '{self._cloud_run_name}'\n'''
+            f'''CLOUD_TASKS_QUEUE_LOCATION = '{self._cloud_tasks_queue_location}'\n'''
+            f'''CLOUD_TASKS_QUEUE_NAME = '{self._cloud_tasks_queue_name}'\n'''
             f'''PARAMETER_VALUES_PATH = 'queueing_svc/pipeline_parameter_values.json'\n'''
-            f'''PIPELINE_RUNNER_SA = '{self.__pipeline_runner_service_account}'\n'''
-            f'''PROJECT_ID = '{self.__project_id}'\n'''
-            f'''SCHEDULE_LOCATION = '{self.__cloud_schedule_location}'\n'''
-            f'''SCHEDULE_PATTERN = '{self.__cloud_schedule_pattern}'\n'''
-            f'''SCHEDULE_NAME = '{self.__cloud_schedule_name}'\n'''
+            f'''PIPELINE_RUNNER_SA = '{self._pipeline_runner_service_account}'\n'''
+            f'''PROJECT_ID = '{self._project_id}'\n'''
+            f'''SCHEDULE_LOCATION = '{self._cloud_schedule_location}'\n'''
+            f'''SCHEDULE_PATTERN = '{self._cloud_schedule_pattern}'\n'''
+            f'''SCHEDULE_NAME = '{self._cloud_schedule_name}'\n'''
             f'\n'
             f'''def get_runner_svc_uri(\n'''
             f'''    cloud_run_location: str,\n'''

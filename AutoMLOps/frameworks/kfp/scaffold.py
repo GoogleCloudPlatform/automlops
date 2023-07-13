@@ -14,6 +14,7 @@
 
 """Builds temporary component scaffold yaml files."""
 
+# pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
@@ -41,9 +42,8 @@ T = TypeVar('T')
 def create_component_scaffold(func: Optional[Callable] = None,
                               *,
                               packages_to_install: Optional[List[str]] = None):
-    """Creates a tmp component scaffold which will be used by
-       the formalize function. Code is temporarily stored in
-       component_spec['implementation']['container']['command'].
+    """Creates a tmp component scaffold which will be used by the formalize function.
+    Code is temporarily stored in component_spec['implementation']['container']['command'].
 
     Args:
         func: The python function to create a component from. The function
@@ -89,7 +89,6 @@ def get_packages_to_install_command(func: Optional[Callable] = None,
         packages_to_install: A list of optional packages to install before
             executing func. These will always be installed at component runtime.
     """
-    # pylint: disable=anomalous-backslash-in-string
     newline = '\n'
     if not packages_to_install:
         packages_to_install = []
@@ -159,7 +158,7 @@ def create_pipeline_scaffold(func: Optional[Callable] = None,
                              name: Optional[str] = None,
                              description: Optional[str] = None):
     """Creates a temporary pipeline scaffold which will
-       be used by the formalize function.
+    be used by the formalize function.
 
     Args:
         func: The python function to create a pipeline from. The function

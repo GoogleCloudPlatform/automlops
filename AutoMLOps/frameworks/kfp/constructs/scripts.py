@@ -86,30 +86,28 @@ class KfpScripts():
             vpc_connector: The name of the vpc connector to use.
         """
         # Set passed variables as hidden attributes
-        self.__base_dir = base_dir
-        self.__run_local = run_local
-
-        # Parse defaults file for hidden class attributes
-        self.__af_registry_name = af_registry_name
-        self.__af_registry_location = af_registry_location
-        self.__project_id = project_id
-        self.__gs_bucket_name = gs_bucket_name
-        self.__gs_bucket_location = gs_bucket_location
-        self.__pipeline_region = gs_bucket_location
-        self.__pipeline_runner_service_account = pipeline_runner_sa
-        self.__cloud_source_repository = csr_name
-        self.__cloud_source_repository_branch = csr_branch_name
-        self.__cb_trigger_location = cb_trigger_location
-        self.__cb_trigger_name = cb_trigger_name
-        self.__cloud_tasks_queue_location = cloud_tasks_queue_location
-        self.__cloud_tasks_queue_name = cloud_tasks_queue_name
-        self.__vpc_connector = vpc_connector
-        self.__cloud_run_name = cloud_run_name
-        self.__cloud_run_location = cloud_run_location
-        self.__cloud_schedule_location = schedule_location
-        self.__cloud_schedule_name = schedule_name
-        self.__cloud_schedule_pattern = schedule_pattern
-        self.__base_image = base_image
+        self._base_dir = base_dir
+        self._run_local = run_local
+        self._af_registry_name = af_registry_name
+        self._af_registry_location = af_registry_location
+        self._project_id = project_id
+        self._gs_bucket_name = gs_bucket_name
+        self._gs_bucket_location = gs_bucket_location
+        self._pipeline_region = gs_bucket_location
+        self._pipeline_runner_service_account = pipeline_runner_sa
+        self._cloud_source_repository = csr_name
+        self._cloud_source_repository_branch = csr_branch_name
+        self._cb_trigger_location = cb_trigger_location
+        self._cb_trigger_name = cb_trigger_name
+        self._cloud_tasks_queue_location = cloud_tasks_queue_location
+        self._cloud_tasks_queue_name = cloud_tasks_queue_name
+        self._vpc_connector = vpc_connector
+        self._cloud_run_name = cloud_run_name
+        self._cloud_run_location = cloud_run_location
+        self._cloud_schedule_location = schedule_location
+        self._cloud_schedule_name = schedule_name
+        self._cloud_schedule_pattern = schedule_pattern
+        self._base_image = base_image
 
         # Set generated scripts as public attributes
         self.build_pipeline_spec = self._build_pipeline_spec()
@@ -130,7 +128,7 @@ class KfpScripts():
         return (
             '#!/bin/bash\n' + GENERATED_LICENSE +
             '# Builds the pipeline specs\n'
-            f'# This script should run from the {self.__base_dir} directory\n'
+            f'# This script should run from the {self._base_dir} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             'CONFIG_FILE=configs/defaults.yaml\n'
@@ -146,7 +144,7 @@ class KfpScripts():
         return (
             '#!/bin/bash\n' + GENERATED_LICENSE +
             '# Submits a Cloud Build job that builds and deploys the components\n'
-            f'# This script should run from the {self.__base_dir} directory\n'
+            f'# This script should run from the {self._base_dir} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600\n')
@@ -160,7 +158,7 @@ class KfpScripts():
         return (
             '#!/bin/bash\n' + GENERATED_LICENSE +
             '# Submits the PipelineJob to Vertex AI\n'
-            f'# This script should run from the {self.__base_dir} directory\n'
+            f'# This script should run from the {self._base_dir} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             'CONFIG_FILE=configs/defaults.yaml\n'
@@ -176,7 +174,7 @@ class KfpScripts():
         return (
             '#!/bin/bash\n' + GENERATED_LICENSE +
             '# Builds components, pipeline specs, and submits the PipelineJob.\n'
-            f'# This script should run from the {self.__base_dir} directory\n'
+            f'# This script should run from the {self._base_dir} directory\n'
             '# Change directory in case this is not the script root.\n'
             '\n'
             '''GREEN='\033[0;32m'\n'''
@@ -205,20 +203,20 @@ class KfpScripts():
             f'\n'
             f'''GREEN='\033[0;32m'\n'''
             f'''NC='\033[0m'\n'''
-            f'''AF_REGISTRY_NAME={self.__af_registry_name}\n'''
-            f'''AF_REGISTRY_LOCATION={self.__af_registry_location}\n'''
-            f'''PROJECT_ID={self.__project_id}\n'''
-            f'''PROJECT_NUMBER=`gcloud projects describe {self.__project_id} --format 'value(projectNumber)'`\n'''
-            f'''BUCKET_NAME={self.__gs_bucket_name}\n'''
-            f'''BUCKET_LOCATION={self.__pipeline_region}\n'''
-            f'''SERVICE_ACCOUNT_NAME={self.__pipeline_runner_service_account.split('@')[0]}\n'''
-            f'''SERVICE_ACCOUNT_FULL={self.__pipeline_runner_service_account}\n'''
-            f'''CLOUD_SOURCE_REPO={self.__cloud_source_repository}\n'''
-            f'''CLOUD_SOURCE_REPO_BRANCH={self.__cloud_source_repository_branch}\n'''
-            f'''CB_TRIGGER_LOCATION={self.__cb_trigger_location}\n'''
-            f'''CB_TRIGGER_NAME={self.__cb_trigger_name}\n'''
-            f'''CLOUD_TASKS_QUEUE_LOCATION={self.__cloud_tasks_queue_location}\n'''
-            f'''CLOUD_TASKS_QUEUE_NAME={self.__cloud_tasks_queue_name}\n'''
+            f'''AF_REGISTRY_NAME={self._af_registry_name}\n'''
+            f'''AF_REGISTRY_LOCATION={self._af_registry_location}\n'''
+            f'''PROJECT_ID={self._project_id}\n'''
+            f'''PROJECT_NUMBER=`gcloud projects describe {self._project_id} --format 'value(projectNumber)'`\n'''
+            f'''BUCKET_NAME={self._gs_bucket_name}\n'''
+            f'''BUCKET_LOCATION={self._pipeline_region}\n'''
+            f'''SERVICE_ACCOUNT_NAME={self._pipeline_runner_service_account.split('@')[0]}\n'''
+            f'''SERVICE_ACCOUNT_FULL={self._pipeline_runner_service_account}\n'''
+            f'''CLOUD_SOURCE_REPO={self._cloud_source_repository}\n'''
+            f'''CLOUD_SOURCE_REPO_BRANCH={self._cloud_source_repository_branch}\n'''
+            f'''CB_TRIGGER_LOCATION={self._cb_trigger_location}\n'''
+            f'''CB_TRIGGER_NAME={self._cb_trigger_name}\n'''
+            f'''CLOUD_TASKS_QUEUE_LOCATION={self._cloud_tasks_queue_location}\n'''
+            f'''CLOUD_TASKS_QUEUE_NAME={self._cloud_tasks_queue_name}\n'''
             f'\n'
             f'echo -e "$GREEN Updating required API services in project $PROJECT_ID $NC"\n'
             f'gcloud services enable cloudresourcemanager.googleapis.com \{NEWLINE}'
@@ -345,7 +343,7 @@ class KfpScripts():
             f'\n'
             f'fi\n')
 
-        if not self.__run_local:
+        if not self._run_local:
             create_resources_script += (
                 f'\n'
                 f'# Create cloud tasks queue\n'
@@ -372,7 +370,7 @@ class KfpScripts():
                 f'  --name=$CB_TRIGGER_NAME \{NEWLINE}'
                 f'  --repo=$CLOUD_SOURCE_REPO \{NEWLINE}'
                 f'  --branch-pattern="$CLOUD_SOURCE_REPO_BRANCH" \{NEWLINE}'
-                f'  --build-config={self.__base_dir}cloudbuild.yaml\n'
+                f'  --build-config={self._base_dir}cloudbuild.yaml\n'
                 f'\n'
                 f'else\n'
                 f'\n'
@@ -390,7 +388,7 @@ class KfpScripts():
         """
         return (
             GENERATED_LICENSE +
-            f'FROM {self.__base_image}\n'
+            f'FROM {self._base_image}\n'
             f'RUN python -m pip install --upgrade pip\n'
             f'COPY requirements.txt .\n'
             f'RUN python -m pip install -r \ \n'
@@ -412,31 +410,31 @@ class KfpScripts():
             f'# These values are descriptive only - do not change.\n'
             f'# Rerun AutoMLOps.generate() to change these values.\n'
             f'gcp:\n'
-            f'  af_registry_location: {self.__af_registry_location}\n'
-            f'  af_registry_name: {self.__af_registry_name}\n'
-            f'  base_image: {self.__base_image}\n'
-            f'  cb_trigger_location: {self.__cb_trigger_location}\n'
-            f'  cb_trigger_name: {self.__cb_trigger_name}\n'
-            f'  cloud_run_location: {self.__cloud_run_location}\n'
-            f'  cloud_run_name: {self.__cloud_run_name}\n'
-            f'  cloud_tasks_queue_location: {self.__cloud_tasks_queue_location}\n'
-            f'  cloud_tasks_queue_name: {self.__cloud_tasks_queue_name}\n'
-            f'  cloud_schedule_location: {self.__cloud_schedule_location}\n'
-            f'  cloud_schedule_name: {self.__cloud_schedule_name}\n'
-            f'  cloud_schedule_pattern: {self.__cloud_schedule_pattern}\n'
-            f'  cloud_source_repository: {self.__cloud_source_repository}\n'
-            f'  cloud_source_repository_branch: {self.__cloud_source_repository_branch}\n'
-            f'  gs_bucket_name: {self.__gs_bucket_name}\n'
-            f'  pipeline_runner_service_account: {self.__pipeline_runner_service_account}\n'
-            f'  project_id: {self.__project_id}\n'
-            f'  vpc_connector: {self.__vpc_connector}\n'
+            f'  af_registry_location: {self._af_registry_location}\n'
+            f'  af_registry_name: {self._af_registry_name}\n'
+            f'  base_image: {self._base_image}\n'
+            f'  cb_trigger_location: {self._cb_trigger_location}\n'
+            f'  cb_trigger_name: {self._cb_trigger_name}\n'
+            f'  cloud_run_location: {self._cloud_run_location}\n'
+            f'  cloud_run_name: {self._cloud_run_name}\n'
+            f'  cloud_tasks_queue_location: {self._cloud_tasks_queue_location}\n'
+            f'  cloud_tasks_queue_name: {self._cloud_tasks_queue_name}\n'
+            f'  cloud_schedule_location: {self._cloud_schedule_location}\n'
+            f'  cloud_schedule_name: {self._cloud_schedule_name}\n'
+            f'  cloud_schedule_pattern: {self._cloud_schedule_pattern}\n'
+            f'  cloud_source_repository: {self._cloud_source_repository}\n'
+            f'  cloud_source_repository_branch: {self._cloud_source_repository_branch}\n'
+            f'  gs_bucket_name: {self._gs_bucket_name}\n'
+            f'  pipeline_runner_service_account: {self._pipeline_runner_service_account}\n'
+            f'  project_id: {self._project_id}\n'
+            f'  vpc_connector: {self._vpc_connector}\n'
             f'\n'
             f'pipelines:\n'
             f'  parameter_values_path: {GENERATED_PARAMETER_VALUES_PATH}\n'
             f'  pipeline_component_directory: components\n'
             f'  pipeline_job_spec_path: {GENERATED_PIPELINE_JOB_SPEC_PATH}\n'
-            f'  pipeline_region: {self.__gs_bucket_location}\n'
-            f'  pipeline_storage_path: gs://{self.__gs_bucket_name}/pipeline_root\n')
+            f'  pipeline_region: {self._gs_bucket_location}\n'
+            f'  pipeline_storage_path: gs://{self._gs_bucket_name}/pipeline_root\n')
 
     def _create_requirements(self):
         """Writes a requirements.txt to the component_base directory.
