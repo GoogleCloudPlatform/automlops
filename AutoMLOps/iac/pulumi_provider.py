@@ -42,15 +42,15 @@ def builder(
 
     Args:
         project_id: The project ID.
-        pipeline_model_name: Name of the model being deployed.
-        region: region used in gcs infrastructure config.
-        gcs_bucket_name: gcs bucket name to use as part of the model infrastructure
-        artifact_repo_name: name of the artifact registry for the model infrastructure
-        source_repo_name: source repository used as part of the the model infra
-        cloudtasks_queue_name: name of the task queue used for model scheduling
-        cloud_build_trigger_name: name of the cloud build trigger for the model infra
         provider: The provider option (default: Provider.TERRAFORM).
-        pulumi_runtime: The pulumi runtime option (default: PulumiRuntime.PYTHON).
+        config.pipeline_model_name: Name of the model being deployed.
+        config.region: region used in gcs infrastructure config.
+        config.gcs_bucket_name: gcs bucket name to use as part of the model infrastructure.
+        config.artifact_repo_name: name of the artifact registry for the model infrastructure.
+        config.source_repo_name: source repository used as part of the the model infra.
+        config.cloudtasks_queue_name: name of the task queue used for model scheduling.
+        config.cloud_build_trigger_name: name of the cloud build trigger for the model infra.
+        config.pulumi_runtime: The pulumi runtime option (default: PulumiRuntime.PYTHON).
     """
 
     # Define the model name for the IaC configurations
@@ -100,8 +100,13 @@ def builder(
 
 def _create_pulumi_yaml(
         pipeline_model_name: str,
-        pulumi_runtime: str) -> str:
+        pulumi_runtime: str,
+) -> str:
     """Generates code for Pulumi.yaml, the pulumi script that contains details to deploy project's GCP environment.
+
+    Args:
+        config.pipeline_model_name: Name of the model being deployed.
+        config.pulumi_runtime: The pulumi runtime option (default: PulumiRuntime.PYTHON).
 
     Returns:
         str: Pulumi.yaml config script.
@@ -123,6 +128,12 @@ def _create_pulumi_dev_yaml(
         gcs_bucket_name: str,
 ) -> str:
     """Generates code for Pulumi.dev.yaml, the pulumi script that contains details to deploy dev environment config.
+
+    Args:
+        project_id: The project ID.
+        config.pipeline_model_name: Name of the model being deployed.
+        config.region: region used in gcs infrastructure config.
+        config.gcs_bucket_name: gcs bucket name to use as part of the model infrastructure.
 
     Returns:
         str: Pulumi.dev.yaml config script.
@@ -180,7 +191,10 @@ def _create_main_python(
     """Generates code for __main__.py, the pulumi script that creates the primary resources.
 
     Args:
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
+        artifact_repo_name: name of the artifact registry for the model infrastructure.
+        source_repo_name: source repository used as part of the the model infra.
+        cloudtasks_queue_name: name of the task queue used for model scheduling.
+        cloud_build_trigger_name: name of the cloud build trigger for the model infra.
 
     Returns:
         str: Main pulumi script.

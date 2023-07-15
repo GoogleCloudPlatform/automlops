@@ -28,11 +28,11 @@ class PulumiConfig(BaseModel):
     Args:
         pipeline_model_name: Name of the model being deployed.
         region: region used in gcs infrastructure config.
-        gcs_bucket_name: gcs bucket name to use as part of the model infrastructure
-        artifact_repo_name: name of the artifact registry for the model infrastructure
-        source_repo_name: source repository used as part of the the model infra
-        cloudtasks_queue_name: name of the task queue used for model scheduling
-        cloud_build_trigger_name: name of the cloud build trigger for the model infra
+        gcs_bucket_name: gcs bucket name to use as part of the model infrastructure.
+        artifact_repo_name: name of the artifact registry for the model infrastructure.
+        source_repo_name: source repository used as part of the the model infra.
+        cloudtasks_queue_name: name of the task queue used for model scheduling.
+        cloud_build_trigger_name: name of the cloud build trigger for the model infra.
         provider: The provider option (default: Provider.TERRAFORM).
         pulumi_runtime: The pulumi runtime option (default: PulumiRuntime.PYTHON).
     """
@@ -51,5 +51,22 @@ class TerraformConfig(BaseModel):
 
     Args:
         pipeline_model_name: Name of the model being deployed.
+        region: region used in gcs infrastructure config.
+        gcs_bucket_name: gcs bucket name to use as part of the model infrastructure.
+        artifact_repo_name: name of the artifact registry for the model infrastructure.
+        source_repo_name: source repository used as part of the the model infra.
+        cloudtasks_queue_name: name of the task queue used for model scheduling.
+        cloud_build_trigger_name: name of the cloud build trigger for the model infra.
+        provider: The provider option (default: Provider.TERRAFORM).
+        workspace_name: Name of the terraform cloud workspace.
+        creds_tf_var_name: Name of tf variable with project access credentials json key.
     """
     pipeline_model_name: str
+    creds_tf_var_name: str
+    workspace_name: str
+    region: str
+    gcs_bucket_name: str
+    artifact_repo_name: str
+    cloudtasks_queue_name: str
+    cloud_build_trigger_name: str
+    source_repo_name: str
