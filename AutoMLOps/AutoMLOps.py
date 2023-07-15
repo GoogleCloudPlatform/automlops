@@ -43,7 +43,17 @@ from AutoMLOps.frameworks.kfp import builder as KfpBuilder
 from AutoMLOps.frameworks.kfp import scaffold as KfpScaffold
 from AutoMLOps.deployments.cloudbuild import builder as CloudBuildBuilder
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO, format='%(message)s')
+# IaC imports
+from AutoMLOps.iac.pulumi_provider import builder as PulumiBuilder
+from AutoMLOps.iac.terraform_provider import builder as TerraformBuilder
+from AutoMLOps.iac.enums import Provider
+from AutoMLOps.iac.configs import (
+    PulumiConfig,
+    TerraformConfig
+)
+
+logging.basicConfig(stream=sys.stdout, level=logging.INFO,
+                    format='%(message)s')
 logger = logging.getLogger()
 
 make_dirs([OUTPUT_DIR])
@@ -148,16 +158,47 @@ def generate(project_id: str,
 
     # Build files required to run a Kubeflow Pipeline
     KfpBuilder.build(project_id, pipeline_params, af_registry_location,
-        af_registry_name, base_image, cb_trigger_location, cb_trigger_name,
-        cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
-        cloud_tasks_queue_name, csr_branch_name, csr_name,
-        custom_training_job_specs, gs_bucket_location, default_bucket_name,
-        default_pipeline_runner_sa, run_local, schedule_location,
-        schedule_name, schedule_pattern, vpc_connector)
+                     af_registry_name, base_image, cb_trigger_location, cb_trigger_name,
+                     cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
+                     cloud_tasks_queue_name, csr_branch_name, csr_name,
+                     custom_training_job_specs, gs_bucket_location, default_bucket_name,
+                     default_pipeline_runner_sa, run_local, schedule_location,
+                     schedule_name, schedule_pattern, vpc_connector)
 
     CloudBuildBuilder.build(af_registry_location, af_registry_name, cloud_run_location,
-        cloud_run_name, default_pipeline_runner_sa, project_id,
-        run_local, schedule_pattern, vpc_connector)
+                            cloud_run_name, default_pipeline_runner_sa, project_id,
+                            run_local, schedule_pattern, vpc_connector)
+
+
+def iac_generate(
+    project_id: str,
+    provider: Provider = Provider.TERRAFORM,
+    provider_config: Optional[PulumiConfig or TerraformConfig] = TerraformConfig
+):
+    """Generates relevant IaC configurations.
+       Follows the IaC provider and runtime specified.
+       Configurations can be passed to DevOps for deployment.
+
+    Args:
+        project_id: The project ID.
+        provider: The provider options: TERRAFORM or PULUMI (default: Provider.TERRAFORM).
+        provider_config: The provider config (default: TerraformConfig).
+    """
+
+    # Generate Pulumi IaC configurations
+    if provider == Provider.PULUMI:
+        PulumiBuilder(
+            project_id=project_id,
+            config=provider_config
+        )
+
+    # Generate Terraform IaC configurations
+    if provider == Provider.TERRAFORM:
+        TerraformBuilder(
+            project_id=project_id,
+            config=provider_config,
+        )
+
 
 
 def run(run_local: bool):
@@ -173,7 +214,8 @@ def run(run_local: bool):
     if run_local:
         os.chdir(BASE_DIR)
         try:
-            subprocess.run(['./scripts/run_all.sh'], shell=True, check=True, stderr=subprocess.STDOUT)
+            subprocess.run(['./scripts/run_all.sh'], shell=True,
+                           check=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
             logging.info(e)
         os.chdir('../')
@@ -192,27 +234,38 @@ def _resources_generation_manifest(run_local: bool):
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     logging.info('\n'
-        '#################################################################\n'
-        '#                                                               #\n'
-        '#                       RESOURCES MANIFEST                      #\n'
-        '#---------------------------------------------------------------#\n'
-        '#     Generated resources can be found at the following urls    #\n'
-        '#                                                               #\n'
-        '#################################################################\n')
+                 '#################################################################\n'
+                 '#                                                               #\n'
+                 '#                       RESOURCES MANIFEST                      #\n'
+                 '#---------------------------------------------------------------#\n'
+                 '#     Generated resources can be found at the following urls    #\n'
+                 '#                                                               #\n'
+                 '#################################################################\n')
     # pylint: disable=logging-fstring-interpolation
-    logging.info(f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
-    logging.info(f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
-    logging.info(f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
+    logging.info(
+        f'''Google Cloud Storage Bucket: https://console.cloud.google.com/storage/{defaults['gcp']['gs_bucket_name']}''')
+    logging.info(
+        f'''Artifact Registry: https://console.cloud.google.com/artifacts/docker/{defaults['gcp']['project_id']}/{defaults['gcp']['af_registry_location']}/{defaults['gcp']['af_registry_name']}''')
+    logging.info(
+        f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
     logging.info('APIs: https://console.cloud.google.com/apis')
-    logging.info(f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['cloud_source_repository']}/+/{defaults['gcp']['cloud_source_repository_branch']}:''')
-    logging.info(f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
-    logging.info('Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
+    logging.info(
+        f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['cloud_source_repository']}/+/{defaults['gcp']['cloud_source_repository_branch']}:''')
+    logging.info(
+        f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
+    logging.info(
+        'Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
     if not run_local:
-        logging.info(f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['cb_trigger_location']}''')
-        logging.info(f'''Cloud Run Service: https://console.cloud.google.com/run/detail/{defaults['gcp']['cloud_run_location']}/{defaults['gcp']['cloud_run_name']}''')
-        logging.info(f'''Cloud Tasks Queue: https://console.cloud.google.com/cloudtasks/queue/{defaults['gcp']['cloud_tasks_queue_location']}/{defaults['gcp']['cloud_tasks_queue_name']}/tasks''')
+        logging.info(
+            f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['cb_trigger_location']}''')
+        logging.info(
+            f'''Cloud Run Service: https://console.cloud.google.com/run/detail/{defaults['gcp']['cloud_run_location']}/{defaults['gcp']['cloud_run_name']}''')
+        logging.info(
+            f'''Cloud Tasks Queue: https://console.cloud.google.com/cloudtasks/queue/{defaults['gcp']['cloud_tasks_queue_location']}/{defaults['gcp']['cloud_tasks_queue_name']}/tasks''')
     if defaults['gcp']['cloud_schedule_pattern'] != 'No Schedule Specified':
-        logging.info('Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
+        logging.info(
+            'Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
+
 
 
 def _push_to_csr():
@@ -226,32 +279,44 @@ def _push_to_csr():
 
         # Initialize git and configure credentials
         execute_process('git init', to_null=False)
-        execute_process('''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+        execute_process(
+            '''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
 
         # Add repo and branch
-        execute_process(f'''git remote add origin {csr_remote_origin_url}''', to_null=False)
-        execute_process(f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
-        has_remote_branch = subprocess.check_output([f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+        execute_process(
+            f'''git remote add origin {csr_remote_origin_url}''', to_null=False)
+        execute_process(
+            f'''git checkout -B {defaults['gcp']['cloud_source_repository_branch']}''', to_null=False)
+        has_remote_branch = subprocess.check_output(
+            [f'''git ls-remote origin {defaults['gcp']['cloud_source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
         # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
         if not has_remote_branch:
-            execute_process('touch .gitkeep', to_null=False) # needed to keep dir here
+            # needed to keep dir here
+            execute_process('touch .gitkeep', to_null=False)
             execute_process('git add .gitkeep', to_null=False)
             execute_process('''git commit -m 'init' ''', to_null=False)
-            execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+            execute_process(
+                f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
 
     # Check for remote origin url mismatch
-    actual_remote = subprocess.check_output(['git config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+    actual_remote = subprocess.check_output(
+        ['git config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
     if actual_remote != csr_remote_origin_url:
-        raise RuntimeError(f'Expected remote origin url {csr_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
+        raise RuntimeError(
+            f'Expected remote origin url {csr_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
 
     # Add, commit, and push changes to CSR
     execute_process('git add .', to_null=False)
     execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
-    execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
+    execute_process(
+        f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
     # pylint: disable=logging-fstring-interpolation
-    logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
-    logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
+    logging.info(
+        f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
+    logging.info(
+        f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
+
 
 
 def component(func: Optional[Callable] = None,
@@ -298,7 +363,7 @@ def pipeline(func: Optional[Callable] = None,
                 ):
 
         dataset_task = create_dataset(
-            bq_table=bq_table, 
+            bq_table=bq_table,
             project=project)
       ...
     Args:
