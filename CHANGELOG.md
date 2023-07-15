@@ -1,6 +1,20 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.1.3] - 2023-07-07
+
+### Added
+- Added a BQML retail notebook example
+- Major unit tests added for kfp framework and cloudbuild deployments
+ 
+### Changed
+ 
+- Updated the git workflow to check that the remote is pointing to the correct project id.
+
+### Fixed
+ 
+- Pinned all kfp versions to `kfp<2.0.0.` to address the recent migration to kfp2+.
+
 ## [1.1.2] - 2023-05-26
 
 ### Added

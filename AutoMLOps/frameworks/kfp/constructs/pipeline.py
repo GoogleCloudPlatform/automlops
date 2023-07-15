@@ -36,6 +36,28 @@ class KfpPipeline(Pipeline):
         self.pipeline_argparse = self._get_pipeline_argparse()
         self.pipeline_runner = self._get_pipeline_runner()
 
+    def custom_specs_helper(self, custom_training_job_specs):
+        """Helper function that generates custom specs string.
+
+        Returns:
+            str: Custom specs pulled from custom_training_job_specs.
+        """
+        newline_tab = '\n    '
+        quote = '\''
+
+        if not custom_training_job_specs:
+            custom_specs = ''
+        else:
+            custom_specs = (
+                f'''    {newline_tab.join(f'{spec["component_spec"]}_custom_training_job_specs = {format_spec_dict(spec)}' for spec in custom_training_job_specs)}'''
+                f'\n'
+                f'''    {newline_tab.join(f'{spec["component_spec"]}_job_op = create_custom_training_job_op_from_component(**{spec["component_spec"]}_custom_training_job_specs)' for spec in custom_training_job_specs)}'''
+                f'\n'
+                f'''    {newline_tab.join(f'{spec["component_spec"]} = partial({spec["component_spec"]}_job_op, project={quote}{self._project_id}{quote})' for spec in custom_training_job_specs)}'''        
+                f'\n')
+        return custom_specs
+
+
     def _get_pipeline_imports(self):
         """Generates python code that imports modules and loads all custom components.
 
@@ -49,17 +71,9 @@ class KfpPipeline(Pipeline):
         quote = '\''
         newline_tab = '\n    '
 
+
         # If there is a custom training job specified, write those to feed to pipeline imports
-        if not self._custom_training_job_specs:
-            custom_specs = ''
-        else:
-            custom_specs = (
-                f'''    {newline_tab.join(f'{spec["component_spec"]}_custom_training_job_specs = {format_spec_dict(spec)}' for spec in self._custom_training_job_specs)}'''
-                f'\n'
-                f'''    {newline_tab.join(f'{spec["component_spec"]}_job_op = create_custom_training_job_op_from_component(**{spec["component_spec"]}_custom_training_job_specs)' for spec in self._custom_training_job_specs)}'''
-                f'\n'
-                f'''    {newline_tab.join(f'{spec["component_spec"]} = partial({spec["component_spec"]}_job_op, project={quote}{self._project_id}{quote})' for spec in self._custom_training_job_specs)}'''        
-                f'\n')
+        custom_specs = self.custom_specs_helper(self._custom_training_job_specs)
 
         # Return standard code and customized specs
         return (
