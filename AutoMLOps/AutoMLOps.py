@@ -170,7 +170,7 @@ def generate(project_id: str,
                             run_local, schedule_pattern, vpc_connector)
 
 
-def iac_generate(
+def generate_iac(
     project_id: str,
     provider: Provider = Provider.TERRAFORM,
     provider_config: Optional[PulumiConfig or TerraformConfig] = TerraformConfig
