@@ -3,3 +3,4 @@ pulumi-gcp>=5.0.0
 PyYAML
 pydantic
 docstring-parser
+Jinja2

@@ -175,16 +175,16 @@ Once your model has been tested and is ready for production deployment, you can 
 ######################################
 from AutoMLOps import AutoMLOps
 from AutoMLOps.iac.enums import (Provider, PulumiRuntime)
-from AutoMLOps.iac.configs import PulumiConfig
+from AutoMLOps.iac.configs import PulumiConfig, TerraformConfig
 
 pulumi_config=PulumiConfig(
     pipeline_model_name="ads-customers-automl",
     region="us-central1",
-    gcs_bucket_name="automlops.bucket",
+    gcs_bucket_name="automlops_bucket",
     artifact_repo_name="automlops_artifact_repo",
-    source_repo_name="automlops_source.repo",
+    source_repo_name="automlops_source_repo",
     cloudtasks_queue_name="automlops_cloudtasks_queue",
-    cloud_build_trigger_name="automlops.build_trigger",
+    cloud_build_trigger_name="automlops_build_trigger",
     pulumi_runtime=PulumiRuntime.PYTHON
 )
 ...
@@ -203,8 +203,14 @@ AutoMLOps.generate_iac(
 ######################################
 terraform_config=TerraformConfig(
     pipeline_model_name="ads-customers-automl",
-    ...
-    ...
+    creds_tf_var_name="GOOGLE_CREDENTIALS",
+    workspace_name="test-ml-workspace",
+    region="us-central1",
+    gcs_bucket_name="automlops_bucket",
+    artifact_repo_name="ml-artifact-repo",
+    source_repo_name="ml_source_repo",
+    cloudtasks_queue_name="queue_ml_tasks",
+    cloud_build_trigger_name="build-trigger-ml"
 )
 ...
 ...
