@@ -17,6 +17,8 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
+from pathlib import Path
+
 # Apache license
 GENERATED_LICENSE = (
     '# Licensed under the Apache License, Version 2.0 (the "License");\n'
@@ -83,3 +85,7 @@ NEWLINE = '\n'
 
 # KFP v2 Migration constant
 PINNED_KFP_VERSION = 'kfp<2.0.0'
+
+# IAC TEMPLATE PATHs
+TERRAFORM_TEMPLATE_PATH = Path('AutoMLOps/iac/terraform_templates')
+PULUMI_TEMPLATE_PATH = Path('AutoMLOps/iac/pulumi_templates')
