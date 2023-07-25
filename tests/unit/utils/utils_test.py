@@ -59,7 +59,7 @@ def func3(x, y, z):
 
 
 def func4():
-    
+
     def inner_func():
         res = 1 + 1
         return res
