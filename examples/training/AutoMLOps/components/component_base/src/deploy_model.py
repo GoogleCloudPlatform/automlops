@@ -26,7 +26,8 @@ def deploy_model(
     project_id: str,
     region: str
 ):
-    """Custom component that trains a decision tree on the training data.
+    """Custom component that uploads a saved model from GCS to Vertex Model Registry
+       and deploys the model to an endpoint for online prediction.
 
     Args:
         model_directory: GS location of saved model.

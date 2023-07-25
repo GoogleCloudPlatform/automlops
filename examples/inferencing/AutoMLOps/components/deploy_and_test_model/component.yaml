@@ -12,7 +12,7 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-name: deploy_model
+name: deploy_and_test_model
 description: Custom component that uploads a saved model from GCS to Vertex Model
   Registry
 inputs:
@@ -30,9 +30,9 @@ implementation:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
     command:
     - python3
-    - /pipelines/component/src/deploy_model.py
+    - /pipelines/component/src/deploy_and_test_model.py
     args:
     - --executor_input
     - executorInput: null
     - --function_to_execute
-    - deploy_model
+    - deploy_and_test_model

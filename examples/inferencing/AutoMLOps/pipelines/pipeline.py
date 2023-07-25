@@ -27,40 +27,46 @@ def load_custom_component(component_name: str):
     return kfp.components.load_component_from_file(component_path)
 
 def create_training_pipeline(pipeline_job_spec_path: str):
-    batch_predict = load_custom_component(component_name='batch_predict')
+    test_monitoring_job = load_custom_component(component_name='test_monitoring_job')
+    deploy_and_test_model = load_custom_component(component_name='deploy_and_test_model')
+    create_monitoring_job = load_custom_component(component_name='create_monitoring_job')
 
     @dsl.pipeline(
-        name='automlops-pipeline',
+        name='automlops-monitoring-pipeline',
+        description='This is an example model monitoring pipeline',
     )
-    def pipeline(bq_table: str,
-                 data_path: str,
+    def pipeline(alert_emails: list,
+                 cnt_user_engagement_threshold_value: float,
+                 country_threshold_value: float,
+                 data_source: str,
+                 log_sampling_rate: float,
+                 model_directory: str,
+                 monitor_interval: int,
                  project_id: str,
-                 bigquery_destination: str,
-                 bq_dataset_path: str,
-                 instances_format: str,
-                 predictions_format: str,
-                 model_resource_name: str,
-                 endpoint_resource_name: str,
-                 machine_type: str,
-                 accelerator_count: int,
-                 accelerator_type: str,
-                 max_replica_count: int,
-                 starting_replica_count: int
-                ):
+                 region: str,
+                 target: str):
     
-        batch_predict_task = batch_predict(
-                 project_id=project_id,
-                 bigquery_destination=bigquery_destination,
-                 bq_dataset_path=bq_dataset_path,
-                 instances_format=instances_format,
-                 predictions_format=predictions_format,
-                 model_resource_name=model_resource_name,
-                 endpoint_resource_name=endpoint_resource_name,
-                 machine_type=machine_type,
-                 accelerator_count=accelerator_count,
-                 accelerator_type=accelerator_type,
-                 max_replica_count=max_replica_count,
-                 starting_replica_count=starting_replica_count)
+        deploy_and_test_model_task = deploy_and_test_model(
+            model_directory=model_directory,
+            project_id=project_id,
+            region=region)
+    
+        create_monitoring_job_task = create_monitoring_job(
+            alert_emails=alert_emails,
+            cnt_user_engagement_threshold_value=cnt_user_engagement_threshold_value,
+            country_threshold_value=country_threshold_value,
+            data_source=data_source,
+            log_sampling_rate=log_sampling_rate,
+            monitor_interval=monitor_interval,
+            project_id=project_id,
+            region=region,
+            target=target).after(deploy_and_test_model_task)
+    
+        test_monitoring_job_task = test_monitoring_job(
+            data_source=data_source,
+            project_id=project_id,
+            region=region,
+            target=target).after(create_monitoring_job_task)
     
     compiler.Compiler().compile(
         pipeline_func=pipeline,

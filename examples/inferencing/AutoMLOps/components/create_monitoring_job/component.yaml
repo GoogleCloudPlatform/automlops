@@ -12,27 +12,45 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-name: deploy_model
+name: create_monitoring_job
 description: Custom component that uploads a saved model from GCS to Vertex Model
   Registry
 inputs:
-- name: model_directory
-  description: GS location of saved model.
+- name: alert_emails
+  description: List of emails to send monitoring alerts.
+  type: JsonArray
+- name: cnt_user_engagement_threshold_value
+  description: Threshold value for the cnt_user_engagement feature.
+  type: Float
+- name: country_threshold_value
+  description: Threshold value for the country feature.
+  type: Float
+- name: data_source
+  description: 'BQ training data table.        '
   type: String
+- name: log_sampling_rate
+  description: Sampling rate.
+  type: Float
+- name: monitor_interval
+  description: Monitoring interval in hours.
+  type: Integer
 - name: project_id
   description: Project_id.
   type: String
 - name: region
   description: Region.
   type: String
+- name: target
+  description: Prediction target column name in training dataset.
+  type: String
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
     command:
     - python3
-    - /pipelines/component/src/deploy_model.py
+    - /pipelines/component/src/create_monitoring_job.py
     args:
     - --executor_input
     - executorInput: null
     - --function_to_execute
-    - deploy_model
+    - create_monitoring_job

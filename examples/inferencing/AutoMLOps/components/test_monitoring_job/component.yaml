@@ -12,12 +12,12 @@
 #
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
-name: deploy_model
+name: test_monitoring_job
 description: Custom component that uploads a saved model from GCS to Vertex Model
   Registry
 inputs:
-- name: model_directory
-  description: GS location of saved model.
+- name: data_source
+  description: BQ training data table.
   type: String
 - name: project_id
   description: Project_id.
@@ -25,14 +25,17 @@ inputs:
 - name: region
   description: Region.
   type: String
+- name: target
+  description: Prediction target column name in training dataset.
+  type: String
 implementation:
   container:
     image: us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest
     command:
     - python3
-    - /pipelines/component/src/deploy_model.py
+    - /pipelines/component/src/test_monitoring_job.py
     args:
     - --executor_input
     - executorInput: null
     - --function_to_execute
-    - deploy_model
+    - test_monitoring_job

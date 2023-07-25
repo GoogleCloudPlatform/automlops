@@ -231,8 +231,8 @@ def update_params(params: list) -> list:
         str: 'String',
         float: 'Float',
         bool: 'Bool',
-        list: 'List',
-        dict: 'Dict'
+        list: 'JsonArray',
+        dict: 'JsonObject'
     }
     for param in params:
         try:

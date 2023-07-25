@@ -1,0 +1,269 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-create-monitoring-job": {
+        "executorLabel": "exec-create-monitoring-job",
+        "inputDefinitions": {
+          "parameters": {
+            "alert_emails": {
+              "type": "STRING"
+            },
+            "cnt_user_engagement_threshold_value": {
+              "type": "DOUBLE"
+            },
+            "country_threshold_value": {
+              "type": "DOUBLE"
+            },
+            "data_source": {
+              "type": "STRING"
+            },
+            "log_sampling_rate": {
+              "type": "DOUBLE"
+            },
+            "monitor_interval": {
+              "type": "INT"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "target": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-deploy-and-test-model": {
+        "executorLabel": "exec-deploy-and-test-model",
+        "inputDefinitions": {
+          "parameters": {
+            "model_directory": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-test-monitoring-job": {
+        "executorLabel": "exec-test-monitoring-job",
+        "inputDefinitions": {
+          "parameters": {
+            "data_source": {
+              "type": "STRING"
+            },
+            "project_id": {
+              "type": "STRING"
+            },
+            "region": {
+              "type": "STRING"
+            },
+            "target": {
+              "type": "STRING"
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-create-monitoring-job": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "create_monitoring_job"
+            ],
+            "command": [
+              "python3",
+              "/pipelines/component/src/create_monitoring_job.py"
+            ],
+            "image": "us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest"
+          }
+        },
+        "exec-deploy-and-test-model": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "deploy_and_test_model"
+            ],
+            "command": [
+              "python3",
+              "/pipelines/component/src/deploy_and_test_model.py"
+            ],
+            "image": "us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest"
+          }
+        },
+        "exec-test-monitoring-job": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "test_monitoring_job"
+            ],
+            "command": [
+              "python3",
+              "/pipelines/component/src/test_monitoring_job.py"
+            ],
+            "image": "us-central1-docker.pkg.dev/automlops-sandbox/vertex-mlops-af/components/component_base:latest"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "automlops-monitoring-pipeline"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "create-monitoring-job": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-create-monitoring-job"
+            },
+            "dependentTasks": [
+              "deploy-and-test-model"
+            ],
+            "inputs": {
+              "parameters": {
+                "alert_emails": {
+                  "componentInputParameter": "alert_emails"
+                },
+                "cnt_user_engagement_threshold_value": {
+                  "componentInputParameter": "cnt_user_engagement_threshold_value"
+                },
+                "country_threshold_value": {
+                  "componentInputParameter": "country_threshold_value"
+                },
+                "data_source": {
+                  "componentInputParameter": "data_source"
+                },
+                "log_sampling_rate": {
+                  "componentInputParameter": "log_sampling_rate"
+                },
+                "monitor_interval": {
+                  "componentInputParameter": "monitor_interval"
+                },
+                "project_id": {
+                  "componentInputParameter": "project_id"
+                },
+                "region": {
+                  "componentInputParameter": "region"
+                },
+                "target": {
+                  "componentInputParameter": "target"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "create-monitoring-job"
+            }
+          },
+          "deploy-and-test-model": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-deploy-and-test-model"
+            },
+            "inputs": {
+              "parameters": {
+                "model_directory": {
+                  "componentInputParameter": "model_directory"
+                },
+                "project_id": {
+                  "componentInputParameter": "project_id"
+                },
+                "region": {
+                  "componentInputParameter": "region"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "deploy-and-test-model"
+            }
+          },
+          "test-monitoring-job": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-test-monitoring-job"
+            },
+            "dependentTasks": [
+              "create-monitoring-job"
+            ],
+            "inputs": {
+              "parameters": {
+                "data_source": {
+                  "componentInputParameter": "data_source"
+                },
+                "project_id": {
+                  "componentInputParameter": "project_id"
+                },
+                "region": {
+                  "componentInputParameter": "region"
+                },
+                "target": {
+                  "componentInputParameter": "target"
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "test-monitoring-job"
+            }
+          }
+        }
+      },
+      "inputDefinitions": {
+        "parameters": {
+          "alert_emails": {
+            "type": "STRING"
+          },
+          "cnt_user_engagement_threshold_value": {
+            "type": "DOUBLE"
+          },
+          "country_threshold_value": {
+            "type": "DOUBLE"
+          },
+          "data_source": {
+            "type": "STRING"
+          },
+          "log_sampling_rate": {
+            "type": "DOUBLE"
+          },
+          "model_directory": {
+            "type": "STRING"
+          },
+          "monitor_interval": {
+            "type": "INT"
+          },
+          "project_id": {
+            "type": "STRING"
+          },
+          "region": {
+            "type": "STRING"
+          },
+          "target": {
+            "type": "STRING"
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.8.18"
+  },
+  "runtimeConfig": {}
+}

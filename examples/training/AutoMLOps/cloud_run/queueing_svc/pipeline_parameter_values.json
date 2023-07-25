@@ -1,6 +1,6 @@
 {
     "bq_table": "automlops-sandbox.test_dataset.dry-beans",
-    "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-07-13 17:17:02.925475",
+    "model_directory": "gs://automlops-sandbox-bucket/trained_models/2023-07-25 16:33:36.863411",
     "data_path": "gs://automlops-sandbox-bucket/data.csv",
     "project_id": "automlops-sandbox",
     "region": "us-central1"

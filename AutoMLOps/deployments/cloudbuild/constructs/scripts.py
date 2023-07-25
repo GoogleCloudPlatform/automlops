@@ -90,16 +90,16 @@ class CloudBuildScripts():
             f'''    args: [ "build", "-t", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/components/component_base:latest", "." ]\n'''
             f'''    dir: "{self.__base_dir}components/component_base"\n'''
             f'''    id: "build_component_base"\n'''
-            f'''    waitFor: ["-"]\n'''
+            f'''    waitFor: ["-"]\n''')
+
+        cloudbuild_cloudrun_config = (
             f'\n'
             f'''  # build the run_pipeline image\n'''
             f'''  - name: 'gcr.io/cloud-builders/docker'\n'''
             f'''    args: [ "build", "-t", "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest", "-f", "cloud_run/run_pipeline/Dockerfile", "." ]\n'''
             f'''    dir: "{self.__base_dir}"\n'''
             f'''    id: "build_pipeline_runner_svc"\n'''
-            f'''    waitFor: ['build_component_base']\n''')
-
-        cloudbuild_cloudrun_config = (
+            f'''    waitFor: ['build_component_base']\n'''
             f'\n'
             f'# ==============================================================================\n'
             f'# PUSH & DEPLOY CUSTOM IMAGES\n'

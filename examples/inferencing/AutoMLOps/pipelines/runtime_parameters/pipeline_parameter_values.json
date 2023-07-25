@@ -1,16 +1,14 @@
 {
-    "bq_table": "automlops-sandbox.test_dataset.dry-beans-inferencing",
-    "data_path": "gs://automlops-sandbox-bucket/data.csv",
+    "alert_emails": [
+        "srastatter@google.com"
+    ],
+    "cnt_user_engagement_threshold_value": 0.001,
+    "country_threshold_value": 0.001,
+    "data_source": "bq://mco-mm.bqmlga4.train",
+    "log_sampling_rate": 0.8,
+    "model_directory": "gs://mco-mm/churn",
+    "monitor_interval": 1,
     "project_id": "automlops-sandbox",
-    "bigquery_destination": "bq://automlops-sandbox.test_dataset.dry-beans-inferencing-results",
-    "bq_dataset_path": "bq://automlops-sandbox.test_dataset.dry-beans-inferencing",
-    "instances_format": "bigquery",
-    "predictions_format": "bigquery",
-    "model_resource_name": "",
-    "endpoint_resource_name": "projects/45373616427/locations/us-central1/endpoints/2255296260661575680",
-    "machine_type": "n1-standard-8",
-    "accelerator_count": 0,
-    "accelerator_type": "ACCELERATOR_TYPE_UNSPECIFIED",
-    "max_replica_count": 2,
-    "starting_replica_count": 1
+    "region": "us-central1",
+    "target": "churned"
 }
