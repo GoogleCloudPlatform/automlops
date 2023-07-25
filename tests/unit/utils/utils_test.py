@@ -458,7 +458,7 @@ def test_update_params(params: List[dict], expected_output: List[dict]):
         (func1, 'def func1(x):\n    return x + 1\n'),
         (func2, 'def func2(x, y):\n    return x + y\n'),
         (func3, 'def func3(x, y, z):\n    return x + y + z\n'),
-        (func4, 'def func4():\n    def inner_func():\n        res = 1 + 1\n        return res\n    return inner_func()\n')
+        (func4, 'def func4():\n\n    def inner_func():\n        res = 1 + 1\n        return res\n\n    return inner_func()\n')
     ]
 )
 def test_get_function_source_definition(func: Callable, expected_output: str):
