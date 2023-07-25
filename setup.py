@@ -32,7 +32,7 @@ setup(
     packages=find_packages(),
     install_requires=['docopt==0.6.2',
                       'docstring-parser==0.15',
-                      'pipreqs==0.4.11',
+                      'pipreqs==0.4.12',
                       'PyYAML==6.0.1',
                       'yarg==0.1.9'],
     classifiers=[
