@@ -20,7 +20,7 @@ with open('README.md', 'r', encoding='utf-8') as file:
 
 setup(
     name='google-cloud-automlops',
-    version='1.1.3',
+    version='1.1.4',
     description='AutoMLOps is a service that generates a production-style \
         MLOps pipeline from Jupyter Notebooks.',
     long_description=readme_contents,
@@ -33,7 +33,7 @@ setup(
     install_requires=['docopt==0.6.2',
                       'docstring-parser==0.15',
                       'pipreqs==0.4.11',
-                      'PyYAML==5.4.1',
+                      'PyYAML==6.0.1',
                       'yarg==0.1.9'],
     classifiers=[
         'Development Status :: 4 - Beta',
