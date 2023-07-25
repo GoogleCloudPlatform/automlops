@@ -44,18 +44,28 @@ from AutoMLOps.utils.utils import (
     write_yaml_file
 )
 
+
 # Define simple functions to be used in tests
 def func1(x):
     return x + 1
+
+
 def func2(x, y):
     return x + y
+
+
 def func3(x, y, z):
     return x + y + z
+
+
 def func4():
+    
     def inner_func():
         res = 1 + 1
         return res
+
     return inner_func()
+
 
 @pytest.mark.parametrize(
     'directories, existance, expectation',
@@ -84,6 +94,7 @@ def test_make_dirs(directories: List[str], existance: List[bool], expectation):
             assert os.path.exists(directory) == exist
             if exist:
                 os.rmdir(directory)
+
 
 @pytest.mark.parametrize(
     'filepath, content1, content2, expectation',
@@ -126,6 +137,7 @@ def test_read_yaml_file(filepath: str, content1: dict, content2: str, expectatio
         assert read_yaml_file(filepath=filepath) == content1
     os.remove(path=filepath)
 
+
 @pytest.mark.parametrize(
     'filepath, mode, expectation',
     [
@@ -158,6 +170,7 @@ def test_write_yaml(filepath: str, mode: str, expectation):
             assert yaml.safe_load(file) == contents
         os.remove(path=filepath)
 
+
 @pytest.mark.parametrize(
     'filepath, text, write_file_bool, expectation',
     [
@@ -187,6 +200,7 @@ def test_read_file(filepath: str, text: str, write_file_bool: bool, expectation)
         assert read_file(filepath=filepath) == text
     if os.path.exists(filepath):
         os.remove(filepath)
+
 
 @pytest.mark.parametrize(
     'filepath, text, mode, expectation',
@@ -220,6 +234,7 @@ def test_write_file(filepath: str, text: str, mode: str, expectation):
             assert text == file.read()
         os.remove(filepath)
 
+
 def test_write_and_chmod():
     """Tests write_and_chmod, which writes a file at the specified path
     and chmods the file to allow for execution.
@@ -240,6 +255,7 @@ def test_write_and_chmod():
         contents = file.read()
     assert contents == 'This is a test file.'
     os.remove('test.txt')
+
 
 @pytest.mark.parametrize(
     'file_to_delete, valid_file',
@@ -265,6 +281,7 @@ def test_delete_file(file_to_delete: str, valid_file: bool):
             file.write('This is a test file.')
             delete_file(file_to_delete)
             assert not os.path.exists(file_to_delete)
+
 
 @pytest.mark.parametrize(
     'comp_path, comp_name, patch_cwd, expectation',
@@ -314,6 +331,7 @@ def test_get_components_list(mocker: pytest_mock.MockerFixture,
         if os.path.exists(file):
             os.remove(file)
 
+
 @pytest.mark.parametrize(
     'yaml_contents, expectation',
     [
@@ -349,6 +367,7 @@ def test_is_component_config(yaml_contents: dict, expectation: bool):
     assert expectation == is_component_config('component.yaml')
     os.remove('component.yaml')
 
+
 @pytest.mark.parametrize(
     'command, to_null, expectation',
     [
@@ -378,6 +397,7 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
         assert os.path.exists('test.txt')
         os.remove('test.txt')
 
+
 @pytest.mark.parametrize(
     'sch_pattern, run_local, expectation',
     [
@@ -399,6 +419,7 @@ def test_validate_schedule(sch_pattern: str, run_local: bool, expectation):
     """
     with expectation:
         validate_schedule(schedule_pattern=sch_pattern, run_local=run_local)
+
 
 @pytest.mark.parametrize(
     'params, expected_output',
@@ -430,6 +451,7 @@ def test_update_params(params: List[dict], expected_output: List[dict]):
         with pytest.raises(ValueError):
             assert update_params(params=params)
 
+
 @pytest.mark.parametrize(
     'func, expected_output',
     [
@@ -448,6 +470,7 @@ def test_get_function_source_definition(func: Callable, expected_output: str):
         expected_output (str): Expected source definition of the given function.
     """
     assert expected_output == get_function_source_definition(func=func)
+
 
 @pytest.mark.parametrize(
     'job_spec, expected_output',

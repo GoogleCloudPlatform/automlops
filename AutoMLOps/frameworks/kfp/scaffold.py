@@ -39,6 +39,7 @@ from AutoMLOps.utils.utils import (
 
 T = TypeVar('T')
 
+
 def create_component_scaffold(func: Optional[Callable] = None,
                               *,
                               packages_to_install: Optional[List[str]] = None):
@@ -77,6 +78,7 @@ def create_component_scaffold(func: Optional[Callable] = None,
     make_dirs([CACHE_DIR])
     write_yaml_file(filename, component_spec, 'w')
 
+
 def get_packages_to_install_command(func: Optional[Callable] = None,
                                     packages_to_install: Optional[List[str]] = None):
     """Returns a list of formatted list of commands, including code for tmp storage.
@@ -102,6 +104,7 @@ def get_packages_to_install_command(func: Optional[Callable] = None,
         f'''{newline}''')
     src_code = get_function_source_definition(func)
     return ['sh', '-c', install_python_packages_script, src_code]
+
 
 def get_function_parameters(func: Callable) -> dict:
     """Returns a formatted list of parameters.
@@ -137,6 +140,7 @@ def get_function_parameters(func: Callable) -> dict:
                 f'''Please specify the type for this parameter.''')
     return update_params(parameter_holder)
 
+
 def maybe_strip_optional_from_annotation(annotation: T) -> T:
     """Strips 'Optional' from 'Optional[<type>]' if applicable.
     For example::
@@ -152,6 +156,7 @@ def maybe_strip_optional_from_annotation(annotation: T) -> T:
         return annotation.__args__[0]
     else:
         return annotation
+
 
 def create_pipeline_scaffold(func: Optional[Callable] = None,
                              *,
@@ -174,6 +179,7 @@ def create_pipeline_scaffold(func: Optional[Callable] = None,
     make_dirs([CACHE_DIR]) # if it doesn't already exist
     write_file(PIPELINE_CACHE_FILE, pipeline_scaffold, 'w')
 
+
 def get_pipeline_decorator(name: Optional[str] = None,
                            description: Optional[str] = None):
     """Creates the kfp pipeline decorator.
@@ -190,6 +196,7 @@ def get_pipeline_decorator(name: Optional[str] = None,
     desc_str = f'''    description='{description}',\n''' if description else ''
     ending_str = ')\n'
     return '@dsl.pipeline' + name_str + desc_str + ending_str
+
 
 def get_compile_step(func_name: str):
     """Creates the compile function call.

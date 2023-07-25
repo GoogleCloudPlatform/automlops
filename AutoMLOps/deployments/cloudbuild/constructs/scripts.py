@@ -18,6 +18,7 @@
 
 from AutoMLOps.utils.constants import GENERATED_LICENSE
 
+
 class CloudBuildScripts():
     """Generates CloudBuild yaml config file."""
     def __init__(self,

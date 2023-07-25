@@ -22,6 +22,7 @@ from AutoMLOps.utils.utils import get_components_list, format_spec_dict
 from AutoMLOps.utils.constants import GENERATED_LICENSE
 from AutoMLOps.frameworks.base import Pipeline
 
+
 class KfpPipeline(Pipeline):
     """Child class that generates files related to kfp pipelines."""
     def __init__(self, custom_training_job_specs: List[Dict], defaults_file: str):
@@ -57,7 +58,6 @@ class KfpPipeline(Pipeline):
                 f'\n')
         return custom_specs
 
-
     def _get_pipeline_imports(self):
         """Generates python code that imports modules and loads all custom components.
 
@@ -70,7 +70,6 @@ class KfpPipeline(Pipeline):
             'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component\n')
         quote = '\''
         newline_tab = '\n    '
-
 
         # If there is a custom training job specified, write those to feed to pipeline imports
         custom_specs = self.custom_specs_helper(self._custom_training_job_specs)

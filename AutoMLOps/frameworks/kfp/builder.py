@@ -48,6 +48,7 @@ from AutoMLOps.frameworks.kfp.constructs.component import KfpComponent
 from AutoMLOps.frameworks.kfp.constructs.pipeline import KfpPipeline
 from AutoMLOps.frameworks.kfp.constructs.scripts import KfpScripts
 
+
 def build(project_id: str,
           pipeline_params: Dict,
           af_registry_location: Optional[str],
@@ -135,6 +136,7 @@ def build(project_id: str,
     if not run_local:
         build_cloudrun()
 
+
 def build_component(component_path: str):
     """Constructs and writes component.yaml and {component_name}.py files.
         component.yaml: Contains the Kubeflow custom component definition.
@@ -177,6 +179,7 @@ def build_component(component_path: str):
     write_file(filename, GENERATED_LICENSE, 'w')
     write_yaml_file(filename, component_spec, 'a')
 
+
 def build_pipeline(custom_training_job_specs: List[Dict],
                    pipeline_parameter_values: dict):
     """Constructs and writes pipeline.py, pipeline_runner.py, and pipeline_parameter_values.json files.
@@ -216,6 +219,7 @@ def build_pipeline(custom_training_job_specs: List[Dict],
     # Construct pipeline_parameter_values.json
     serialized_params = json.dumps(pipeline_parameter_values, indent=4)
     write_file(pipeline_params_file, serialized_params, 'w+')
+
 
 def build_cloudrun():
     """Constructs and writes a Dockerfile, requirements.txt, and

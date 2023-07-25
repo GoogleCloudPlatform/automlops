@@ -36,6 +36,7 @@ from AutoMLOps.utils.constants import (
     RIGHT_BRACKET
 )
 
+
 class KfpScripts():
     """Generates files related to running kubeflow pipelines."""
     def __init__(self,

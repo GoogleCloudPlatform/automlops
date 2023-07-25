@@ -23,6 +23,7 @@ from AutoMLOps.utils.constants import (
 )
 from AutoMLOps.deployments.cloudbuild.constructs.scripts import CloudBuildScripts
 
+
 def build(af_registry_location: str,
           af_registry_name: str,
           cloud_run_location: str,

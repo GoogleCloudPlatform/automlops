@@ -25,6 +25,7 @@ from AutoMLOps.utils.constants import (
     RIGHT_BRACKET
 )
 
+
 class KfpCloudRun():
     """Generates files related to cloud runner service."""
     def __init__(self, defaults_file: str):

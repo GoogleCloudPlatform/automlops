@@ -48,6 +48,7 @@ logger = logging.getLogger()
 
 make_dirs([OUTPUT_DIR])
 
+
 def go(project_id: str,
        pipeline_params: Dict,
        af_registry_location: Optional[str] = 'us-central1',
@@ -106,6 +107,7 @@ def go(project_id: str,
              schedule_name, schedule_pattern, vpc_connector)
     run(run_local)
 
+
 def generate(project_id: str,
              pipeline_params: Dict,
              af_registry_location: Optional[str] = 'us-central1',
@@ -157,6 +159,7 @@ def generate(project_id: str,
         cloud_run_name, default_pipeline_runner_sa, project_id,
         run_local, schedule_pattern, vpc_connector)
 
+
 def run(run_local: bool):
     """Builds, compiles, and submits the PipelineJob.
 
@@ -179,6 +182,7 @@ def run(run_local: bool):
 
     # Log generated resources
     _resources_generation_manifest(run_local)
+
 
 def _resources_generation_manifest(run_local: bool):
     """Logs urls of generated resources.
@@ -209,6 +213,7 @@ def _resources_generation_manifest(run_local: bool):
         logging.info(f'''Cloud Tasks Queue: https://console.cloud.google.com/cloudtasks/queue/{defaults['gcp']['cloud_tasks_queue_location']}/{defaults['gcp']['cloud_tasks_queue_name']}/tasks''')
     if defaults['gcp']['cloud_schedule_pattern'] != 'No Schedule Specified':
         logging.info('Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
+
 
 def _push_to_csr():
     """Initializes a git repo if one doesn't already exist,
@@ -249,6 +254,7 @@ def _push_to_csr():
     logging.info(f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
     logging.info(f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
 
+
 def component(func: Optional[Callable] = None,
               *,
               packages_to_install: Optional[List[str]] = None):
@@ -275,6 +281,7 @@ def component(func: Optional[Callable] = None,
         return KfpScaffold.create_component_scaffold(
             func=func,
             packages_to_install=packages_to_install)
+
 
 def pipeline(func: Optional[Callable] = None,
              *,
@@ -313,6 +320,7 @@ def pipeline(func: Optional[Callable] = None,
             func=func,
             name=name,
             description=description)
+
 
 def clear_cache():
     """Deletes all temporary files stored in the cache directory."""
