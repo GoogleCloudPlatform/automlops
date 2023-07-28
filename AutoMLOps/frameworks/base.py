@@ -18,7 +18,9 @@
 # pylint: disable=line-too-long
 
 from typing import Dict, List
+
 from AutoMLOps.utils.utils import read_yaml_file
+
 
 class Component():
     """Parent class that defines a general abstraction of a Component."""
@@ -37,6 +39,7 @@ class Component():
         self._af_registry_location = defaults['gcp']['af_registry_location']
         self._project_id = defaults['gcp']['project_id']
         self._af_registry_name = defaults['gcp']['af_registry_name']
+
 
 class Pipeline():
     """Parent class that defines a general abstraction of a Pipeline """

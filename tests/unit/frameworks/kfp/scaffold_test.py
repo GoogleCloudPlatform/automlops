@@ -36,6 +36,7 @@ from AutoMLOps.utils.constants import DEFAULT_PIPELINE_NAME
 import AutoMLOps.utils.utils
 from AutoMLOps.utils.utils import get_function_source_definition, read_yaml_file
 
+
 def add(a: int, b: int):
     """Testing
 
@@ -48,8 +49,10 @@ def add(a: int, b: int):
     """
     return a + b
 
+
 def sub(a, b):
     return a - b
+
 
 def div(a: float, b: float):
     """Testing
@@ -59,6 +62,7 @@ def div(a: float, b: float):
         b (float): Float b
     """
     return a/b
+
 
 @pytest.mark.parametrize(
     'func, packages_to_install, expectation',
@@ -101,6 +105,7 @@ def test_create_component_scaffold(func: Callable, packages_to_install: list, ex
         os.remove(func_path)
         os.rmdir('.AutoMLOps-cache')
 
+
 @pytest.mark.parametrize(
     'func, packages_to_install',
     [
@@ -132,6 +137,7 @@ def test_get_packages_to_install_command(func: Callable, packages_to_install: li
         f'''    --no-warn-script-location {' '.join([repr(str(package)) for package in packages_to_install])} && "$0" "$@"{newline}'''
         f'''{newline}''')
     assert get_packages_to_install_command(func, packages_to_install) == ['sh', '-c', install_python_packages_script, get_function_source_definition(func=func)]
+
 
 @pytest.mark.parametrize(
     'func, params, expectation',
@@ -175,6 +181,7 @@ def test_get_function_parameters(func: Callable, params: List[dict], expectation
     with expectation:
         assert params == get_function_parameters(func=func)
 
+
 @pytest.mark.parametrize(
     'func, name, description',
     [
@@ -205,6 +212,7 @@ def test_create_pipeline_scaffold(mocker, func: Callable, name: str, description
     os.remove(os.path.join(fold, file_path))
     os.rmdir(fold)
 
+
 @pytest.mark.parametrize(
     'name, description',
     [
@@ -228,6 +236,7 @@ def test_get_pipeline_decorator(name: str, description: str):
         f''')\n'''
     )
     assert decorator == get_pipeline_decorator(name=name, description=description)
+
 
 @pytest.mark.parametrize(
     'func_name',

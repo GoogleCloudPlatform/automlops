@@ -32,6 +32,7 @@ from AutoMLOps.utils.constants import (
     PLACEHOLDER_IMAGE
 )
 
+
 def make_dirs(directories: list):
     """Makes directories with the specified names.
 
@@ -43,6 +44,7 @@ def make_dirs(directories: list):
             os.makedirs(d)
         except FileExistsError:
             pass
+
 
 def read_yaml_file(filepath: str) -> dict:
     """Reads a yaml and returns file contents as a dict.
@@ -63,6 +65,7 @@ def read_yaml_file(filepath: str) -> dict:
         raise yaml.YAMLError(f'Error reading file. {err}') from err
     return file_dict
 
+
 def write_yaml_file(filepath: str, contents: dict, mode: str):
     """Writes a dictionary to yaml. Defaults to utf-8 encoding.
 
@@ -79,6 +82,7 @@ def write_yaml_file(filepath: str, contents: dict, mode: str):
         file.close()
     except yaml.YAMLError as err:
         raise yaml.YAMLError(f'Error writing to file. {err}') from err
+
 
 def read_file(filepath: str) -> str:
     """Reads a file and returns contents as a string.
@@ -99,6 +103,7 @@ def read_file(filepath: str) -> str:
         raise FileNotFoundError(f'Error reading file. {err}') from err
     return contents
 
+
 def write_file(filepath: str, text: str, mode: str):
     """Writes a file at the specified path. Defaults to utf-8 encoding.
 
@@ -115,6 +120,7 @@ def write_file(filepath: str, text: str, mode: str):
         file.close()
     except OSError as err:
         raise OSError(f'Error writing to file. {err}') from err
+
 
 def write_and_chmod(filepath: str, text: str):
     """Writes a file at the specified path and chmods the file
@@ -133,6 +139,7 @@ def write_and_chmod(filepath: str, text: str):
     except OSError as err:
         raise OSError(f'Error chmod-ing file. {err}') from err
 
+
 def delete_file(filepath: str):
     """Deletes a file at the specified path.
        If it does not exist, pass.
@@ -144,6 +151,7 @@ def delete_file(filepath: str):
         os.remove(filepath)
     except OSError:
         pass
+
 
 def get_components_list(full_path: bool = True) -> list:
     """Reads yamls in the cache directory, verifies they are component
@@ -165,6 +173,7 @@ def get_components_list(full_path: bool = True) -> list:
                 components_list.append(os.path.basename(file).split('.')[0])
     return components_list
 
+
 def is_component_config(filepath: str) -> bool:
     """Checks to see if the given file is a component yaml.
 
@@ -176,6 +185,7 @@ def is_component_config(filepath: str) -> bool:
     required_keys = ['name','inputs','implementation']
     file_dict = read_yaml_file(filepath)
     return all(key in file_dict.keys() for key in required_keys)
+
 
 def execute_process(command: str, to_null: bool):
     """Executes an external shell process.
@@ -196,6 +206,7 @@ def execute_process(command: str, to_null: bool):
     except subprocess.CalledProcessError as err:
         raise RuntimeError(f'Error executing process. {err}') from err
 
+
 def validate_schedule(schedule_pattern: str, run_local: str):
     """Validates that the inputted schedule parameter aligns with the run_local configuration.
     Note: this function does not validate that schedule_pattern is a properly formatted cron value.
@@ -209,6 +220,7 @@ def validate_schedule(schedule_pattern: str, run_local: str):
     """
     if schedule_pattern != 'No Schedule Specified' and run_local:
         raise ValueError('run_local must be set to False to use Cloud Scheduler.')
+
 
 def update_params(params: list) -> list:
     """Converts the parameter types from Python types
@@ -242,6 +254,7 @@ def update_params(params: list) -> list:
                              f'primitive types at this time. {err}') from err
     return params
 
+
 def get_function_source_definition(func: Callable) -> str:
     """Returns a formatted string of the source code.
 
@@ -267,6 +280,7 @@ def get_function_source_definition(func: Callable) -> str:
 
     return '\n'.join(source_code_lines)
 
+
 def format_spec_dict(job_spec: dict) -> str:
     """Takes in a job spec dictionary and removes the quotes around the component op name. 
     e.g. 'component_spec': 'train_model' becomes 'component_spec': train_model.
@@ -287,6 +301,7 @@ def format_spec_dict(job_spec: dict) -> str:
         f'''{left_bracket}\n'''
         f'''    {f'{newline}    '.join(f"   {quote}{k}{quote}: {quote if k != 'component_spec' else ''}{v}{quote if k != 'component_spec' else ''}," for k, v in job_spec.items())}{newline}'''
         f'''    {right_bracket}\n''')
+
 
 def is_using_kfp_spec(image: str):
     """Takes in an image string from a component yaml and determines if it came from kfp or not.

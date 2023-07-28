@@ -20,6 +20,7 @@ from AutoMLOps.utils.constants import GENERATED_LICENSE
 from AutoMLOps.utils.utils import is_using_kfp_spec
 from AutoMLOps.frameworks.base import Component
 
+
 class KfpComponent(Component):
     """Child class that generates files related to kfp components."""
     def __init__(self, component_spec: dict, defaults_file: str):

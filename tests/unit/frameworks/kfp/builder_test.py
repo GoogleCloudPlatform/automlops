@@ -81,6 +81,7 @@ TEMP_YAML = {
     },
 }
 
+
 @pytest.fixture(name='temp_yaml_dict', params=[TEMP_YAML])
 def fixture_temp_yaml_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
@@ -99,6 +100,7 @@ def fixture_temp_yaml_dict(request: pytest.FixtureRequest, tmpdir: pytest.Fixtur
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
 
+
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS])
 def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
@@ -116,6 +118,7 @@ def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.Fixture
     yaml_path = tmpdir.join('defaults.yaml')
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
+
 
 @pytest.fixture(name='expected_component_dict')
 def fixture_expected_component_dict():
@@ -140,6 +143,7 @@ def fixture_expected_component_dict():
         }
     }
     return expected
+
 
 def test_build_component(mocker: pytest_mock.MockerFixture,
                          tmpdir: pytest.FixtureRequest,
@@ -178,6 +182,7 @@ def test_build_component(mocker: pytest_mock.MockerFixture,
     # Load component.yaml file and compare to the expected output in test_data
     created_component_dict = read_yaml_file(f'{tmpdir}/components/{component_name}/component.yaml')
     assert created_component_dict == expected_component_dict
+
 
 @pytest.mark.parametrize(
     'custom_training_job_specs, pipeline_parameter_values',

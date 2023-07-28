@@ -31,6 +31,7 @@ from AutoMLOps.utils.constants import (
     RIGHT_BRACKET
 )
 
+
 @pytest.mark.parametrize(
     '''af_registry_location, af_registry_name, base_image, cb_trigger_location,'''
     '''cb_trigger_name, cloud_run_location, cloud_run_name, cloud_tasks_queue_location,'''

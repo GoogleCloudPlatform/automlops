@@ -65,6 +65,7 @@ COMPONENT_SPEC2 = {
         }
 }
 
+
 @pytest.fixture(name='defaults_dict', params=[DEFAULTS1, DEFAULTS2])
 def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.FixtureRequest):
     """Writes temporary yaml file fixture using defaults parameterized
@@ -82,6 +83,7 @@ def fixture_defaults_dict(request: pytest.FixtureRequest, tmpdir: pytest.Fixture
     yaml_path = tmpdir.join('test.yaml')
     write_yaml_file(yaml_path, request.param, 'w')
     return {'path': yaml_path, 'vals': request.param}
+
 
 @pytest.mark.parametrize(
     'component_spec',
