@@ -12,6 +12,9 @@ For a user-guide, please view these [slides](https://github.com/GoogleCloudPlatf
 
 ```bash
 .
+├── cloud_run                                      : Cloud Runner service for submitting PipelineJobs.
+    ├──run_pipeline                                : Contains main.py file, Dockerfile and requirements.txt
+    ├──queueing_svc                                : Contains files for scheduling and queueing jobs to runner service
 ├── components                                     : Custom vertex pipeline components.
     ├──component_base                              : Contains all the python files, Dockerfile and requirements.txt
     ├──component_a                                 : Components generated using AutoMLOps
