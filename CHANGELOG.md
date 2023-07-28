@@ -4,10 +4,15 @@ All notable changes to this project will be documented in this file.
 ## [1.1.4] - 2023-07-25
 
 ### Added
+
+- Writes .gitkeep to scripts/pipeline_spec directory by default
+- Generates a readme.md into generated AutoMLOps codebase now by default
  
 ### Changed
  
 - Two newlines after functions (linting)
+- Parameter mapping (list -> JsonArray, map -> JsonObject)
+- Updated documentation: added examples section into main readme, changed package version deps in examples notebooks
 
 ### Fixed
  

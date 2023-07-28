@@ -13,7 +13,8 @@
 # DISCLAIMER: This code is generated as part of the AutoMLOps output.
 
 name: deploy_model
-description: Custom component that trains a decision tree on the training data.
+description: Custom component that uploads a saved model from GCS to Vertex Model
+  Registry
 inputs:
 - name: model_directory
   description: GS location of saved model.
