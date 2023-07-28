@@ -33,7 +33,7 @@ Or Install locally by cloning the repo and running `pip install .`
 - `docopt==0.6.2`,
 - `docstring-parser==0.15`,
 - `pipreqs==0.4.11`,
-- `PyYAML==5.4.1`,
+- `PyYAML==6.0.1`,
 - `yarg==0.1.9`
 
 # GCP Services
@@ -81,6 +81,20 @@ AutoMLOps will update [IAM privileges](https://cloud.google.com/iam/docs/underst
 # User Guide
 
 For a user-guide, please view these [slides](./AutoMLOps_Implementation_Guide_External.pdf).
+
+# List of Examples
+
+Training
+- [00_introduction_training_example](./examples/training/00_introduction_training_example.ipynb)
+- [00_introduction_training_example_no_notebook](./examples/training/00_introduction_training_example_no_notebook.py)
+- [01_clustering_example](./examples/training/01_clustering_example.ipynb)
+- [02_tensorflow_transfer_learning_gpu_example](./examples/training/02_tensorflow_transfer_learning_gpu_example.ipynb)
+- [03_bqml_introduction_training_example](./examples/training/03_bqml_introduction_training_example.ipynb)
+- [04_bqml_forecasting-retail-demand](./examples/training/04_bqml_forecasting-retail-demand.ipynb)
+
+Inferencing
+- [00_batch_prediction_example](./examples/inferencing/00_batch_prediction_example.ipynb)
+- [01_customer_churn_model_monitoring_example](./examples/inferencing/01_customer_churn_model_monitoring_example.ipynb)
 
 # Options
 
@@ -216,10 +230,8 @@ The [example notebook](./examples/training/00_training_example.ipynb) comes with
 - [Google Cloud Pipeline Components](https://github.com/GoogleCloudPlatform/vertex-ai-samples/blob/main/notebooks/official/pipelines/custom_model_training_and_batch_prediction.ipynb)
 
 # Next Steps / Backlog
-- Refine unit tests
 - Use [terraform](https://github.com/GoogleCloudPlatform/vertex-pipelines-end-to-end-samples/tree/main/terraform) for the creation of resources.
 - Allow multiple AutoMLOps pipelines within the same directory
-- Adding model monitoring part
 - Alternatives to Pipreqs
 
 # Contributors

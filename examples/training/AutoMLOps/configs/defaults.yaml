@@ -26,7 +26,7 @@ gcp:
   cloud_tasks_queue_name: queueing-svc
   cloud_schedule_location: us-central1
   cloud_schedule_name: AutoMLOps-schedule
-  cloud_schedule_pattern: 59 11 * * 0
+  cloud_schedule_pattern: No Schedule Specified
   cloud_source_repository: AutoMLOps-repo
   cloud_source_repository_branch: automlops
   gs_bucket_name: automlops-sandbox-bucket

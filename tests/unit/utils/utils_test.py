@@ -407,8 +407,8 @@ def test_validate_schedule(sch_pattern: str, run_local: bool, expectation):
         ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
         ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
         ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Bool'}]),
-        ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'List'}]),
-        ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'Dict'}]),
+        ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'JsonArray'}]),
+        ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'JsonObject'}]),
         ([{'name': 'param6', 'type': pd.DataFrame}], None)
     ]
 )

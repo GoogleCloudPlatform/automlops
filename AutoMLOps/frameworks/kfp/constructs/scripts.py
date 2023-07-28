@@ -118,6 +118,7 @@ class KfpScripts():
         self.dockerfile = self._create_dockerfile()
         self.defaults = self._create_default_config()
         self.requirements = self._create_requirements()
+        self.readme = self._create_generated_readme()
 
     def _build_pipeline_spec(self):
         """Builds content of a shell script to build the pipeline specs.
@@ -398,7 +399,7 @@ class KfpScripts():
             f'ENTRYPOINT ["/bin/bash"]\n')
 
     def _create_default_config(self):
-        """Creates default defaults.yaml file contents. This defaults
+        """Creates defaults.yaml file contents. This defaults
         file is used by subsequent functions and by the pipeline
         files themselves.
 
@@ -501,3 +502,55 @@ class KfpScripts():
         # Stringify and sort
         reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
         return reqs_str
+
+    def _create_generated_readme(self):
+        """Creates a readme markdown file to describe the contents of the
+        generated AutoMLOps code repo.
+
+        Returns:
+            str: readme.md file content
+        """
+        cloud_run_dirs = ''
+        if not self._run_local:
+            cloud_run_dirs = (
+                '├── cloud_run                                      : Cloud Runner service for submitting PipelineJobs.\n'
+                '    ├──run_pipeline                                : Contains main.py file, Dockerfile and requirements.txt\n'
+                '    ├──queueing_svc                                : Contains files for scheduling and queueing jobs to runner service\n'
+            )
+
+        return (
+            '# AutoMLOps - Generated Code Directory\n'
+            '\n'
+            '**Note: This directory contains code generated using AutoMLOps**\n'
+            '\n'
+            'AutoMLOps is a service that generates a production ready MLOps pipeline from Jupyter Notebooks, bridging the gap between Data Science and DevOps and accelerating the adoption and use of Vertex AI. The service generates an MLOps codebase for users to customize, and provides a way to build and manage a CI/CD integrated MLOps pipeline from the notebook. AutoMLOps automatically builds a source repo for versioning, cloudbuild configs and triggers, an artifact registry for storing custom components, gs buckets, service accounts and updated IAM privs for running pipelines, enables APIs (cloud Run, Cloud Build, Artifact Registry, etc.), creates a runner service API in Cloud Run for submitting PipelineJobs to Vertex AI, and a Cloud Scheduler job for submitting PipelineJobs on a recurring basis. These automatic integrations empower data scientists to take their experiments to production more quickly, allowing them to focus on what they do best: providing actionable insights through data.\n'
+            '\n'
+            '# User Guide\n'
+            '\n'
+            'For a user-guide, please view these [slides](https://github.com/GoogleCloudPlatform/automlops/blob/main/AutoMLOps_Implementation_Guide_External.pdf).\n'
+            '\n'
+            '# Layout\n'
+            '\n'
+            '```bash\n'
+            '.\n'
+            f'{cloud_run_dirs}'
+            '├── components                                     : Custom vertex pipeline components.\n'
+            '    ├──component_base                              : Contains all the python files, Dockerfile and requirements.txt\n'
+            '    ├──component_a                                 : Components generated using AutoMLOps\n'
+            '    ├──...\n'
+            '├── images                                         : Custom container images for training models.\n'
+            '├── pipelines                                      : Vertex ai pipeline definitions.\n'
+            '    ├── pipeline.py                                : Full pipeline definition.\n'
+            '    ├── pipeline_runner.py                         : Sends a PipelineJob to Vertex AI.\n'
+            '    ├── runtime_parameters                         : Variables to be used in a PipelineJob.\n'
+            '        ├── pipeline_parameter_values.json         : Json containing pipeline parameters.\n'  
+            '├── configs                                        : Configurations for defining vertex ai pipeline.\n'
+            '    ├── defaults.yaml                              : PipelineJob configuration variables.\n'
+            '├── scripts                                        : Scripts for manually triggering the cloud run service.\n'
+            '    ├── build_components.sh                        : Submits a Cloud Build job that builds and deploys the components.\n'
+            '    ├── build_pipeline_spec.sh                     : Builds the pipeline specs.\n'
+            '    ├── create_resources.sh                        : Creates an artifact registry and gs bucket if they do not already exist.\n'
+            '    ├── run_pipeline.sh                            : Submit the PipelineJob to Vertex AI.\n'
+            '    ├── run_all.sh                                 : Builds components, pipeline specs, and submits the PipelineJob.\n'
+            '└── cloudbuild.yaml                                : Cloudbuild configuration file for building custom components.\n'
+            '```\n')

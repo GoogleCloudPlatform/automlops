@@ -156,3 +156,35 @@ else
   echo "Cloud Source Repository: ${CLOUD_SOURCE_REPO} already exists in project $PROJECT_ID"
 
 fi
+
+# Create cloud tasks queue
+echo -e "$GREEN Checking for Cloud Tasks Queue: $CLOUD_TASKS_QUEUE_NAME in project $PROJECT_ID $NC"
+if ! (gcloud tasks queues list --location $CLOUD_TASKS_QUEUE_LOCATION | grep -E "(^|[[:blank:]])$CLOUD_TASKS_QUEUE_NAME($|[[:blank:]])"); then
+
+  echo "Creating Cloud Tasks Queue: ${CLOUD_TASKS_QUEUE_NAME} in project $PROJECT_ID"
+  gcloud tasks queues create $CLOUD_TASKS_QUEUE_NAME \
+  --location=$CLOUD_TASKS_QUEUE_LOCATION
+
+else
+
+  echo "Cloud Tasks Queue: ${CLOUD_TASKS_QUEUE_NAME} already exists in project $PROJECT_ID"
+
+fi
+
+# Create cloud build trigger
+echo -e "$GREEN Checking for Cloudbuild Trigger: $CB_TRIGGER_NAME in project $PROJECT_ID $NC"
+if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$CB_TRIGGER_LOCATION" | grep -E "(^|[[:blank:]])name: $CB_TRIGGER_NAME($|[[:blank:]])"); then
+
+  echo "Creating Cloudbuild Trigger on branch $CLOUD_SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${CLOUD_SOURCE_REPO}"
+  gcloud beta builds triggers create cloud-source-repositories \
+  --region=$CB_TRIGGER_LOCATION \
+  --name=$CB_TRIGGER_NAME \
+  --repo=$CLOUD_SOURCE_REPO \
+  --branch-pattern="$CLOUD_SOURCE_REPO_BRANCH" \
+  --build-config=AutoMLOps/cloudbuild.yaml
+
+else
+
+  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${CLOUD_SOURCE_REPO}"
+
+fi

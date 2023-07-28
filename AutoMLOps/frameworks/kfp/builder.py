@@ -125,6 +125,12 @@ def build(project_id: str,
         build_component(path)
     build_pipeline(custom_training_job_specs, pipeline_params)
 
+    # Write empty .gitkeep to pipeline_spec directory
+    write_file(f'{BASE_DIR}scripts/pipeline_spec/.gitkeep', '', 'w')
+
+    # Write empty .gitkeep to pipeline_spec directory
+    write_file(f'{BASE_DIR}README.md', kfp_scripts.readme, 'w')
+
     # Write dockerfile to the component base directory
     write_file(f'{GENERATED_COMPONENT_BASE}/Dockerfile', kfp_scripts.dockerfile, 'w')
 

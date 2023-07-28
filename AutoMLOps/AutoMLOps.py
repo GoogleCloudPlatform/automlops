@@ -241,7 +241,6 @@ def _push_to_csr():
         raise RuntimeError(f'Expected remote origin url {csr_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
 
     # Add, commit, and push changes to CSR
-    execute_process(f'touch {BASE_DIR}scripts/pipeline_spec/.gitkeep', to_null=False) # needed to keep dir here
     execute_process('git add .', to_null=False)
     execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
     execute_process(f'''git push origin {defaults['gcp']['cloud_source_repository_branch']} --force''', to_null=False)
