@@ -1,0 +1,4 @@
+google-cloud-storage==2.7.0
+sentencepiece==0.1.97
+torch==1.13.0
+transformers==4.25.1
