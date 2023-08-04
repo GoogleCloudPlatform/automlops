@@ -10,3 +10,5 @@ pytest
 pytest-cov
 pytest-mock
 pytest-xdist
+pydantic
+Jinja2
