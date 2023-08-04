@@ -200,7 +200,6 @@ def generate_iac(
         )
 
 
-
 def run(run_local: bool):
     """Builds, compiles, and submits the PipelineJob.
 
@@ -267,7 +266,6 @@ def _resources_generation_manifest(run_local: bool):
             'Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
 
 
-
 def _push_to_csr():
     """Initializes a git repo if one doesn't already exist,
        then pushes to the specified branch and triggers the cloudbuild job.
@@ -316,7 +314,6 @@ def _push_to_csr():
         f'''Pushing code to {defaults['gcp']['cloud_source_repository_branch']} branch, triggering cloudbuild...''')
     logging.info(
         f'''Cloudbuild job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
-
 
 
 def component(func: Optional[Callable] = None,
