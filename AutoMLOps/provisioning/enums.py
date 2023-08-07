@@ -25,6 +25,7 @@ class Provider(Enum):
 
     TERRAFORM = 'terraform'
     PULUMI = 'pulumi'
+    GCLOUD = 'gcloud'
 
 
 class PulumiRuntime(Enum):

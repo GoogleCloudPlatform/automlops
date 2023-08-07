@@ -19,7 +19,7 @@
 
 from pydantic import BaseModel
 
-from AutoMLOps.iac.enums import PulumiRuntime
+from AutoMLOps.provisioning.enums import PulumiRuntime
 
 
 class PulumiConfig(BaseModel):

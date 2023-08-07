@@ -66,7 +66,7 @@ def build(project_id: str,
           gs_bucket_location: Optional[str],
           gs_bucket_name: Optional[str],
           pipeline_runner_sa: Optional[str],
-          run_local: Optional[bool],
+          use_ci: Optional[bool],
           schedule_location: Optional[str],
           schedule_name: Optional[str],
           schedule_pattern: Optional[str],
@@ -89,7 +89,7 @@ def build(project_id: str,
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
         project_id: The project ID.
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
+        use_ci: Flag that determines whether to use Cloud Run CI/CD.
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
@@ -102,7 +102,7 @@ def build(project_id: str,
         cb_trigger_name, cloud_run_location, cloud_run_name,
         cloud_tasks_queue_location, cloud_tasks_queue_name, csr_branch_name,
         csr_name, gs_bucket_location, gs_bucket_name,
-        pipeline_runner_sa, project_id, run_local, schedule_location,
+        pipeline_runner_sa, project_id, use_ci, schedule_location,
         schedule_name, schedule_pattern, BASE_DIR, vpc_connector)
 
     # Write defaults.yaml
@@ -139,7 +139,7 @@ def build(project_id: str,
     write_file(f'{GENERATED_COMPONENT_BASE}/requirements.txt', kfp_scripts.requirements, 'w')
 
     # Build the cloud run files
-    if not run_local:
+    if use_ci:
         build_cloudrun()
 
 

@@ -55,7 +55,7 @@ class KfpScripts():
                  gs_bucket_name: str,
                  pipeline_runner_sa: str,
                  project_id: str,
-                 run_local: str,
+                 use_ci: str,
                  schedule_location: str,
                  schedule_name: str,
                  schedule_pattern: str,
@@ -79,7 +79,7 @@ class KfpScripts():
             gs_bucket_name: GS bucket name where pipeline run metadata is stored.
             pipeline_runner_sa: Service Account to runner PipelineJobs.
             project_id: The project ID.
-            run_local: Flag that determines whether to use Cloud Run CI/CD.
+            use_ci: Flag that determines whether to use Cloud CI/CD.
             schedule_location: The location of the scheduler resource.
             schedule_name: The name of the scheduler resource.
             schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
@@ -88,7 +88,7 @@ class KfpScripts():
         """
         # Set passed variables as hidden attributes
         self._base_dir = base_dir
-        self._run_local = run_local
+        self._use_ci = use_ci
         self._af_registry_name = af_registry_name
         self._af_registry_location = af_registry_location
         self._project_id = project_id
@@ -345,7 +345,7 @@ class KfpScripts():
             f'\n'
             f'fi\n')
 
-        if not self._run_local:
+        if self._use_ci:
             create_resources_script += (
                 f'\n'
                 f'# Create cloud tasks queue\n'
@@ -512,7 +512,7 @@ class KfpScripts():
             str: readme.md file content
         """
         cloud_run_dirs = ''
-        if not self._run_local:
+        if self._use_ci:
             cloud_run_dirs = (
                 '├── cloud_run                                      : Cloud Runner service for submitting PipelineJobs.\n'
                 '    ├──run_pipeline                                : Contains main.py file, Dockerfile and requirements.txt\n'

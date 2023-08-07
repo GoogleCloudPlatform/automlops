@@ -36,7 +36,7 @@ from AutoMLOps.utils.constants import (
     '''af_registry_location, af_registry_name, base_image, cb_trigger_location,'''
     '''cb_trigger_name, cloud_run_location, cloud_run_name, cloud_tasks_queue_location,'''
     '''cloud_tasks_queue_name, csr_branch_name, csr_name, gs_bucket_location,'''
-    '''gs_bucket_name, pipeline_runner_sa, project_id, run_local, schedule_location,'''
+    '''gs_bucket_name, pipeline_runner_sa, project_id, use_ci, schedule_location,'''
     '''schedule_name, schedule_pattern, base_dir, vpc_connector, reqs''',
     [
         (
@@ -72,7 +72,7 @@ def test_init(mocker: pytest_mock.MockerFixture,
               gs_bucket_name: str,
               pipeline_runner_sa: str,
               project_id: str,
-              run_local: bool,
+              use_ci: bool,
               schedule_location: str,
               schedule_name: str,
               schedule_pattern: str,
@@ -100,7 +100,7 @@ def test_init(mocker: pytest_mock.MockerFixture,
         gs_bucket_name (str): GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa (str): Service Account to runner PipelineJobs.
         project_id (str): The project ID.
-        run_local (bool): Flag that determines whether to use Cloud Run CI/CD.
+        use_ci (bool): Flag that determines whether to use Cloud CI/CD.
         schedule_location (str): The location of the scheduler resource.
         schedule_name (str): The name of the scheduler resource.
         schedule_pattern (str): Cron formatted value used to create a scheduled retrain job.
@@ -146,7 +146,7 @@ def test_init(mocker: pytest_mock.MockerFixture,
             gs_bucket_name=gs_bucket_name,
             pipeline_runner_sa=pipeline_runner_sa,
             project_id=project_id,
-            run_local=run_local,
+            use_ci=use_ci,
             schedule_location=schedule_location,
             schedule_name=schedule_name,
             schedule_pattern=schedule_pattern,
@@ -170,7 +170,7 @@ def test_init(mocker: pytest_mock.MockerFixture,
         assert scripts._gs_bucket_name == gs_bucket_name
         assert scripts._pipeline_runner_service_account == pipeline_runner_sa
         assert scripts._project_id == project_id
-        assert scripts._run_local == run_local
+        assert scripts._use_ci == use_ci
         assert scripts._cloud_schedule_location == schedule_location
         assert scripts._cloud_schedule_name == schedule_name
         assert scripts._cloud_schedule_pattern == schedule_pattern

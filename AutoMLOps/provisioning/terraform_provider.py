@@ -30,7 +30,7 @@ from AutoMLOps.utils.constants import (
     TERRAFORM_TEMPLATE_PATH
 )
 
-from AutoMLOps.iac.configs import TerraformConfig
+from AutoMLOps.provisioning.configs import TerraformConfig
 
 
 def builder(

@@ -399,7 +399,7 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
 
 
 @pytest.mark.parametrize(
-    'sch_pattern, run_local, expectation',
+    'sch_pattern, use_ci, expectation',
     [
         ('No Schedule Specified', True, does_not_raise()),
         ('No Schedule Specified', False, does_not_raise()),
@@ -407,18 +407,18 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
         ('Schedule', False, does_not_raise())
     ]
 )
-def test_validate_schedule(sch_pattern: str, run_local: bool, expectation):
+def test_validate_schedule(sch_pattern: str, use_ci: bool, expectation):
     """Tests validate_schedule, which validates the inputted schedule
     parameter. There are four test cases for this function, which tests each
     combination of sch_pattern and run_loc for the expected results.
 
     Args:
         sch_pattern (str): Cron formatted value used to create a Scheduled retrain job.
-        run_local (bool): Flag that determines whether to use Cloud Run CI/CD.
+        use_ci (bool): Flag that determines whether to use Cloud Run CI/CD.
         expectation: Any corresponding expected errors for each set of parameters.
     """
     with expectation:
-        validate_schedule(schedule_pattern=sch_pattern, run_local=run_local)
+        validate_schedule(schedule_pattern=sch_pattern, use_ci=use_ci)
 
 
 @pytest.mark.parametrize(

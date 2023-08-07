@@ -28,7 +28,7 @@ class CloudBuildScripts():
                  cloud_run_name: str,
                  pipeline_runner_sa: str,
                  project_id: str,
-                 run_local: str,
+                 use_ci: str,
                  schedule_pattern: str,
                  base_dir: str,
                  vpc_connector: str):
@@ -41,7 +41,7 @@ class CloudBuildScripts():
             cloud_run_name: The name of the cloud runner service.
             pipeline_runner_sa: Service Account to runner PipelineJobs.
             project_id: The project ID.
-            run_local: Flag that determines whether to use Cloud Run CI/CD.
+            use_ci: Flag that determines whether to use Cloud CI/CD.
             schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
             base_dir: Top directory name.
             vpc_connector: The name of the vpc connector to use.
@@ -49,7 +49,7 @@ class CloudBuildScripts():
 
         # Set passed variables as hidden attributes
         self.__base_dir = base_dir
-        self.__run_local = run_local
+        self.__use_ci = use_ci
 
         # Parse defaults file for hidden class attributes
         self.__af_registry_name = af_registry_name
@@ -179,12 +179,12 @@ class CloudBuildScripts():
             f'''  # Cloud Run image\n'''
             f'''  - "{self.__af_registry_location}-docker.pkg.dev/{self.__project_id}/{self.__af_registry_name}/run_pipeline:latest"\n''')
 
-        if self.__run_local:
-            cb_file_contents = cloudbuild_comp_config + custom_comp_image
-        else:
+        if self.__use_ci:
             if self.__cloud_schedule_pattern == 'No Schedule Specified':
                 cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + custom_comp_image + cloudrun_image
             else:
                 cb_file_contents = cloudbuild_comp_config + cloudbuild_cloudrun_config + cloudbuild_scheduler_config + custom_comp_image + cloudrun_image
+        else:
+            cb_file_contents = cloudbuild_comp_config + custom_comp_image
 
         return cb_file_contents

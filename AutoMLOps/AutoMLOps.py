@@ -41,15 +41,17 @@ from AutoMLOps.utils.utils import (
 )
 from AutoMLOps.frameworks.kfp import builder as KfpBuilder
 from AutoMLOps.frameworks.kfp import scaffold as KfpScaffold
+from AutoMLOps.frameworks.enums import Orchestrator
 from AutoMLOps.deployments.cloudbuild import builder as CloudBuildBuilder
 
-# IaC imports
-from AutoMLOps.iac.pulumi_provider import builder as PulumiBuilder
-from AutoMLOps.iac.terraform_provider import builder as TerraformBuilder
-from AutoMLOps.iac.enums import Provider
-from AutoMLOps.iac.configs import (
+# Provisioning imports
+from AutoMLOps.provisioning.pulumi_provider import builder as PulumiBuilder
+from AutoMLOps.provisioning.terraform_provider import builder as TerraformBuilder
+from AutoMLOps.provisioning.enums import Provider
+from AutoMLOps.provisioning.configs import (
     PulumiConfig,
     TerraformConfig
+    # need to add GcloudConfig
 )
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -59,28 +61,37 @@ logger = logging.getLogger()
 make_dirs([OUTPUT_DIR])
 
 
-def go(project_id: str,
-       pipeline_params: Dict,
-       af_registry_location: Optional[str] = 'us-central1',
-       af_registry_name: Optional[str] = 'vertex-mlops-af',
-       base_image: Optional[str] = 'python:3.9-slim',
-       cb_trigger_location: Optional[str] = 'us-central1',
-       cb_trigger_name: Optional[str] = 'automlops-trigger',
-       cloud_run_location: Optional[str] = 'us-central1',
-       cloud_run_name: Optional[str] = 'run-pipeline',
-       cloud_tasks_queue_location: Optional[str] = 'us-central1',
-       cloud_tasks_queue_name: Optional[str] = 'queueing-svc',
-       csr_branch_name: Optional[str] = 'automlops',
-       csr_name: Optional[str] = 'AutoMLOps-repo',
-       custom_training_job_specs: Optional[List[Dict]] = None,
-       gs_bucket_location: Optional[str] = 'us-central1',
-       gs_bucket_name: Optional[str] = None,
-       pipeline_runner_sa: Optional[str] = None,
-       run_local: Optional[bool] = True,
-       schedule_location: Optional[str] = 'us-central1',
-       schedule_name: Optional[str] = 'AutoMLOps-schedule',
-       schedule_pattern: Optional[str] = 'No Schedule Specified',
-       vpc_connector: Optional[str] = 'No VPC Specified'):
+def launch(project_id: str,
+           pipeline_params: Dict,
+           af_registry_location: Optional[str] = 'us-central1',
+           af_registry_name: Optional[str] = 'vertex-mlops-af',
+           base_image: Optional[str] = 'python:3.9-slim',
+           cb_trigger_location: Optional[str] = 'us-central1',
+           cb_trigger_name: Optional[str] = 'automlops-trigger',
+           cloud_run_location: Optional[str] = 'us-central1',
+           cloud_run_name: Optional[str] = 'run-pipeline',
+           cloud_tasks_queue_location: Optional[str] = 'us-central1',
+           cloud_tasks_queue_name: Optional[str] = 'queueing-svc',
+           csr_branch_name: Optional[str] = 'automlops',
+           csr_name: Optional[str] = 'AutoMLOps-repo',
+           custom_training_job_specs: Optional[List[Dict]] = None,
+           gs_bucket_location: Optional[str] = 'us-central1',
+           gs_bucket_name: Optional[str] = None,
+           pipeline_runner_sa: Optional[str] = None,
+           use_ci: Optional[bool] = False,
+           schedule_location: Optional[str] = 'us-central1',
+           schedule_name: Optional[str] = 'AutoMLOps-schedule',
+           schedule_pattern: Optional[str] = 'No Schedule Specified',
+           vpc_connector: Optional[str] = 'No VPC Specified',
+
+           orchestration_framework: Optional[str] = 'kfp',
+           provisioning_framework: Optional[str] = 'gcloud',
+           deployment_framework: Optional[str] = 'cloudbuild', # needs an enum
+           source_repo_type: Optional[str] = 'csr',
+           source_repo_name: Optional[str] = 'AutoMLOps-repo',
+           source_repo_branch: Optional[str] = 'automlops',
+
+           ):
     """Generates relevant pipeline and component artifacts,
        then builds, compiles, and submits the PipelineJob.
 
@@ -102,7 +113,7 @@ def go(project_id: str,
         gs_bucket_location: Region of the GS bucket.
         gs_bucket_name: GS bucket name where pipeline run metadata is stored.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
@@ -113,9 +124,10 @@ def go(project_id: str,
              cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
              cloud_tasks_queue_name, csr_branch_name, csr_name,
              custom_training_job_specs, gs_bucket_location, gs_bucket_name,
-             pipeline_runner_sa, run_local, schedule_location,
+             pipeline_runner_sa, use_ci, schedule_location,
              schedule_name, schedule_pattern, vpc_connector)
-    run(run_local)
+    # provision
+    deploy(use_ci)
 
 
 def generate(project_id: str,
@@ -135,17 +147,17 @@ def generate(project_id: str,
              gs_bucket_location: Optional[str] = 'us-central1',
              gs_bucket_name: Optional[str] = None,
              pipeline_runner_sa: Optional[str] = None,
-             run_local: Optional[bool] = True,
+             use_ci: Optional[bool] = False,
              schedule_location: Optional[str] = 'us-central1',
              schedule_name: Optional[str] = 'AutoMLOps-schedule',
              schedule_pattern: Optional[str] = 'No Schedule Specified',
              vpc_connector: Optional[str] = 'No VPC Specified'):
     """Generates relevant pipeline and component artifacts.
 
-    Args: See go() function.
+    Args: See launch() function.
     """
-    # Validate that run_local=False if schedule_pattern parameter is set
-    validate_schedule(schedule_pattern, run_local)
+    # Validate that use_ci=True if schedule_pattern parameter is set
+    validate_schedule(schedule_pattern, use_ci)
 
     # Set defaults if none were given for bucket name and pipeline runner sa
     default_bucket_name = f'{project_id}-bucket' if gs_bucket_name is None else gs_bucket_name
@@ -156,18 +168,61 @@ def generate(project_id: str,
 
     # Switch statement to go here for different frameworks and deployments:
 
-    # Build files required to run a Kubeflow Pipeline
-    KfpBuilder.build(project_id, pipeline_params, af_registry_location,
-                     af_registry_name, base_image, cb_trigger_location, cb_trigger_name,
-                     cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
-                     cloud_tasks_queue_name, csr_branch_name, csr_name,
-                     custom_training_job_specs, gs_bucket_location, default_bucket_name,
-                     default_pipeline_runner_sa, run_local, schedule_location,
-                     schedule_name, schedule_pattern, vpc_connector)
+    # Generate files required to run a Kubeflow MLOps pipeline
+    if orchestration_framework == Orchestrator.KFP:
+        KfpBuilder.build(project_id, pipeline_params, af_registry_location,
+                        af_registry_name, base_image, cb_trigger_location, cb_trigger_name,
+                        cloud_run_location, cloud_run_name, cloud_tasks_queue_location,
+                        cloud_tasks_queue_name, csr_branch_name, csr_name,
+                        custom_training_job_specs, gs_bucket_location, default_bucket_name,
+                        default_pipeline_runner_sa, use_ci, schedule_location,
+                        schedule_name, schedule_pattern, vpc_connector)
+    else:
+        print(f'Unsupported orchestration framework: {orchestration_framework}') # update this to logging
 
     CloudBuildBuilder.build(af_registry_location, af_registry_name, cloud_run_location,
                             cloud_run_name, default_pipeline_runner_sa, project_id,
-                            run_local, schedule_pattern, vpc_connector)
+                            use_ci, schedule_pattern, vpc_connector)
+
+    # switch statement for generate IAC
+
+
+def provision():
+    # check yaml for provision framework
+
+    # if terraform
+    #   run shell script
+    # if pulumi
+    #   run shell script
+    # if gcloud
+    #   run shell script
+
+    return
+
+
+def deploy(use_ci: bool):
+    """Builds, compiles, and submits the PipelineJob.
+
+    Args:
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+    """
+    # Build resources
+    execute_process('./' + GENERATED_RESOURCES_SH_FILE, to_null=False)
+
+    # Build, compile, and submit pipeline job
+    if use_ci:
+        _push_to_csr()
+    else:
+        os.chdir(BASE_DIR)
+        try:
+            subprocess.run(['./scripts/run_all.sh'], shell=True,
+                           check=True, stderr=subprocess.STDOUT)
+        except subprocess.CalledProcessError as e:
+            logging.info(e)
+        os.chdir('../')
+
+    # Log generated resources
+    _resources_generation_manifest(use_ci)
 
 
 def generate_iac(
@@ -200,36 +255,11 @@ def generate_iac(
         )
 
 
-def run(run_local: bool):
-    """Builds, compiles, and submits the PipelineJob.
-
-    Args:
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
-    """
-    # Build resources
-    execute_process('./' + GENERATED_RESOURCES_SH_FILE, to_null=False)
-
-    # Build, compile, and submit pipeline job
-    if run_local:
-        os.chdir(BASE_DIR)
-        try:
-            subprocess.run(['./scripts/run_all.sh'], shell=True,
-                           check=True, stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
-            logging.info(e)
-        os.chdir('../')
-    else:
-        _push_to_csr()
-
-    # Log generated resources
-    _resources_generation_manifest(run_local)
-
-
-def _resources_generation_manifest(run_local: bool):
+def _resources_generation_manifest(use_ci: bool):
     """Logs urls of generated resources.
 
     Args:
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
+        use_ci: Flag that determines whether to use Cloud Run CI/CD.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     logging.info('\n'
@@ -254,7 +284,7 @@ def _resources_generation_manifest(run_local: bool):
         f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['cb_trigger_location']}''')
     logging.info(
         'Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
-    if not run_local:
+    if use_ci:
         logging.info(
             f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['cb_trigger_location']}''')
         logging.info(

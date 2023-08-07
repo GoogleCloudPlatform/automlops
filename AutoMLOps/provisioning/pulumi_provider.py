@@ -31,8 +31,8 @@ from AutoMLOps.utils.constants import (
     PULUMI_TEMPLATE_PATH
 )
 
-from AutoMLOps.iac.enums import PulumiRuntime
-from AutoMLOps.iac.configs import PulumiConfig
+from AutoMLOps.provisioning.enums import PulumiRuntime
+from AutoMLOps.provisioning.configs import PulumiConfig
 
 
 def builder(

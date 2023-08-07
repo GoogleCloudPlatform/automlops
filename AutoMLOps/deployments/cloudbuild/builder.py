@@ -30,7 +30,7 @@ def build(af_registry_location: str,
           cloud_run_name: str,
           pipeline_runner_sa: str,
           project_id: str,
-          run_local: bool,
+          use_ci: bool,
           schedule_pattern: str,
           vpc_connector: str):
     """Constructs scripts for resource deployment and running Kubeflow pipelines.
@@ -42,7 +42,7 @@ def build(af_registry_location: str,
         cloud_run_name: The name of the cloud runner service.
         pipeline_runner_sa: Service Account to runner PipelineJobs.
         project_id: The project ID.
-        run_local: Flag that determines whether to use Cloud Run CI/CD.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         vpc_connector: The name of the vpc connector to use.
     """
@@ -50,7 +50,7 @@ def build(af_registry_location: str,
     cb_scripts = CloudBuildScripts(
         af_registry_location, af_registry_name, cloud_run_location,
         cloud_run_name, pipeline_runner_sa, project_id,
-        run_local, schedule_pattern, BASE_DIR,
+        use_ci, schedule_pattern, BASE_DIR,
         vpc_connector)
 
     # Write cloud build config

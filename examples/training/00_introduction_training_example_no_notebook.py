@@ -233,5 +233,5 @@ pipeline_params = {
 
 
 # ## Generate and Run the pipeline
-# `AutoMLOps.generate` generates the code for the MLOps pipeline. `AutoMLOps.go` generates the code and runs the pipeline.
-AutoMLOps.generate(project_id=PROJECT_ID, pipeline_params=pipeline_params, run_local=False, schedule_pattern='0 */12 * * *')
+# `AutoMLOps.generate` generates the code for the MLOps pipeline. `AutoMLOps.launch` generates the code and runs the pipeline.
+AutoMLOps.generate(project_id=PROJECT_ID, pipeline_params=pipeline_params, use_ci=True, schedule_pattern='0 */12 * * *')

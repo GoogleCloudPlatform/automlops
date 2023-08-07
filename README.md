@@ -80,7 +80,7 @@ AutoMLOps will update [IAM privileges](https://cloud.google.com/iam/docs/underst
 
 # User Guide
 
-For a user-guide, please view these [slides](./AutoMLOps_Implementation_Guide_External.pdf).
+For a user-guide, please view these [slides](https://github.com/GoogleCloudPlatform/automlops/blob/main/AutoMLOps_Implementation_Guide_External.pdf).
 
 # List of Examples
 
@@ -99,7 +99,7 @@ Inferencing
 # Options
 
 AutoMLOps CI/CD options:
-1. `run_local`: Bool that specifies whether to use generate files resources locally or use cloud CI/CD workflow (see below). Defaults to True. See [CI/CD Workflow](#cloud-continuous-integration-and-continuous-deployment-workflow)
+1. `use_ci`: Bool that specifies whether to execute using generated files and scripts locally or use cloud CI/CD workflow (see below). Defaults to False. See [CI/CD Workflow](#cloud-continuous-integration-and-continuous-deployment-workflow)
 
 Required parameters:
 1. `project_id: str`
@@ -121,13 +121,13 @@ Optional parameters (defaults shown):
 13. `gs_bucket_location: str = 'us-central1'`
 14. `gs_bucket_name: str = None`
 15. `pipeline_runner_sa: str = None`
-16. `run_local: bool = True`
+16. `use_ci: bool = False`
 17. `schedule_location: str = 'us-central1'`
 18. `schedule_name: str = 'AutoMLOps-schedule'`
 19. `schedule_pattern: str = 'No Schedule Specified'`
 20. `vpc_connector: str = None`
 
-AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If run_local is set to False, the AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the CSR. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
+AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 
 # Customizations
 
@@ -270,10 +270,10 @@ Included in the repository is an [example notebook](./examples/training/00_train
 ```
 
 # Cloud Continuous Integration and Continuous Deployment Workflow
-If `run_local=False`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
+If `use_ci=True`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline.
 
 <p align="center">
-    <img src="./CICD.png" alt="CICD" width="1000"/>
+    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/CICD.png" alt="CICD" width="1000"/>
 </p>
 
 # Pipeline Components
