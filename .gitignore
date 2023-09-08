@@ -1,5 +1,7 @@
+.terraform/
 .tmpfiles/
 .AutoMLOps-cache/
+examples/**/AutoMLOps
 .DS_Store
 .vscode
 

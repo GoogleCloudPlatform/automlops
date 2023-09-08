@@ -1,6 +1,0 @@
-name: devops_plm_automlops
-runtime:
-  name: python
-  options:
-    virtualenv: venv
-description: POC of automlops with pulumi in GCP environment

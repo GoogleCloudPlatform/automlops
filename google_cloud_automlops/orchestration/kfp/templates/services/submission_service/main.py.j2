@@ -1,0 +1,112 @@
+{{generated_license}}
+"""Submission service to submit pipeline spec to Vertex AI"""
+import base64
+import json
+import logging
+import os
+from typing import Tuple
+
+import flask
+{% if pipeline_job_submission_service_type == 'cloud-functions' %}import functions_framework{% endif %}
+from google.cloud import aiplatform
+import google.cloud.logging
+
+{% if pipeline_job_submission_service_type == 'cloud-run' %}app = flask.Flask(__name__){% endif %}
+client = google.cloud.logging.Client(project="project")
+client.setup_logging()
+
+PROJECT_ID = '{{project_id}}'
+PIPELINE_ROOT = '{{pipeline_root}}'
+PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT = '{{pipeline_job_runner_service_account}}'
+
+{% if pipeline_job_submission_service_type == 'cloud-functions' %}@functions_framework.http{% elif pipeline_job_submission_service_type == 'cloud-run' %}@app.route('/', methods=['POST']){% endif %}
+def process_request({% if pipeline_job_submission_service_type == 'cloud-functions' %}request: flask.Request{% endif %}) -> flask.Response:
+    """HTTP web service to trigger pipeline execution.
+    
+    Args:
+        request (flask.Request): The request object.
+        <https://flask.palletsprojects.com/en/1.1.x/api/#incoming-request-data>
+
+    Returns:
+        The response text, or any set of values that can be turned into a
+        Response object using `make_response`
+        <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
+    """
+    {% if pipeline_job_submission_service_type == 'cloud-run' %}request = flask.request{% endif %}
+    content_type = request.headers['content-type']
+    if content_type == 'application/json':
+        request_json = request.get_json()
+        try:
+            {% if pipeline_job_submission_service_type == 'cloud-functions' %}base64_message = request_json['data']['data']{% elif pipeline_job_submission_service_type == 'cloud-run' %}base64_message = request_json['message']['data']{% endif %}
+            data_payload = json.loads(base64.b64decode(base64_message).decode('utf-8'))
+        except ValueError:
+            logging.error('No data payload received, must receive runtime parameters.')
+            return flask.make_response('Malformed request, received incorrect runtime parameters',
+                                       400)
+
+        logging.info('JSON Recieved:')
+        logging.info(data_payload)
+
+        if 'gs_pipeline_spec_path' in data_payload:
+            gs_pipeline_spec_path = data_payload['gs_pipeline_spec_path']
+            del data_payload['gs_pipeline_spec_path']
+        else:
+            logging.error('Pipeline spec path not found, must have path to pipeline spec file.')
+            return flask.make_response('Malformed request, received incorrect runtime parameters. '
+                                       'No pipeline spec path parameter found', 400)
+
+        logging.info('Calling submit_pipeline()')
+        dashboard_uri, resource_name = submit_pipeline(
+            project_id=PROJECT_ID,
+            pipeline_root=PIPELINE_ROOT,
+            pipeline_job_runner_service_account=PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT,
+            pipeline_params=data_payload,
+            pipeline_spec_path=gs_pipeline_spec_path)
+        return flask.make_response({
+            'dashboard_uri': dashboard_uri,
+            'resource_name': resource_name
+        }, 200)
+
+    else:
+        logging.error(f'Unknown content type: {content_type}')
+        return flask.make_response('Non-json content_type received.', 400)
+
+def submit_pipeline(
+    project_id: str,
+    pipeline_root: str,
+    pipeline_job_runner_service_account: str,
+    pipeline_params: dict,
+    pipeline_spec_path: str,
+    display_name: str = 'mlops-pipeline-run',
+    enable_caching: bool = False) -> Tuple[str, str]:
+    """Submits a pipeline run.
+
+    Args:
+        project_id: The project_id.
+        pipeline_root: GCS location of the pipeline runs metadata.
+        pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
+        pipeline_params: Pipeline parameters values.
+        pipeline_spec_path: Location of the pipeline spec JSON.
+        display_name: Name to call the pipeline.
+        enable_caching: Should caching be enabled (Boolean)
+    """
+    logging.info('Pipeline Parms Configured:')
+    logging.info(pipeline_params)
+
+    aiplatform.init(project=project_id)
+    job = aiplatform.PipelineJob(
+        display_name = display_name,
+        template_path = pipeline_spec_path,
+        pipeline_root = pipeline_root,
+        parameter_values = pipeline_params,
+        enable_caching = enable_caching)
+    logging.info('AI Platform job built. Submitting...')
+    job.submit(service_account=pipeline_job_runner_service_account)
+    logging.info('Job sent!')
+    dashboard_uri = job._dashboard_uri()
+    resource_name = job.resource_name
+    return dashboard_uri, resource_name
+{% if pipeline_job_submission_service_type == 'cloud-run' %}
+if __name__ == '__main__':
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+{% endif %}

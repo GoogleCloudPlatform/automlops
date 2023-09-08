@@ -1,0 +1,67 @@
+{{generated_license}}
+output "enabled_apis" {
+  description = "Enabled APIs in the project"
+  value       = [for api in local.org_project.enable_apis : api]
+}
+
+output "create_pipeline_job_runner_service_account_email" {
+  description = "The pipeline job runner service account email."
+  value       = google_service_account.pipeline_job_runner_service_account.email
+}
+
+{% if artifact_repo_type == 'artifact-registry' %}
+output "create_artifact_registry" {
+  description = "outputs for all google_artifact_registry_repositories created"
+  value       = google_artifact_registry_repository.artifact_registry
+}
+{% endif %}
+output "create_storage_bucket" {
+  description = "Bucket resource by name."
+  value       = google_storage_bucket.storage_bucket
+}
+
+output "create_storage_bucket_names" {
+  description = "Bucket names."
+  value       = google_storage_bucket.storage_bucket.name
+}
+{% if source_repo_type == 'cloud-source-repositories' %}
+output "create_cloud_source_repository" {
+  description = "Cloud Source Repository name."
+  value = var.source_repo_name
+}
+{% endif %}{% if use_ci %}{% if pipeline_job_submission_service_type == 'cloud-run' %}
+output "cloud_run_id" {
+  description = "ID of the created service."
+  value       = module.cloud_run
+}
+
+output "create_pubsub_subscription" {
+  description = "All attributes of the created subscription."
+  value       = module.pubsub
+}
+{% elif pipeline_job_submission_service_type == 'cloud-functions' %}
+output "create_pubsub_topic" {
+  description = "The created pub/sub topic."
+  value       = google_pubsub_topic.pubsub_topic
+}
+
+output "create_cloud_function" {
+  description = "All outputs of the created \"google_cloudfunctions_function\" resource."
+  value       = google_cloudfunctions_function.pipeline_job_submission_service
+}
+{% endif %}{% if deployment_framework == 'cloud-build' and source_repo_type == 'cloud-source-repositories' %}
+output "create_cloud_build_trigger" {
+  description = "Cloud build trigger name."
+  value       = var.build_trigger_name
+}
+{% endif %}{% if schedule_pattern != 'No Schedule Specified' %}
+output "create_cloud_scheduler_name" {
+  description = "The name of the job created"
+  value       = google_cloud_scheduler_job.scheduler_job.name
+}
+
+output "create_cloud_scheduler_job" {
+  description = "The Cloud Scheduler job instance"
+  value       = google_cloud_scheduler_job.scheduler_job
+}
+{% endif %}{% endif %}

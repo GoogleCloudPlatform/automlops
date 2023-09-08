@@ -40,7 +40,7 @@ def create_training_pipeline(pipeline_job_spec_path: str):
        'accelerator_count': '4',
        'replica_count': '1',
        'service_account': 'vertex-pipelines@automlops-sandbox.iam.gserviceaccount.com',
-       'tensorboard': 'projects/45373616427/locations/us-central1/tensorboards/2049340140593086464',
+       'tensorboard': 'projects/45373616427/locations/us-central1/tensorboards/7295189281549582336',
        'base_output_directory': 'gs://automlops-sandbox-bucket/finetune_t5_model/',
     }
 
