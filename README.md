@@ -2,7 +2,7 @@
 
 AutoMLOps is a service that generates, provisions, and deploys CI/CD integrated MLOps pipelines, bridging the gap between Data Science and DevOps. AutoMLOps provides a repeatable process that dramatically reduces the time required to build MLOps pipelines. The service generates a containerized MLOps codebase, provides infrastructure-as-code to provision and maintain the underlying MLOps infra, and provides deployment functionalities to trigger and run MLOps pipelines.
 
-AutoMLOps gives flexibility over the tooling and technologies used in the MLOps pipelines, allowing users to choose from a wide range of options for artifact repositories, build tools, provisioning tools, orchestration frameworks, and source code repositories. AutoMLOps can be configured to either use existing infra, or provision new infra, including source code repositories for versioning the generated MLOps codebase, build configs and triggers, artifact repositories for storing docker containers, storage buckets, service accounts, IAM permissions, APIs needed to run pipelines, RESTful services to allow for triggering and running pipelines asynchronous, and Cloud Scheduler jobs for triggering and running pipelines on a recurring basis.
+AutoMLOps gives flexibility over the tools and technologies used in the MLOps pipelines, allowing users to choose from a wide range of options for artifact repositories, build tools, provisioning tools, orchestration frameworks, and source code repositories. AutoMLOps can be configured to either use existing infra, or provision new infra, including source code repositories for versioning the generated MLOps codebase, build configs and triggers, artifact repositories for storing docker containers, storage buckets, service accounts, IAM permissions, APIs needed to run pipelines, RESTful services to allow for triggering and running pipelines asynchronous, and Cloud Scheduler jobs for triggering and running pipelines on a recurring basis.
 
 These automatic integrations empower data scientists to take their experiments to production more quickly, allowing them to focus on what they do best: providing actionable insights through data.
 
@@ -99,7 +99,7 @@ In order to use `AutoMLOps.provision(...)` with `provisioning_framework='gcloud'
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
 - [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
 
-In order to use `AutoMLOps.provision(...)` with `provisioning_framework='gcloud'`, the following are required:
+In order to use `AutoMLOps.provision(...)` with `provisioning_framework='terraform'`, the following are required:
 - [Terraform v1.5.6](https://www.terraform.io/downloads.html)
 
 ### Deploy
@@ -133,11 +133,13 @@ AutoMLOps will makes use of the following products based on user selected option
 1. if `artifact_repo_type='artifact-registry'`, AutoMLOps will use:
 - [Artifact Registry](https://cloud.google.com/artifact-registry/docs/overview)
 
-2. if `use_ci=True` and `orchestration_framework='kfp'`, AutoMLOps will use:
+2. if `use_ci=False` and `orchestration_framework='kfp'` and `deployment_framework='cloud-build'`, AutoMLOps will use:
+- [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
+- [Cloud Build](https://cloud.google.com/build/docs/overview)
+
+2. if `use_ci=True` and `orchestration_framework='kfp'` and `deployment_framework='cloud-build'`, AutoMLOps will use:
 - [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction)
 - [Cloud Pub/Sub](https://cloud.google.com/pubsub/docs/overview)
-
-3. if `use_ci=True` and `deployment_framework='cloud-build'`, AutoMLOps will use:
 - [Cloud Build](https://cloud.google.com/build/docs/overview)
 - [Cloud Build Triggers](https://cloud.google.com/build/docs/triggers)
 
@@ -255,7 +257,7 @@ AutoMLOps will generate the resources specified by these parameters (e.g. Artifa
 
 # Generating Code
 
-Included in the repository is an [example notebook](./examples/training/00_training_example.ipynb) that demonstrates the usage of AutoMLOps. AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `AutoMLOps.generate(project_id='project-id', pipeline_params=pipeline_params, use_ci=True)`, a series of directories will be generated automatically:
+AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `AutoMLOps.generate(project_id='project-id', pipeline_params=pipeline_params, use_ci=True)`, a series of directories will be generated automatically:
 
 ```bash
 .
@@ -297,7 +299,7 @@ Included in the repository is an [example notebook](./examples/training/00_train
 ```
 
 # Provisioning
-AutoMLOps currently provides 2 primary options for provisioning infrastructure: gcloud and terraform. In the diagram below dashed boxes show areas users can select and customize their tooling. 
+AutoMLOps currently provides 2 primary options for provisioning infrastructure: `gcloud` and `terraform`. In the diagram below dashed boxes show areas users can select and customize their tooling. 
 
 <p align="center">
     <img src="assets/provision/provision-default.png" alt="CICD" width="1000"/>
