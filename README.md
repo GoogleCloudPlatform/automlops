@@ -40,7 +40,7 @@ AutoMLOps provides 5 functions for building and maintaining MLOps pipelines:
 - `AutoMLOps.deploy(...)`: Builds and pushes component container, then triggers the pipeline job.
 - `AutoMLOps.launchAll(...)`: Runs `generate()`, `provision()`, and `deploy()` all in succession.
 
-For a full user-guide, please view these [slides](https://github.com/GoogleCloudPlatform/automlops/blob/main/AutoMLOps_Implementation_Guide_External.pdf).
+For a full user-guide, please view these [slides](./AutoMLOps_User_Guide.pdf).
 
 # List of Examples
 
@@ -95,11 +95,11 @@ Inferencing
 In order to use `AutoMLOps.generate(...)`, the following are required:
 - Python 3.7 - 3.10
 ### Provision
-In order to use `AutoMLOps.provision(...)` with `provisioning_framework='gcloud'`, the following are required:
+In order to use `AutoMLOps.provision(...)` with `provisioning_framework='gcloud'`, the following are recommended:
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
 - [beta 2022.10.21](https://cloud.google.com/sdk/gcloud/reference/beta)
 
-In order to use `AutoMLOps.provision(...)` with `provisioning_framework='terraform'`, the following are required:
+In order to use `AutoMLOps.provision(...)` with `provisioning_framework='terraform'`, the following are recommended:
 - [Terraform v1.5.6](https://www.terraform.io/downloads.html)
 
 ### Deploy
@@ -118,7 +118,8 @@ In order to use `AutoMLOps.deploy(...)` with `use_ci=True`, the following are re
   git config --global user.email "you@example.com"
   git config --global user.name "Your Name"
 ```
-- [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc) are setup. This can be done through the following commands:
+- Registered and setup your SSH key if you are using Github, Gitlab, or Bitbucket
+- [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc) are set up if you are using Cloud Source Repositories. This can be done through the following commands:
 ```
 gcloud auth application-default login
 gcloud config set account <account@example.com>
@@ -253,6 +254,39 @@ Parameter Options:
     - 'gitlab'
     - 'bitbucket'
 
+A description of the parameters is below:
+- `project_id`: The project ID.
+- `pipeline_params`: Dictionary containing runtime pipeline parameters.
+- `artifact_repo_location`: Region of the artifact repo (default use with Artifact Registry).
+- `artifact_repo_name`: Artifact repo name where components are stored (default use with Artifact Registry).
+- `artifact_repo_type`: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
+- `base_image`: The image to use in the component base dockerfile.
+- `build_trigger_location`: The location of the build trigger (for cloud build).
+- `build_trigger_name`: The name of the build trigger (for cloud build).
+- `custom_training_job_specs`: Specifies the specs to run the training job with.
+- `deployment_framework`: The CI tool to use (e.g. cloud build, github actions, etc.)
+- `naming_prefix`: Unique value used to differentiate pipelines and services across AutoMLOps runs.
+- `orchestration_framework`: The orchestration framework to use (e.g. kfp, tfx, etc.)
+- `pipeline_job_runner_service_account`: Service Account to run PipelineJobs.
+- `pipeline_job_submission_service_location`: The location of the cloud submission service.
+- `pipeline_job_submission_service_name`: The name of the cloud submission service.
+- `pipeline_job_submission_service_type`: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
+- `precheck`: Boolean used to specify whether to check for provisioned resources before deploying.
+- `provision_credentials_key`: Either a path to or the contents of a service account key file in JSON format.
+- `provisioning_framework`: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
+- `pubsub_topic_name`: The name of the pubsub topic to publish to.
+- `schedule_location`: The location of the scheduler resource.
+- `schedule_name`: The name of the scheduler resource.
+- `schedule_pattern`: Cron formatted value used to create a Scheduled retrain job.
+- `source_repo_branch`: The branch to use in the source repository.
+- `source_repo_name`: The name of the source repository to use.
+- `source_repo_type`: The type of source repository to use (e.g. gitlab, github, etc.)
+- `storage_bucket_location`: Region of the GS bucket.
+- `storage_bucket_name`: GS bucket name where pipeline run metadata is stored.
+- `hide_warnings`: Boolean used to specify whether to show provision/deploy permission warnings
+- `use_ci`: Flag that determines whether to use Cloud CI/CD.
+- `vpc_connector`: The name of the vpc connector to use.
+
 AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 
 # Generating Code
@@ -269,7 +303,7 @@ AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `Auto
             ├──component_a.py                      : Python file containing code for the component.
             ├──...(for each component)
     ├──component_a                                 : Components specs generated using AutoMLOps
-        ├── component.yaml                         : Component yaml spec, acts and an I/O wrapper around the Docker container.
+        ├── component.yaml                         : Component yaml spec, acts as an I/O wrapper around the Docker container.
     ├──...(for each component)
 ├── configs                                        : Configurations for defining vertex ai pipeline and MLOps infra.
     ├── defaults.yaml                              : Runtime configuration variables.
@@ -280,7 +314,7 @@ AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `Auto
     ├── requirements.txt                           : Package requirements for running pipeline.py.
     ├── runtime_parameters                         : Variables to be used in a PipelineJob.
         ├── pipeline_parameter_values.json         : Json containing pipeline parameters.
-├── provision                                      : Vertex ai pipeline definitions.
+├── provision                                      : Provision configurations and details.
     ├── provision_resources.sh                     : Provisions the necessary infra to run the MLOps pipeline.
     ├── provisioning_configs                       : (Optional) Relevant terraform/Pulumi config files for provisioning infa.
 ├── scripts                                        : Scripts for manually triggering the cloud run service.
@@ -357,7 +391,7 @@ custom_training_job_specs = [{
 
 Use the `vpc_connector` parameter to specify a vpc connector.
 ```
-vpc_connector = 'example-vpc'
+vpc_connector = 'example-vpc-connector'
 ```
 
 **Specify package versions:**

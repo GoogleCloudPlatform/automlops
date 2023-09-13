@@ -46,7 +46,7 @@ from google_cloud_automlops.provisioning.gcloud.builder import provision_resourc
              'gsutil mb -l ${STORAGE_BUCKET_LOCATION} gs://$STORAGE_BUCKET_NAME', 'gcloud iam service-accounts create',
              'gcloud projects add-iam-policy-binding', 'gcloud source repos create', 'gcloud pubsub topics create',
              'gcloud functions deploy', 'gcloud beta builds triggers create', 'gcloud scheduler jobs create pubsub',
-             '--vpc_connector=my-vpc-connector']
+             '--vpc-connector=my-vpc-connector']
         ),
         (
             'us-central1', 'my-registry', 'artifact-registry', 'us-central1',
@@ -148,19 +148,45 @@ def test_provision_resources_script_jinja(
     vpc_connector: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    labels as strings. There are seven test cases for this function, which test
-    for updating different parameter types.
+    """Tests provision_resources_script_jinja, which generates code for 
+       provision_resources.sh which sets up the project's environment.
+       There are seven test cases for this function:
+        1. Checks for relevant gcloud commands when using the following tooling:
+            artifact-registry, cloud-build, cloud-functions, cloud scheduler, cloud-source-repositories, and a vpc connector
+        2. Checks for relevant gcloud commands when using the following tooling:
+            artifact-registry, cloud-build, cloud-run, cloud scheduler, cloud-source-repositories, and no vpc connector
+        3. Checks that gcloud source repo commands are not included when not using cloud-source-repositories.
+        4. Checks that gcloud scheduler command and vpc_connector flag are not included when not specifying a vpc connector or schedule.
+        5. Checks that gcloud artifacts command is not included when not using artifact-registry.
+        6. Checks that gcloud beta builds triggers command is not included when not using cloud-build.
+        7. Checks for that CI/CD elements are not included when use_ci=False.
 
     Args:
-        params (List[dict]): Pipeline parameters. A list of dictionaries, each param is a dict containing keys:
-            'name': required, str param name.
-            'type': required, python primitive type.
-            'description': optional, str param desc.
-        expected_output (List[dict]): Expectation of whether or not the configuration is valid.
+        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
+        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
+        artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
+        build_trigger_location: The location of the build trigger (for cloud build).
+        build_trigger_name: The name of the build trigger (for cloud build).
+        deployment_framework: The CI tool to use (e.g. cloud build, github actions, etc.)
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
+        pipeline_job_runner_service_account: Service Account to run PipelineJobs.
+        pipeline_job_submission_service_location: The location of the cloud submission service.
+        pipeline_job_submission_service_name: The name of the cloud submission service.
+        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
+        project_id: The project ID.
+        pubsub_topic_name: The name of the pubsub topic to publish to.
+        required_apis: List of APIs that are required to run the service.
+        schedule_location: The location of the scheduler resource.
+        schedule_name: The name of the scheduler resource.
+        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
+        source_repo_branch: The branch to use in the source repository.
+        source_repo_name: The name of the source repository to use.
+        source_repo_type: The type of source repository to use (e.g. gitlab, github, etc.)
+        storage_bucket_location: Region of the GS bucket.
+        storage_bucket_name: GS bucket name where pipeline run metadata is stored.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+        vpc_connector: The name of the vpc connector to use.
     """
-
     provision_resources_script = provision_resources_script_jinja(
         artifact_repo_location=artifact_repo_location,
         artifact_repo_name=artifact_repo_name,

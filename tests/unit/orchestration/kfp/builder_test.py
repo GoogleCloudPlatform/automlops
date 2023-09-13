@@ -354,10 +354,14 @@ def test_build_services(mocker: pytest_mock.MockerFixture,
 def test_build_pipeline_spec_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests build_pipeline_spec_jinja, which generates code for build_pipeline_spec.sh 
+       which builds the pipeline specs. There is one test case for this function:
+        1. Checks for the apache license and the pipeline compile command.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     build_pipeline_spec_script = build_pipeline_spec_jinja()
 
     for snippet in expected_output_snippets:
@@ -374,10 +378,14 @@ def test_build_pipeline_spec_jinja(
 def test_build_components_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests build_components_jinja, which generates code for build_components.sh
+       which builds the components. There is one test case for this function:
+        1. Checks for the apache license and the builds submit command.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     build_components_script = build_components_jinja()
 
     for snippet in expected_output_snippets:
@@ -394,10 +402,14 @@ def test_build_components_jinja(
 def test_run_pipeline_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests run_pipeline_jinja, which generates code for run_pipeline.sh
+       which runs the pipeline locally. There is one test case for this function:
+        1. Checks for the apache license and the pipeline runner command.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     run_pipeline_script = run_pipeline_jinja()
 
     for snippet in expected_output_snippets:
@@ -415,10 +427,14 @@ def test_run_pipeline_jinja(
 def test_run_all_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests run_all_jinja, which generates code for run_all.sh
+       which builds runs all other shell scripts. There is one test case for this function:
+        1. Checks for the apache license and the builds submit, the pipeline compile, and the pipeline runner commands.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     run_all_script = run_all_jinja()
 
     for snippet in expected_output_snippets:
@@ -436,10 +452,15 @@ def test_publish_to_topic_jinja(
     pubsub_topic_name: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests publish_to_topic_jinja, which generates code for publish_to_topic.sh 
+       which submits a message to the pipeline job submission service.
+       There is one test case for this function:
+        1. Checks for the apache license and the pubsub publish command.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     publish_to_topic_script = publish_to_topic_jinja(pubsub_topic_name=pubsub_topic_name)
 
     for snippet in expected_output_snippets:
@@ -475,8 +496,16 @@ def test_readme_jinja(
     use_ci: bool,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
+    """Tests readme_jinja, which generates code for readme.md which
+       is a readme markdown file to describe the contents of the
+       generated AutoMLOps code repo. There are two test cases for this function:
+        1. Checks that certain directories and files exist when use_ci=True.
+        2. Checks that certain directories and files do not exist when use_ci=False.
+
+    Args:
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
     readme_str = readme_jinja(use_ci=use_ci)
 
@@ -495,10 +524,16 @@ def test_component_base_dockerfile_jinja(
     base_image: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests readme_jinja, which generates code for a Dockerfile 
+       to be written to the component_base directory. There is one 
+       test case for this function:
+        1. Checks for the apache license and the FROM image line.
 
+    Args:
+        base_image: The image to use in the component base dockerfile.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     component_base_dockerfile = component_base_dockerfile_jinja(base_image)
 
     for snippet in expected_output_snippets:
@@ -519,7 +554,8 @@ def test_component_base_dockerfile_jinja(
         ),
         (
             'this is some custom code', False, True,
-            ['this is some custom code',
+            [GENERATED_LICENSE,
+             'this is some custom code',
              'def main():',
              'import kfp',
              'from kfp.v2.dsl import *']
@@ -536,10 +572,19 @@ def test_component_base_task_file_jinja(
     kfp_spec_bool: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests component_base_task_file_jinja, which generates code 
+       for the task.py file to be written to the component_base/src directory.
+       There are three test cases for this function:
+        1. Checks for the apache license, the custom_code_contents, and a main function when using kfp spec (kfp spec comes with kfp imports by default).
+        2. Checks for the apache license, the custom_code_contents, a main function, and kfp imports when not using kfp spec.
+        3. Checks that the kfp imports are not included in the string when using kfp spec (kfp spec comes with kfp imports by default).
 
+    Args:
+        custom_code_contents: Code inside of the component, specified by the user.
+        kfp_spec_bool: Boolean that specifies whether components are defined using kfp.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     component_base_task_file = component_base_task_file_jinja(custom_code_contents, kfp_spec_bool)
 
     for snippet in expected_output_snippets:
@@ -556,10 +601,14 @@ def test_component_base_task_file_jinja(
 def test_pipeline_runner_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests pipeline_runner_jinja, which generates code for the pipeline_runner.py 
+       file to be written to the pipelines directory. There is one test case for this function:
+        1. Checks for the apache license.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     pipeline_runner_py = pipeline_runner_jinja()
 
     for snippet in expected_output_snippets:
@@ -618,10 +667,21 @@ def test_pipeline_jinja(
     pipeline_scaffold_contents: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests pipeline_jinja, which generates code for the pipeline.py 
+       file to be written to the pipelines directory.
+       There are three test cases for this function:
+        1. Checks for the apache license and relevant code elements when custom_training_job_specs is not None.
+        2. Checks for the apache license and relevant code elements when custom_training_job_specs is None.
+        3. Checks that the output does not contain custom_training_job_specs code elements when custom_training_job_specs is None.
 
+    Args:
+        components_list: Contains the names or paths of all component yamls in the dir.
+        custom_training_job_specs: Specifies the specs to run the training job with.
+        pipeline_scaffold_contents: The contents of the pipeline scaffold file,
+            which can be found at PIPELINE_CACHE_FILE.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     pipeline_py = pipeline_jinja(
         components_list,
         custom_training_job_specs,
@@ -641,10 +701,14 @@ def test_pipeline_jinja(
 def test_pipeline_requirements_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests pipeline_requirements_jinja, which generates code for a requirements.txt
+       to be written to the pipelines directory. There is one test case for this function:
+        1. Checks for the pinned kfp version, and the google-cloud-aiplatform dep.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     pipeline_requirements_py = pipeline_requirements_jinja()
 
     for snippet in expected_output_snippets:
@@ -662,10 +726,14 @@ def test_pipeline_requirements_jinja(
 def test_submission_service_dockerfile_jinja(
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests pipeline_requirements_jinja, which generates code for a Dockerfile to be
+       written to the serivces/submission_service directory. There is one test case for this function:
+        1. Checks for the apache license and relevant dockerfile elements.
 
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     submission_service_dockerfile = submission_service_dockerfile_jinja()
 
     for snippet in expected_output_snippets:
@@ -686,10 +754,19 @@ def test_submission_service_requirements_jinja(
     pipeline_job_submission_service_type: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests submission_service_requirements_jinja, which generates code 
+       for a requirements.txt to be written to the serivces/submission_service directory.
+       There are four test cases for this function:
+        1. Checks for the pinned kfp version, the google-cloud-aiplatform and function-framework deps when set to cloud-functions.
+        2. Checks that gunicorn dep is not included when set to cloud-functions.
+        3. Checks for the pinned kfp version, the google-cloud-aiplatform and gunicorn deps when set to cloud-run.
+        4. Checks that functions-framework dep is not included when set to cloud-run.
 
+    Args:
+        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     submission_service_requirements = submission_service_requirements_jinja(pipeline_job_submission_service_type=pipeline_job_submission_service_type)
 
     for snippet in expected_output_snippets:
@@ -752,10 +829,22 @@ def test_submission_service_main_jinja(
     project_id: str,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests submission_service_main_jinja, which generates content
+       for main.py to be written to the serivces/submission_service directory. 
+       There are four test cases for this function:
+        1. Checks for functions_framework code elements when set to cloud-functions.
+        2. Checks that Flask app code elements are not included when set to cloud-functions.
+        3. Checks for Flask app code elements when set to cloud-run.
+        4. Checks that functions_framework code elements are not included when set to cloud-run.
 
+    Args:
+        pipeline_root: GS location where to store metadata from pipeline runs.
+        pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
+        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
+        project_id: The project ID.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     submission_service_main_py = submission_service_main_jinja(
         pipeline_root=pipeline_root,
         pipeline_job_runner_service_account=pipeline_job_runner_service_account,

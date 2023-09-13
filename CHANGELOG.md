@@ -1,6 +1,38 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2023-09-13
+
+### Added
+
+Major version updates:
+- Code is now broken down into 5 main operations: generate, provision, deprovision, deploy, and launchAll
+- Uses jinja2 templates for store code templates and write to files
+- Additional package dependencies using Jinja2 templates and deploy precheck function
+- Provides additional warnings and checks for given IAM permissions visibility to the user
+- Creates a .gitignore by default now
+- Support for cloud-functions in addition to cloud-run for the submission service
+- Added 2 new generated folders: provision/ and services/
+- Added naming_prefix parameter to allow for
+- Significant generalization in terms of tooling (now allows for specifying provisioning_frameworks, deployment_frameworks, etc.)
+- Renamed backend src code folder to google_cloud_automlops to avoid naming confusion
+- Added enumeration and config files, which are different than previous approach of class inheritance
+ 
+### Changed
+
+- Updated README.md and documentation
+- Templatized code has now been pulled how and placed into jinja2 templates.
+- Gitops workflow placed into separate folder and file, now will only version AutoMLOps/ directoring instead of the whole cwd.
+- Reworked deployment workflow and build configuration (submission service and cloud scheduler are now created as part of the provision step).
+- Update notebook examples
+- Changed working and branding descriptions
+- Significant updates to unit tests
+
+### Fixed
+ 
+- Bugs related to provisioning with terraform
+
+
 ## [1.1.4] - 2023-07-25
 
 ### Added

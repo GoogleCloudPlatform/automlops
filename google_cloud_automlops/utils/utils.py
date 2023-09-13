@@ -17,6 +17,7 @@
 
 # pylint: disable=C0103
 # pylint: disable=line-too-long
+# pylint: disable=broad-exception-caught
 
 import inspect
 import itertools
@@ -42,6 +43,7 @@ from google_cloud_automlops.utils.constants import (
     IAM_ROLES_RUNNER_SA,
     MIN_GCLOUD_BETA_VERSION,
     MIN_GCLOUD_SDK_VERSION,
+    MIN_RECOMMENDED_TERRAFORM_VERSION,
     PLACEHOLDER_IMAGE
 )
 
@@ -446,7 +448,15 @@ def create_default_config(artifact_repo_location: str,
 
 
 def get_required_apis(defaults: dict) -> Set:
-    # TODO(@srastatter)
+    """Returns the set of required APIs based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of required APIs
+    """
     required_apis = set([
         'cloudresourcemanager.googleapis.com',
         'compute.googleapis.com',
@@ -473,8 +483,16 @@ def get_required_apis(defaults: dict) -> Set:
 
 
 def get_provision_min_permissions(defaults: dict) -> Set:
-    # TODO(@srastatter)
-    # Permissions required to run AutoMLOps.provision
+    """Returns the set of minimum required permissions to run
+       the provision() step based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of required permissions
+    """
     required_permissions = set([
         'serviceusage.services.enable',
         'serviceusage.services.use',
@@ -503,8 +521,17 @@ def get_provision_min_permissions(defaults: dict) -> Set:
 
 
 def get_provision_recommended_roles(defaults: dict) -> Set:
-    # TODO(@srastatter)
-    # Roles recommended to run AutoMLOps.provision
+    """Returns the set of recommended roles to run
+       the provision() step based on the user tooling selection
+       determined during the generate() step. These roles have
+       the minimum permissions required for provision.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of recommended roles
+    """
     recommended_roles = set([
         'roles/serviceusage.serviceUsageAdmin',
         'roles/resourcemanager.projectIamAdmin',
@@ -527,8 +554,18 @@ def get_provision_recommended_roles(defaults: dict) -> Set:
 
 
 def get_deploy_with_precheck_min_permissions(defaults: dict) -> Set:
-    # TODO(@srastatter)
-    # Permissions required to run precheck=True for AutoMLOps.deploy
+    """Returns the set of minimum required permissions to run
+       the deploy() step based on the user tooling selection
+       determined during the generate() step. This function is called
+       when precheck=True, which makes several API calls to determine if the infra
+       exists to run deploy() and increases the required set of permissions.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of minimum permissions to deploy with precheck=True
+    """
     recommended_permissions = set([
         'serviceusage.services.get',
         'resourcemanager.projects.getIamPolicy',
@@ -552,8 +589,18 @@ def get_deploy_with_precheck_min_permissions(defaults: dict) -> Set:
 
 
 def get_deploy_with_precheck_recommended_roles(defaults: dict) -> Set:
-    # TODO(@srastatter)
-    # Roles recommended to run precheck=True for AutoMLOps.deploy
+    """Returns the set of recommended roles to run
+       the deploy() step based on the user tooling selection
+       determined during the generate() step. This function is called
+       when precheck=True, which makes several API calls to determine if the infra
+       exists to run deploy() and increases the required set of permissions.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of recommended roles to deploy with precheck=True
+    """
     recommended_roles = set([
         'roles/serviceusage.serviceUsageViewer',
         'roles/iam.roleViewer',
@@ -577,8 +624,17 @@ def get_deploy_with_precheck_recommended_roles(defaults: dict) -> Set:
 
 
 def get_deploy_without_precheck_min_permissions(defaults: dict) -> Set:
-    # TODO(@srastatter)
-    # Permissions required to run precheck=False for AutoMLOps.deploy
+    """Returns the set of minimum required permissions to run
+       the deploy() step based on the user tooling selection
+       determined during the generate() step. This function is called
+       when precheck=False, which decreases the required set of permissions.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of minimum permissions to deploy with precheck=False
+    """
     recommended_permissions = set()
     if defaults['tooling']['use_ci']:
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
@@ -589,8 +645,17 @@ def get_deploy_without_precheck_min_permissions(defaults: dict) -> Set:
 
 
 def get_deploy_without_precheck_recommended_roles(defaults: dict) -> Set:
-    # TODO(@srastatter)
-    # Roles recommended to run precheck=False for AutoMLOps.deploy
+    """Returns the set of recommended roles to run
+       the deploy() step based on the user tooling selection
+       determined during the generate() step. This function is called
+       when precheck=False, which decreases the required set of permissions.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        set: The set of recommended roles to deploy with precheck=False
+    """
     recommended_roles = set()
     if defaults['tooling']['use_ci']:
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
@@ -601,7 +666,12 @@ def get_deploy_without_precheck_recommended_roles(defaults: dict) -> Set:
 
 
 def account_permissions_warning(operation: str, defaults: dict):
-    # TODO(@srastatter)
+    """Logs the current gcloud account and generates warnings based on the operation being performed.
+
+    Args:
+        operation: Specifies which operation is being performed. Available options {provision, deploy_with_precheck, deploy_without_precheck}
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+    """
     bullet_nl = '\n-'
     gcp_account = subprocess.check_output(
         ['gcloud config list account --format "value(core.account)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
@@ -622,28 +692,53 @@ def account_permissions_warning(operation: str, defaults: dict):
 
 
 def check_installation_versions(provisioning_framework: str):
-    # TODO(@srastatter)
+    """Checks the version of the provisioning tool (e.g. terraform, gcloud) and generates warning if
+       either the tool is not installed, or if it below the recommended version.
+
+    Args:
+        provisioning_framework: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
+    """
     if provisioning_framework == Provisioner.GCLOUD.value:
-        gcloud_sdk_version = subprocess.check_output(
-            ['gcloud info --format="value(basic.version)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
-        gcloud_beta_version = subprocess.check_output(
-            ['gcloud info --format="value(installation.components.beta)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
-        if gcloud_sdk_version == '':
+        try:
+            gcloud_sdk_version = subprocess.check_output(
+                ['gcloud info --format="value(basic.version)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+            if version.parse(MIN_GCLOUD_SDK_VERSION) > version.parse(gcloud_sdk_version):
+                logging.warning(f'WARNING: You are currently using version {gcloud_sdk_version} of the gcloud sdk. We recommend using at least version {MIN_GCLOUD_SDK_VERSION}.\n '
+                                f'Please update your sdk version by running: gcloud components update.\n')
+        except subprocess.CalledProcessError:
             logging.warning('WARNING: You do not have gcloud installed. Please install the gcloud sdk.\n')
-        if gcloud_beta_version == '':
+
+        try:
+            gcloud_beta_version = subprocess.check_output(
+                ['gcloud info --format="value(installation.components.beta)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+            if version.parse(MIN_GCLOUD_BETA_VERSION) > version.parse(gcloud_beta_version):
+                logging.warning(f'WARNING: You are currently using version {gcloud_beta_version} of the gcloud beta. We recommend using at least version {MIN_GCLOUD_BETA_VERSION}.\n '
+                                f'Please update your beta version by running: gcloud components install beta.\n')
+        except subprocess.CalledProcessError:
             logging.warning('WARNING: You do not have gcloud beta installed. Please install the gcloud beta by running: gcloud components install beta\n')
-        if version.parse(MIN_GCLOUD_SDK_VERSION) > version.parse(gcloud_sdk_version) and gcloud_sdk_version != '':
-            logging.warning(f'WARNING: You are currently using version {gcloud_sdk_version} of the gcloud sdk. We recommend using at least version {MIN_GCLOUD_SDK_VERSION}.\n '
-                            f'Please update your sdk version by running: gcloud components update.\n')
-        if version.parse(MIN_GCLOUD_BETA_VERSION) > version.parse(gcloud_beta_version) and gcloud_beta_version != '':
-            logging.warning(f'WARNING: You are currently using version {gcloud_beta_version} of the gcloud beta. We recommend using at least version {MIN_GCLOUD_BETA_VERSION}.\n '
-                            f'Please update your beta version by running: gcloud components install beta.\n')
-    # check for terraform versions
+
+    if provisioning_framework == Provisioner.TERRAFORM.value:
+        try:
+            terraform_version_json_string = subprocess.check_output(
+                ['terraform version -json 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+            terraform_version = json.loads(terraform_version_json_string)['terraform_version']
+            if version.parse(MIN_RECOMMENDED_TERRAFORM_VERSION) > version.parse(terraform_version):
+                logging.warning(f'WARNING: You are currently using version {terraform_version} of terraform. AutoMLOps has been tested with version {MIN_RECOMMENDED_TERRAFORM_VERSION}.\n '
+                                f'We recommend updating your terraform version.\n')
+        except subprocess.CalledProcessError:
+            logging.warning('WARNING: You do not have terraform installed. Please install terraform.\n')
+
     # check for pulumi versions
 
 
 def precheck_deployment_requirements(defaults: dict):
-    # TODO(@srastatter)
+    """Checks to see if the necessary MLOps infra exists to run
+       the deploy() step based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+    """
     artifact_repo_location = defaults['gcp']['artifact_repo_location']
     artifact_repo_name = defaults['gcp']['artifact_repo_name']
     artifact_repo_type = defaults['gcp']['artifact_repo_type']
@@ -791,8 +886,11 @@ def precheck_deployment_requirements(defaults: dict):
 
 
 def resources_generation_manifest(defaults: dict):
-    """Logs urls of generated resources."""
-    # TODO Update
+    """Logs urls of generated resources.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+    """
     logging.info('Please wait for this build job to complete.')
     logging.info('\n'
                  '#################################################################\n'

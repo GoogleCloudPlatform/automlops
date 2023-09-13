@@ -6,6 +6,10 @@ module "google_project_service" {
   project_id              = var.project_id
   activate_apis           = local.org_project.enable_apis
 }
+resource "time_sleep" "wait_60_seconds" {
+  depends_on = [module.google_project_service]
+  create_duration = "60s"
+}
 {% if artifact_repo_type == 'artifact-registry' %}
 # Create Artifact Registry
 resource "google_artifact_registry_repository" "artifact_registry" {
@@ -15,7 +19,7 @@ resource "google_artifact_registry_repository" "artifact_registry" {
   description   = "Docker artifact repository"
   format        = "DOCKER"
 
-  depends_on = [module.google_project_service]
+  depends_on = [module.google_project_service,time_sleep.wait_60_seconds]
 }
 {% endif %}
 # Create Storage Bucket
@@ -23,8 +27,12 @@ resource "google_storage_bucket" "storage_bucket" {
   project                 = var.project_id
   name                    = var.storage_bucket_name
   location                = var.storage_bucket_location
-
-  depends_on              = [module.google_project_service]
+  force_destroy           = false
+  storage_class           = "STANDARD"
+  versioning {
+    enabled               = true
+  }
+  depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
 }
 {% if source_repo_type == 'cloud-source-repositories' %}
 # Create cloud source repository
@@ -32,14 +40,14 @@ resource "google_sourcerepo_repository" "source_repo" {
   project                 = var.project_id
   name                    = var.source_repo_name
 
-  depends_on              = [module.google_project_service]
+  depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
 }{% endif %}
 {% if use_ci %}{% if pipeline_job_submission_service_type == 'cloud-run' %}
 # Build and Push Submission Service image
 resource "null_resource" "build_and_push_submission_service" {
   provisioner "local-exec" {
     command = <<EOF
-    /bin/bash gcloud builds submit ../services/submission_service \
+    /bin/bash gcloud builds submit ../../services/submission_service \
       --tag "${var.artifact_repo_location}-docker.pkg.dev/${var.project_id}/${var.artifact_repo_name}/{{naming_prefix}}/submission_service:latest" \
       --region "${var.build_trigger_location}" \
       --suppress-logs
@@ -59,7 +67,7 @@ module "cloud_run" {
   image                  = "${var.artifact_repo_location}-docker.pkg.dev/${var.project_id}/${var.artifact_repo_name}/{{naming_prefix}}/submission_service:latest"
   {% if vpc_connector != 'No VPC Specified' %}
   template_annotations = {
-    "run.googleapis.com/vpc-access-connector" = element(tolist("${var.vpc_connector}"), 1)
+    "run.googleapis.com/vpc-access-connector" = var.vpc_connector
   }{% endif %}
   depends_on            = [null_resource.build_and_push_submission_service]
 }
@@ -87,7 +95,7 @@ module "pubsub" {
 resource "google_pubsub_topic" "pubsub_topic" {
   name = var.pubsub_topic_name
 
-  depends_on              = [module.google_project_service]
+  depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
 }
 # Upload Cloud Functions source code to storage bucket
 resource "google_storage_bucket_object" "archive_submission_service_code" {
@@ -141,7 +149,7 @@ resource "google_cloud_scheduler_job" "scheduler_job" {
   schedule      = var.schedule_pattern
   pubsub_target {
     topic_name  = "projects/${var.project_id}/topics/${var.pubsub_topic_name}"
-    data        = base64encode(file("../{{generated_parameter_values_path}}"))    
+    data        = base64encode(file("../../{{generated_parameter_values_path}}"))    
   }
 
   depends_on    = {% if pipeline_job_submission_service_type == 'cloud-run' %}[module.pubsub]{% elif pipeline_job_submission_service_type == 'cloud-functions' %}[google_pubsub_topic.pubsub_topic]{% endif %}

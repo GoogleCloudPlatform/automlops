@@ -40,6 +40,7 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_PROVISION_DIRS,
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
+    GENERATED_TERRAFORM_DIRS,
     OUTPUT_DIR
 )
 from google_cloud_automlops.utils.utils import (
@@ -256,6 +257,8 @@ def generate(
     if use_ci:
         make_dirs(GENERATED_SERVICES_DIRS)
         make_dirs(GENERATED_PROVISION_DIRS)
+    if provisioning_framework == Provisioner.TERRAFORM.value:
+        make_dirs(GENERATED_TERRAFORM_DIRS)
 
     # Set derived vars if none were given for certain variables
     derived_artifact_repo_name = f'{naming_prefix}-artifact-registry' if artifact_repo_name is None else artifact_repo_name
@@ -301,18 +304,20 @@ def generate(
 
     # Generate files required to run a Kubeflow pipeline
     if orchestration_framework == Orchestrator.KFP.value:
-        logging.info(f'Writing Kubeflow Pipelines code to {BASE_DIR}pipelines, {BASE_DIR}components, {BASE_DIR}services')
+        logging.info(f'Writing README.md to {BASE_DIR}README.md')
+        logging.info(f'Writing kubeflow pipelines code to {BASE_DIR}pipelines, {BASE_DIR}components')
+        logging.info(f'Writing scripts to {BASE_DIR}scripts')
+        logging.info(f'Writing submission service code to {BASE_DIR}services')
         KfpBuilder.build(KfpConfig(
             base_image=base_image,
             custom_training_job_specs=derived_custom_training_job_specs,
             pipeline_params=pipeline_params,
             pubsub_topic_name=derived_pubsub_topic_name,
             use_ci=use_ci))
-        logging.info(f'Writing README.md to {BASE_DIR}README.md')
 
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:
-        logging.info(f'Writing scripts to {BASE_DIR}scripts')
+        logging.info(f'Writing gcloud provisioning code to {BASE_DIR}provision')
         GcloudBuilder.build(project_id, GcloudConfig(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=derived_artifact_repo_name,
@@ -338,6 +343,7 @@ def generate(
             vpc_connector=vpc_connector))
 
     elif provisioning_framework == Provisioner.TERRAFORM.value:
+        logging.info(f'Writing terraform provisioning code to {BASE_DIR}provision')
         TerraformBuilder.build(project_id, TerraformConfig(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=derived_artifact_repo_name,
@@ -350,7 +356,7 @@ def generate(
             pipeline_job_submission_service_location=pipeline_job_submission_service_location,
             pipeline_job_submission_service_name=derived_pipeline_job_submission_service_name,
             pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-            provision_credentials_key=provision_credentials_key, # TODO This needs to be tested
+            provision_credentials_key=provision_credentials_key,
             pubsub_topic_name=derived_pubsub_topic_name,
             schedule_location=schedule_location,
             schedule_name=derived_schedule_name,
@@ -361,14 +367,15 @@ def generate(
             storage_bucket_location=storage_bucket_location,
             storage_bucket_name=derived_storage_bucket_name,
             use_ci=use_ci,
-            vpc_connector=vpc_connector)) # TODO This needs to be tested
+            vpc_connector=vpc_connector))
 
-    elif provisioning_framework == Provisioner.PULUMI.value:
-        PulumiBuilder.build(project_id, PulumiConfig) # TODO(@srastatter) Provide args to this obj
+    # Pulumi - Currently a roadmap item
+    # elif provisioning_framework == Provisioner.PULUMI.value:
+    #     PulumiBuilder.build(project_id, PulumiConfig)
 
     # Generate files required to run cicd pipeline
     if deployment_framework == Deployer.CLOUDBUILD.value:
-        logging.info(f'Writing CloudBuild config to {GENERATED_CLOUDBUILD_FILE}')
+        logging.info(f'Writing cloud build config to {GENERATED_CLOUDBUILD_FILE}')
         CloudBuildBuilder.build(CloudBuildConfig(
                 artifact_repo_location=artifact_repo_location,
                 artifact_repo_name=derived_artifact_repo_name,
@@ -380,35 +387,64 @@ def generate(
 
 
 def provision(hide_warnings: Optional[bool] = True):
-    """Sets up the necessary infra to run PipelineJobs."""
-    # TODO Update docstring
+    """Provisions the necessary infra to run MLOps pipelines. 
+       The provisioning option (e.g. terraform, gcloud, etc.)
+       is set during the generate() step and stored in config/defaults.yaml. 
+
+    Args:
+        hide_warnings: Boolean that specifies whether to show permissions warnings before provisioning.
+    """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     provisioning_framework = defaults['tooling']['provisioning_framework']
 
     if not hide_warnings:
-        check_installation_versions(provisioning_framework=provisioning_framework) # TODO updated versions for terraform
+        check_installation_versions(provisioning_framework=provisioning_framework)
         account_permissions_warning(operation='provision', defaults=defaults)
 
-    execute_process('./' + GENERATED_RESOURCES_SH_FILE, to_null=False)
+    if provisioning_framework == Provisioner.GCLOUD.value:
+        execute_process(f'./{GENERATED_RESOURCES_SH_FILE}', to_null=False)
+    elif provisioning_framework == Provisioner.TERRAFORM.value:
+        execute_process(f'./{GENERATED_RESOURCES_SH_FILE} state_bucket', to_null=False)
+        execute_process(f'./{GENERATED_RESOURCES_SH_FILE} environment', to_null=False)
 
 
 def deprovision():
-    """Destroys the infra used to run PipelineJobs. Only works with Terraform or Pulumi."""
-    # TODO Update docstring
+    """De-provisions the infra stood up during the provision() step.
+       deprovision currently only works with terraform. 
+       The provisioning option (e.g. terraform, gcloud, etc.)
+       is set during the generate() step and stored in config/defaults.yaml. 
+    """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     provisioning_framework = defaults['tooling']['provisioning_framework']
 
     if provisioning_framework == Provisioner.GCLOUD.value:
-        raise ValueError('Deprovisioning is currently only supported for provisioning_framework={terraform, pulumi}.')
+        raise ValueError('De-provisioning is currently only supported for provisioning_framework={terraform, pulumi}.')
 
-    execute_process(f'terraform -chdir={BASE_DIR}provision destroy -auto-approve', to_null=False)
+    execute_process(f'terraform -chdir={BASE_DIR}provision/environment destroy -auto-approve', to_null=False)
 
 
 def deploy(
     hide_warnings: Optional[bool] = True,
     precheck: Optional[bool] = False):
-    """Builds, compiles, and submits the PipelineJob."""
-    # TODO Update docstring
+
+    """Builds and pushes the component_base image, compiles the pipeline,
+       and submits a message to the queueing service to execute a PipelineJob.
+       The specifics of the deploy step are dependent on the defaults set during
+       the generate() step, particularly:
+       - use_ci: if use_ci is False, the deploy step will use scripts/run_all.sh,
+            which will submit the build job, compile the pipeline, and submit the
+            PipelineJob all from the local machine.
+       - artifact_repo_type: Determines which type of artifact repo the image
+            is pushed to.
+       - deployment_framework: Determines which build tool to use for building.
+       - source_repo_type: Determines which source repo to use for versioning code
+            and triggering the build.
+       Defaults are stored in config/defaults.yaml.
+
+    Args:
+        hide_warnings: Boolean that specifies whether to show permissions warnings before deploying.
+        precheck: Boolean that specifies whether to check if the infra exists before deploying.
+    """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     use_ci = defaults['tooling']['use_ci']
 
@@ -429,7 +465,7 @@ def deploy(
             subprocess.run(['./scripts/run_all.sh'], shell=True,
                            check=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as e:
-            logging.info(e)
+            logging.info(e) # graceful error exit to allow for cd-ing back
         os.chdir('../')
 
     # Log generated resources
@@ -442,7 +478,7 @@ def component(func: Optional[Callable] = None,
     """Decorator for Python-function based components in AutoMLOps.
 
     Example usage:
-    from AutoMLOps import AutoMLOps
+    from google_cloud_automlops import AutoMLOps
     @AutoMLOps.component
     def my_function_one(input: str, output: Output[Model]):
       ...
@@ -471,7 +507,7 @@ def pipeline(func: Optional[Callable] = None,
     """Decorator for Python-function based pipelines in AutoMLOps.
 
     Example usage:
-    from AutoMLOps import AutoMLOps
+    from google_cloud_automlops import AutoMLOps
     @AutoMLOps.pipeline
     def pipeline(bq_table: str,
                 output_model_directory: str,

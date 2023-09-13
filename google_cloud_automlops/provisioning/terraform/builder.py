@@ -77,13 +77,13 @@ def build(
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     required_apis = list(get_required_apis(defaults))
-    # create data.tf
-    write_file(f'{BASE_DIR}provision/data.tf', create_data_tf_jinja(
+    # create environment/data.tf
+    write_file(f'{BASE_DIR}provision/environment/data.tf', create_environment_data_tf_jinja(
         required_apis=required_apis), 'w')
-    # create iam.tf
-    write_file(f'{BASE_DIR}provision/iam.tf', create_iam_tf_jinja(), 'w')
-    # create main.tf
-    write_file(f'{BASE_DIR}provision/main.tf', create_main_tf_jinja(
+    # create environment/iam.tf
+    write_file(f'{BASE_DIR}provision/environment/iam.tf', create_environment_iam_tf_jinja(), 'w')
+    # create environment/main.tf
+    write_file(f'{BASE_DIR}provision/environment/main.tf', create_environment_main_tf_jinja(
         artifact_repo_type=config.artifact_repo_type,
         deployment_framework=config.deployment_framework,
         naming_prefix=config.naming_prefix,
@@ -92,20 +92,20 @@ def build(
         source_repo_type=config.source_repo_type,
         use_ci=config.use_ci,
         vpc_connector=config.vpc_connector), 'w')
-    # create outputs.tf
-    write_file(f'{BASE_DIR}provision/outputs.tf', create_outputs_tf_jinja(
+    # create environment/outputs.tf
+    write_file(f'{BASE_DIR}provision/environment/outputs.tf', create_environment_outputs_tf_jinja(
         artifact_repo_type=config.artifact_repo_type,
         deployment_framework=config.deployment_framework,
         pipeline_job_submission_service_type=config.pipeline_job_submission_service_type,
         schedule_pattern=config.schedule_pattern,
         source_repo_type=config.source_repo_type,
         use_ci=config.use_ci), 'w')
-    # create provider.tf
-    write_file(f'{BASE_DIR}provision/provider.tf', create_provider_tf_jinja(), 'w')
-    # create variables.tf
-    write_file(f'{BASE_DIR}provision/variables.tf', create_variables_tf_jinja(), 'w')
-    # create variables.auto.tfvars
-    write_file(f'{BASE_DIR}provision/variables.auto.tfvars', create_variables_auto_tfvars_jinja(
+    # create environment/provider.tf
+    write_file(f'{BASE_DIR}provision/environment/provider.tf', create_environment_provider_tf_jinja(), 'w')
+    # create environment/variables.tf
+    write_file(f'{BASE_DIR}provision/environment/variables.tf', create_environment_variables_tf_jinja(), 'w')
+    # create environment/variables.auto.tfvars
+    write_file(f'{BASE_DIR}provision/environment/variables.auto.tfvars', create_environment_variables_auto_tfvars_jinja(
         artifact_repo_location=config.artifact_repo_location,
         artifact_repo_name=config.artifact_repo_name,
         build_trigger_location=config.build_trigger_location,
@@ -124,22 +124,31 @@ def build(
         storage_bucket_location=config.storage_bucket_location,
         storage_bucket_name=config.storage_bucket_name,
         vpc_connector=config.vpc_connector), 'w')
-    # create versions.tf
-    write_file(f'{BASE_DIR}provision/versions.tf', create_versions_tf_jinja(), 'w')
+    # create environment/versions.tf
+    write_file(f'{BASE_DIR}provision/environment/versions.tf', create_environment_versions_tf_jinja(storage_bucket_name=config.storage_bucket_name), 'w')
     # create provision_resources.sh
     write_and_chmod(GENERATED_RESOURCES_SH_FILE, create_provision_resources_script_jinja())
+    # create state_bucket/main.tf
+    write_file(f'{BASE_DIR}provision/state_bucket/main.tf', create_state_bucket_main_tf_jinja(), 'w')
+    # create state_bucket/variables.tf
+    write_file(f'{BASE_DIR}provision/state_bucket/variables.tf', create_state_bucket_variables_tf_jinja(), 'w')
+    # create state_bucket/variables.auto.tfvars
+    write_file(f'{BASE_DIR}provision/state_bucket/variables.auto.tfvars', create_state_bucket_variables_auto_tfvars_jinja(
+        project_id=project_id,
+        storage_bucket_location=config.storage_bucket_location,
+        storage_bucket_name=config.storage_bucket_name), 'w')
 
 
-def create_data_tf_jinja(required_apis: list) -> str:
-    """Generates code for data.tf, the terraform hcl script that contains terraform remote backend and org project details.
+def create_environment_data_tf_jinja(required_apis: list) -> str:
+    """Generates code for environment/data.tf, the terraform hcl script that contains terraform remote backend and org project details.
 
     Args:
         required_apis: List of APIs that are required to run the service.
 
     Returns:
-        str: data.tf file.
+        str: environment/data.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'data.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'data.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
@@ -147,13 +156,13 @@ def create_data_tf_jinja(required_apis: list) -> str:
             required_apis=required_apis)
 
 
-def create_iam_tf_jinja() -> str:
-    """Generates code for iam.tf, the terraform hcl script that contains service accounts iam bindings for project's environment.
+def create_environment_iam_tf_jinja() -> str:
+    """Generates code for environment/iam.tf, the terraform hcl script that contains service accounts iam bindings for project's environment.
 
     Returns:
-        str: iam.tf file.
+        str: environment/iam.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'iam.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'iam.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
@@ -161,7 +170,7 @@ def create_iam_tf_jinja() -> str:
             required_iam_roles=IAM_ROLES_RUNNER_SA)
 
 
-def create_main_tf_jinja(
+def create_environment_main_tf_jinja(
     artifact_repo_type: str,
     deployment_framework: str,
     naming_prefix: str,
@@ -170,7 +179,7 @@ def create_main_tf_jinja(
     source_repo_type: str,
     use_ci: bool,
     vpc_connector: str) -> str:
-    """Generates code for main.tf, the terraform hcl script that contains terraform resources configs to deploy resources in the project.
+    """Generates code for environment/main.tf, the terraform hcl script that contains terraform resources configs to deploy resources in the project.
 
     Args:
         artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
@@ -183,9 +192,9 @@ def create_main_tf_jinja(
         vpc_connector: The name of the vpc connector to use.
 
     Returns:
-        str: main.tf file.
+        str: environment/main.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'main.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'main.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
@@ -202,14 +211,14 @@ def create_main_tf_jinja(
             vpc_connector=vpc_connector)
 
 
-def create_outputs_tf_jinja(
+def create_environment_outputs_tf_jinja(
     artifact_repo_type: str,
     deployment_framework: str,
     pipeline_job_submission_service_type: str,
     schedule_pattern: str,
     source_repo_type: str,
     use_ci: bool) -> str:
-    """Generates code for outputs.tf, the terraform hcl script that contains outputs from project's environment.
+    """Generates code for environment/outputs.tf, the terraform hcl script that contains outputs from project's environment.
 
     Args:
         artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
@@ -220,9 +229,9 @@ def create_outputs_tf_jinja(
         use_ci: Flag that determines whether to use Cloud CI/CD.
 
     Returns:
-        str: outputs.tf file.
+        str: environment/outputs.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'outputs.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'outputs.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
@@ -235,33 +244,33 @@ def create_outputs_tf_jinja(
             use_ci=use_ci)
 
 
-def create_provider_tf_jinja() -> str:
-    """Generates code for provider.tf, the terraform hcl script that contains teraform providers used to deploy project's environment.
+def create_environment_provider_tf_jinja() -> str:
+    """Generates code for environment/provider.tf, the terraform hcl script that contains teraform providers used to deploy project's environment.
 
     Returns:
-        str: provider.tf file.
+        str: environment/provider.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'provider.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'provider.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
             generated_license=GENERATED_LICENSE)
 
 
-def create_variables_tf_jinja() -> str:
-    """Generates code for variables.tf, the terraform hcl script that contains variables used to deploy project's environment.
+def create_environment_variables_tf_jinja() -> str:
+    """Generates code for environment/variables.tf, the terraform hcl script that contains variables used to deploy project's environment.
 
     Returns:
-        str: variables.tf file.
+        str: environment/variables.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'variables.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'variables.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
             generated_license=GENERATED_LICENSE)
 
 
-def create_variables_auto_tfvars_jinja(
+def create_environment_variables_auto_tfvars_jinja(
     artifact_repo_location: str,
     artifact_repo_name: str,
     build_trigger_location: str,
@@ -280,7 +289,7 @@ def create_variables_auto_tfvars_jinja(
     storage_bucket_location: str,
     storage_bucket_name: str,
     vpc_connector: str) -> str:
-    """Generates code for variables.auto.tfvars, the terraform hcl script that contains teraform arguments for variables used to deploy project's environment.
+    """Generates code for environment/variables.auto.tfvars, the terraform hcl script that contains teraform arguments for variables used to deploy project's environment.
 
     Args:
         artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
@@ -302,9 +311,9 @@ def create_variables_auto_tfvars_jinja(
         vpc_connector: The name of the vpc connector to use.
 
     Returns:
-        str: variables.auto.tfvars file.
+        str: environment/variables.auto.tfvars file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'variables.auto.tfvars.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'variables.auto.tfvars.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
@@ -329,17 +338,20 @@ def create_variables_auto_tfvars_jinja(
             vpc_connector=vpc_connector)
 
 
-def create_versions_tf_jinja() -> str:
-    """Generates code for versions.tf, the terraform hcl script that contains teraform version information.
+def create_environment_versions_tf_jinja(storage_bucket_name: str) -> str:
+    """Generates code for environment/versions.tf, the terraform hcl script that contains teraform version information.
+    Args:
+        storage_bucket_name: GS bucket name where pipeline run metadata is stored.
 
     Returns:
-        str: versions.tf file.
+        str: environment/versions.tf file.
     """
-    template_file = import_files(TERRAFORM_TEMPLATES_PATH) / 'versions.tf.j2'
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'versions.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
-            generated_license=GENERATED_LICENSE)
+            generated_license=GENERATED_LICENSE,
+            storage_bucket_name=storage_bucket_name)
 
 
 def create_provision_resources_script_jinja() -> str:
@@ -353,4 +365,54 @@ def create_provision_resources_script_jinja() -> str:
         template = Template(f.read())
         return template.render(
             base_dir=BASE_DIR,
+            generated_license=GENERATED_LICENSE)
+
+
+def create_state_bucket_variables_tf_jinja() -> str:
+    """Generates code for state_bucket/variables.tf, the terraform hcl script that contains variables used for the state_bucket.
+
+    Returns:
+        str: state_bucket/variables.tf file.
+    """
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'variables.tf.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(
+            generated_license=GENERATED_LICENSE)
+
+
+def create_state_bucket_variables_auto_tfvars_jinja(
+    project_id: str,
+    storage_bucket_location: str,
+    storage_bucket_name: str) -> str:
+    """Generates code for state_bucket/variables.auto.tfvars, the terraform hcl script that contains teraform arguments for variables used for the state_bucket.
+       Uses the string f'{storage_bucket_name}-bucket-tfstate' for the name of the storage state bucket.
+
+    Args:
+        project_id: The project ID.
+        storage_bucket_location: Region of the GS bucket.
+        storage_bucket_name: GS bucket name where pipeline run metadata is stored.
+
+    Returns:
+        str: environment/variables.auto.tfvars file.
+    """
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'variables.auto.tfvars.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(
+            project_id=project_id,
+            storage_bucket_location=storage_bucket_location,
+            storage_bucket_name=storage_bucket_name)
+
+
+def create_state_bucket_main_tf_jinja() -> str:
+    """Generates code for state_bucket/main.tf, the terraform hcl script that contains terraform resources configs to create the state_bucket.
+
+    Returns:
+        str: state_bucket/main.tf file.
+    """
+    template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'main.tf.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(
             generated_license=GENERATED_LICENSE)

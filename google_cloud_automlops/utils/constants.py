@@ -54,6 +54,7 @@ DEFAULT_VPC_CONNECTOR = 'No VPC Specified'
 # Recommended software versions
 MIN_GCLOUD_BETA_VERSION = '2022.10.21'
 MIN_GCLOUD_SDK_VERSION = '420.0.0'
+MIN_RECOMMENDED_TERRAFORM_VERSION = '1.5.6'
 
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
@@ -91,7 +92,12 @@ GENERATED_SERVICES_DIRS = [
 ]
 
 GENERATED_PROVISION_DIRS = [
-    BASE_DIR + 'provision',
+    BASE_DIR + 'provision'
+]
+
+GENERATED_TERRAFORM_DIRS = [
+    BASE_DIR + 'provision/state_bucket',
+    BASE_DIR + 'provision/environment',
 ]
 
 # temporary files

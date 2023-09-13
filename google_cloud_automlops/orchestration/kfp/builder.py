@@ -310,7 +310,7 @@ def build_components_jinja() -> str:
 
 
 def run_pipeline_jinja() -> str:
-    """Generates code for build_pipeline_spec.sh which runs the pipeline locally.
+    """Generates code for run_pipeline.sh which runs the pipeline locally.
 
     Returns:
         str: run_pipeline.sh script.
@@ -324,7 +324,7 @@ def run_pipeline_jinja() -> str:
 
 
 def run_all_jinja() -> str:
-    """Generates code for build_pipeline_spec.sh which builds runs all other shell scripts.
+    """Generates code for run_all.sh which builds runs all other shell scripts.
 
     Returns:
         str: run_all.sh script.
@@ -351,6 +351,7 @@ def publish_to_topic_jinja(pubsub_topic_name: str) -> str:
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
+            base_dir=BASE_DIR,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
             pubsub_topic_name=pubsub_topic_name)

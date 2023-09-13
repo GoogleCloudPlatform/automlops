@@ -11,26 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Sets global enums."""
-
-# pylint: disable=C0103
-# pylint: disable=line-too-long
-
-from enum import Enum
-
-
-class Provisioner(Enum):
-    """Enum representing the available providers for infrastructure management."""
-
-    TERRAFORM = 'terraform'
-    # PULUMI = 'pulumi' roadmap item
-    GCLOUD = 'gcloud'
-
-
-class PulumiRuntime(Enum):
-    """Enum representing the available pulumi runtimes."""
-
-    PYTHON = 'python'
-    TYPESCRIPT = 'typescript'
-    GO = 'go'

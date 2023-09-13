@@ -51,6 +51,7 @@ def git_workflow():
        then pushes to the specified branch and triggers a build job.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    deployment_framework = defaults['tooling']['deployment_framework']
     source_repository_type = defaults['gcp']['source_repository_type']
     if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
         git_remote_origin_url = f'''https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['source_repository_name']}'''
@@ -91,14 +92,19 @@ def git_workflow():
             f'Expected remote origin url {git_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
 
     # Add, commit, and push changes to CSR
-    execute_process(f'git add {BASE_DIR} ', to_null=False) # TODO update based on Gitlab and Github yaml ci files
+    execute_process(f'git add {BASE_DIR} ', to_null=False)
+    # Gitlab CI and Github Actions are roadmap items
+    # if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+    #     execute_process('git add .github/workflows/.github-ci.yml ', to_null=False)
+    # elif deployment_framework == Deployer.GITLAB_CI.value:
+    #     execute_process('git add .gitlab-ci.yml ', to_null=False)
     execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
     execute_process(
         f'''git push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
     # pylint: disable=logging-fstring-interpolation
     logging.info(
         f'''Pushing code to {defaults['gcp']['source_repository_branch']} branch, triggering build...''')
-    if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
+    if deployment_framework == Deployer.CLOUDBUILD.value:
         logging.info(
             f'''Cloud Build job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')
 
