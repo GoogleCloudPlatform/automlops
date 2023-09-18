@@ -485,7 +485,7 @@ def test_get_function_source_definition(func: Callable, expected_output: str):
             '''{\n'''
             '''        "accelerator_count": 1,\n'''
             '''        "accelerator_type": "NVIDIA_TESLA_A100",\n'''
-            '''        "component_spec": "train_model",\n'''
+            '''        "component_spec": train_model,\n'''
             '''        "display_name": "train-model-accelerated",\n'''
             '''        "machine_type": "a2-highgpu-1g"\n    }'''
          }]),
@@ -511,7 +511,7 @@ def test_stringify_job_spec_list(job_spec_list: List[dict], expected_output: Lis
                        'spec_string': '''{
         "accelerator_count": 1,
         "accelerator_type": "NVIDIA_TESLA_A100",
-        "component_spec": "train_model",
+        "component_spec": train_model,
         "display_name": "train-model-accelerated",
         "machine_type": "a2-highgpu-1g"
     }'''

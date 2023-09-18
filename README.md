@@ -178,7 +178,12 @@ Based on the above user selection, AutoMLOps will enable up to the following API
 
 AutoMLOps will create the following service account and update [IAM permissions](https://cloud.google.com/iam/docs/understanding-roles) during the provision step:
 1. Pipeline Runner Service Account (defaults to: vertex-pipelines@PROJECT_ID.iam.gserviceaccount.com). Roles added:
-- roles/aiplatform.serviceAgent
+- roles/aiplatform.user
+- roles/artifactregistry.reader
+- roles/bigquery.user
+- roles/bigquery.dataEditor
+- roles/iam.serviceAccountUser
+- roles/storage.admin
 
 # Prechecks and Warnings
 

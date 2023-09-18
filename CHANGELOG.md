@@ -7,25 +7,25 @@ All notable changes to this project will be documented in this file.
 
 Major version updates:
 - Code is now broken down into 5 main operations: generate, provision, deprovision, deploy, and launchAll
-- Uses jinja2 templates for store code templates and write to files
-- Additional package dependencies using Jinja2 templates and deploy precheck function
-- Provides additional warnings and checks for given IAM permissions visibility to the user
-- Creates a .gitignore by default now
+- Uses jinja2 templates for storing code templates and writing to files
+- Additional package dependencies using Jinja2 templates and deploying with precheck function
+- Provides additional warnings and checks for giving IAM permissions visibility to the user
+- Creates a .gitignore by default
 - Support for cloud-functions in addition to cloud-run for the submission service
 - Added 2 new generated folders: provision/ and services/
-- Added naming_prefix parameter to allow for
+- Added naming_prefix parameter to allow for differentiating between AutoMLOps pipelines in the same project
 - Significant generalization in terms of tooling (now allows for specifying provisioning_frameworks, deployment_frameworks, etc.)
 - Renamed backend src code folder to google_cloud_automlops to avoid naming confusion
-- Added enumeration and config files, which are different than previous approach of class inheritance
+- Added enum and config files, which is different than previous approach of class inheritance
  
 ### Changed
 
 - Updated README.md and documentation
-- Templatized code has now been pulled how and placed into jinja2 templates.
-- Gitops workflow placed into separate folder and file, now will only version AutoMLOps/ directoring instead of the whole cwd.
+- Templatized code has now been pulled out and placed into jinja2 templates.
+- Gitops workflow placed into separate folder and file, will only version AutoMLOps/ directory instead of the whole cwd.
 - Reworked deployment workflow and build configuration (submission service and cloud scheduler are now created as part of the provision step).
 - Update notebook examples
-- Changed working and branding descriptions
+- Changed wording and branding descriptions
 - Significant updates to unit tests
 
 ### Fixed

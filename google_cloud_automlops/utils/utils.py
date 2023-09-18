@@ -325,8 +325,12 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
     output = []
     for spec in job_spec_list:
         mapping = {}
-        mapping['component_spec'] = spec['component_spec']
-        mapping['spec_string'] = json.dumps(spec, sort_keys=True, indent=8)
+        if isinstance(spec['component_spec'], str):
+            mapping['component_spec'] = spec['component_spec']
+        else:
+            raise ValueError('component_spec must be a string.')
+        # Remove string quotes from component spec line
+        mapping['spec_string'] = json.dumps(spec, sort_keys=True, indent=8).replace(f'''"{spec['component_spec']}"''', f'''{spec['component_spec']}''')
         mapping['spec_string'] = mapping['spec_string'].replace('}', '    }') # align closing bracket
         output.append(mapping)
     return output

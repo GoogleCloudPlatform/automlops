@@ -619,7 +619,7 @@ def test_pipeline_runner_jinja(
 
 
 @pytest.mark.parametrize(
-    '''components_list, custom_training_job_specs, pipeline_scaffold_contents,'''
+    '''components_list, custom_training_job_specs, pipeline_scaffold_contents, project_id,'''
     '''is_included, expected_output_snippets''',
     [
         (
@@ -633,7 +633,7 @@ def test_pipeline_runner_jinja(
                     'accelerator_count': '1',
                 }
             ],
-           'Pipeline definition goes here', True,
+           'Pipeline definition goes here', 'my-project', True,
             [GENERATED_LICENSE,
              'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component',
              'def upload_pipeline_spec',
@@ -645,7 +645,7 @@ def test_pipeline_runner_jinja(
         ),
         (
             ['componentA','componentB','componentC'],
-            None, 'Pipeline definition goes here', True,
+            None, 'Pipeline definition goes here', 'my-project',  True,
             [GENERATED_LICENSE,
              'def upload_pipeline_spec',
              'componentA = load_custom_component',
@@ -655,7 +655,7 @@ def test_pipeline_runner_jinja(
         ),
         (
             ['componentA','componentB','componentC'],
-            None, 'Pipeline definition goes here', False,
+            None, 'Pipeline definition goes here', 'my-project',  False,
             ['from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component',
              'componentB_custom_training_job_specs']
         ),
@@ -665,6 +665,7 @@ def test_pipeline_jinja(
     components_list: list,
     custom_training_job_specs: list,
     pipeline_scaffold_contents: str,
+    project_id: str,
     is_included: bool,
     expected_output_snippets: List[str]):
     """Tests pipeline_jinja, which generates code for the pipeline.py 
@@ -679,13 +680,15 @@ def test_pipeline_jinja(
         custom_training_job_specs: Specifies the specs to run the training job with.
         pipeline_scaffold_contents: The contents of the pipeline scaffold file,
             which can be found at PIPELINE_CACHE_FILE.
+        project_id: The project ID.
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
     pipeline_py = pipeline_jinja(
         components_list,
         custom_training_job_specs,
-        pipeline_scaffold_contents)
+        pipeline_scaffold_contents,
+        project_id)
 
     for snippet in expected_output_snippets:
         if is_included:

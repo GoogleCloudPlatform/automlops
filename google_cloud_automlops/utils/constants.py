@@ -123,5 +123,10 @@ GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.gitops.templates'
 
 # Required IAM Roles for pipeline runner service account
 IAM_ROLES_RUNNER_SA = set([
-    'roles/aiplatform.serviceAgent'
+    'roles/aiplatform.user',
+    'roles/artifactregistry.reader',
+    'roles/bigquery.user',
+    'roles/bigquery.dataEditor',
+    'roles/iam.serviceAccountUser',
+    'roles/storage.admin'
 ])
