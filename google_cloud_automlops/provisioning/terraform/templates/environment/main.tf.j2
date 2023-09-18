@@ -27,7 +27,7 @@ resource "google_storage_bucket" "storage_bucket" {
   project                 = var.project_id
   name                    = var.storage_bucket_name
   location                = var.storage_bucket_location
-  force_destroy           = false
+  force_destroy           = true
   storage_class           = "STANDARD"
   versioning {
     enabled               = true
