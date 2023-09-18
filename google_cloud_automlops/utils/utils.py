@@ -503,8 +503,9 @@ def get_provision_min_permissions(defaults: dict) -> Set:
         'storage.buckets.get',
         'storage.buckets.create',
         'resourcemanager.projects.setIamPolicy',
-        'iam.serviceAccounts.list'
+        'iam.serviceAccounts.list',
         'iam.serviceAccounts.create',
+        'iam.serviceAccounts.actAs',
         'pubsub.topics.list',
         'pubsub.topics.create',
         'pubsub.subscriptions.list',
@@ -540,7 +541,8 @@ def get_provision_recommended_roles(defaults: dict) -> Set:
         'roles/serviceusage.serviceUsageAdmin',
         'roles/resourcemanager.projectIamAdmin',
         'roles/iam.serviceAccountAdmin',
-        'roles/aiplatform.serviceAgent',
+        'roles/iam.serviceAccountUser',
+        'roles/storage.admin',
         'roles/pubsub.editor'])
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
         recommended_roles.add('roles/artifactregistry.admin')
