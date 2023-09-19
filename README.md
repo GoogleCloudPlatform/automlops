@@ -184,6 +184,7 @@ AutoMLOps will create the following service account and update [IAM permissions]
 - roles/bigquery.dataEditor
 - roles/iam.serviceAccountUser
 - roles/storage.admin
+- roles/cloudfunctions.admin
 
 # Prechecks and Warnings
 
