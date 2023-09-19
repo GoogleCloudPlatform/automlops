@@ -1,0 +1,157 @@
+{{generated_license}}
+# Enable Google Cloud APIs
+module "google_project_service" {
+  source                  = "terraform-google-modules/project-factory/google//modules/project_services"
+  version                 = "14.1.0"
+  project_id              = var.project_id
+  activate_apis           = local.org_project.enable_apis
+}
+resource "time_sleep" "wait_60_seconds" {
+  depends_on = [module.google_project_service]
+  create_duration = "60s"
+}
+{% if artifact_repo_type == 'artifact-registry' %}
+# Create Artifact Registry
+resource "google_artifact_registry_repository" "artifact_registry" {
+  project       = var.project_id
+  location      = var.artifact_repo_location
+  repository_id = var.artifact_repo_name
+  description   = "Docker artifact repository"
+  format        = "DOCKER"
+
+  depends_on = [module.google_project_service,time_sleep.wait_60_seconds]
+}
+{% endif %}
+# Create Storage Bucket
+resource "google_storage_bucket" "storage_bucket" {
+  project                 = var.project_id
+  name                    = var.storage_bucket_name
+  location                = var.storage_bucket_location
+  force_destroy           = true
+  storage_class           = "STANDARD"
+  versioning {
+    enabled               = true
+  }
+  depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
+}
+{% if source_repo_type == 'cloud-source-repositories' %}
+# Create cloud source repository
+resource "google_sourcerepo_repository" "source_repo" {
+  project                 = var.project_id
+  name                    = var.source_repo_name
+
+  depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
+}{% endif %}
+{% if use_ci %}{% if pipeline_job_submission_service_type == 'cloud-run' %}
+# Build and Push Submission Service image
+resource "null_resource" "build_and_push_submission_service" {
+  provisioner "local-exec" {
+    command = <<EOF
+    /bin/bash gcloud builds submit ../../services/submission_service \
+      --tag "${var.artifact_repo_location}-docker.pkg.dev/${var.project_id}/${var.artifact_repo_name}/{{naming_prefix}}/submission_service:latest" \
+      --region "${var.build_trigger_location}" \
+      --suppress-logs
+    EOF
+  }
+  depends_on = [google_artifact_registry_repository.artifact_registry]
+}
+
+# Deploy Pipeline Job Submission Service (Cloud Run)
+module "cloud_run" {
+  source                 = "GoogleCloudPlatform/cloud-run/google"
+  version                = "~> 0.2.0"
+  service_name           = var.pipeline_job_submission_service_name
+  service_account_email  = google_service_account.pipeline_job_runner_service_account.email
+  project_id             = var.project_id
+  location               = var.pipeline_job_submission_service_location
+  image                  = "${var.artifact_repo_location}-docker.pkg.dev/${var.project_id}/${var.artifact_repo_name}/{{naming_prefix}}/submission_service:latest"
+  {% if vpc_connector != 'No VPC Specified' %}
+  template_annotations = {
+    "run.googleapis.com/vpc-access-connector" = var.vpc_connector
+  }{% endif %}
+  depends_on            = [null_resource.build_and_push_submission_service]
+}
+
+# Create Pub/Sub Topic and Subscription
+module "pubsub" {
+  source  = "terraform-google-modules/pubsub/google"
+  version = "~> 5.0"
+  topic      = var.pubsub_topic_name
+  project_id = var.project_id
+  push_subscriptions = [
+    {
+      name                       = "gcr-${var.pipeline_job_submission_service_name}-${var.pipeline_job_submission_service_location}-${var.pubsub_topic_name}"
+      ack_deadline_seconds       = 600
+      push_endpoint              = module.cloud_run.service_url
+      oidc_service_account_email = google_service_account.pipeline_job_runner_service_account.email
+      maximum_backoff            = "600s"
+      minimum_backoff            = "10s"
+    }
+  ]
+  depends_on = [module.cloud_run]
+}
+{% elif pipeline_job_submission_service_type == 'cloud-functions' %}
+# Create Pub/Sub Topic
+resource "google_pubsub_topic" "pubsub_topic" {
+  name = var.pubsub_topic_name
+
+  depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
+}
+# Upload Cloud Functions source code to storage bucket
+resource "google_storage_bucket_object" "archive_submission_service_code" {
+  name   = "submission_service_cf_index.zip"
+  bucket = google_storage_bucket.storage_bucket.name
+  source = data.archive_file.archive_cloud_functions_submission_service.output_path
+
+  depends_on            = [google_storage_bucket.storage_bucket]
+}
+
+# Deploy Pipeline Job Submission Service (Cloud Functions)
+resource "google_cloudfunctions_function" "pipeline_job_submission_service" {
+  name                  = var.pipeline_job_submission_service_name
+  region                = var.pipeline_job_submission_service_location
+  service_account_email = google_service_account.pipeline_job_runner_service_account.email
+  runtime               = "python39"
+  entry_point           = "process_request"
+  source_archive_bucket = google_storage_bucket.storage_bucket.name
+  source_archive_object = google_storage_bucket_object.archive_submission_service_code.name
+  available_memory_mb   = 512
+  timeout               = 540
+  {% if vpc_connector != 'No VPC Specified' %}vpc_connector         = var.vpc_connector{% endif %}
+  event_trigger {
+    event_type          = "providers/cloud.pubsub/eventTypes/topic.publish"
+    resource            = "projects/${var.project_id}/topics/${var.pubsub_topic_name}"
+  }
+
+  depends_on            = [google_pubsub_topic.pubsub_topic]
+}{% endif %}
+{% if deployment_framework == 'cloud-build' and source_repo_type == 'cloud-source-repositories' %}
+# Create Cloud Build Trigger
+resource "google_cloudbuild_trigger" "cloudbuild_trigger" {
+  project                 = var.project_id
+  name                    = var.build_trigger_name
+  location                = var.build_trigger_location
+  trigger_template {
+    branch_name           = var.source_repo_branch
+    project_id            = var.project_id
+    repo_name             = var.source_repo_name
+  }
+  filename                = "{{base_dir}}cloudbuild.yaml"
+
+  depends_on              = [google_sourcerepo_repository.source_repo]
+}{% endif %}
+{% if schedule_pattern != 'No Schedule Specified' %}
+# Create Cloud Scheduler Job
+resource "google_cloud_scheduler_job" "scheduler_job" {
+  project       = var.project_id
+  region        = var.schedule_location
+  name          = var.schedule_name
+  schedule      = var.schedule_pattern
+  pubsub_target {
+    topic_name  = "projects/${var.project_id}/topics/${var.pubsub_topic_name}"
+    data        = base64encode(file("../../{{generated_parameter_values_path}}"))    
+  }
+
+  depends_on    = {% if pipeline_job_submission_service_type == 'cloud-run' %}[module.pubsub]{% elif pipeline_job_submission_service_type == 'cloud-functions' %}[google_pubsub_topic.pubsub_topic]{% endif %}
+}
+{% endif %}{% endif %}

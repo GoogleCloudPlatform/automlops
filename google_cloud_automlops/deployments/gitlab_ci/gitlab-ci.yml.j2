@@ -1,0 +1,59 @@
+{{generated_license}}
+# Only run pipelines for push to {{branch}} branch.
+workflow:
+    rules:
+        - if: $CI_COMMIT_BRANCH == "{{branch}}"
+        - when: never
+
+stages:
+    - build_component_base
+    - push_component_base
+    - build_pipeline_spec
+    - publish_to_topic
+
+image: google/cloud-sdk
+
+before_script:
+    - python -m venv venv
+    #- source venv/bin/activate
+    - pip install -r pipelines/requirements.txt
+    # Check for service account key
+    - if [ -z "${GCP_SERVICE_ACCOUNT_KEY}" ]; then
+        echo "GCP_SERVICE_ACCOUNT_KEY is unset or set to an empty string.
+              You must create a CI/CD variable with you service account key string."; exit
+    # Activate service account
+    - echo $GCP_SERVICE_ACCOUNT_KEY > ./creds/gcp_service_account_key.json
+    - gcloud auth activate-service-account --key-file ./creds/gcp_service_account_key.json
+    # Set project_id
+    - gcloud config set project "{{project_id}}"
+    # Authenticate to Artifact Registry
+    - cat ./creds/gcp_service_account_key.json | docker login -u _json_key_base64 --password-stdin \
+      https://{{artifact_repo_location}}-docker.pkg.dev
+
+
+
+build image:
+  stage: build_component_base
+  script:
+    docker build -t {{artifact_repo_location}}-docker.pkg.dev/{{project_id}}/{{artifact_repo_name}}/{{naming_prefix}}/components/component_base:latest
+
+push image:
+  stage: push_component_base
+  script:
+    docker push {{artifact_repo_location}}-docker.pkg.dev/{{project_id}}/{{artifact_repo_name}}/{{naming_prefix}}/components/component_base:latest
+
+compile pipeline:
+  stage: build_pipeline_spec
+  script:
+    - cd AutoMLOps
+    - pip install -r pipelines/requirements.txt
+    - python -m pipelines.pipeline --config configs/defaults.yaml
+
+publish message:
+  stage: publish_to_topic
+  script:
+    gcloud pubsub topics publish {{pubsub_topic_name}} --message \
+          "$(cat {{generated_parameter_values_path}})"
+
+after_script:
+  - rm ./creds/gcp_service_account_key.json

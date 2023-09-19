@@ -1,0 +1,15 @@
+{{generated_license}}
+variable "project_id" {
+  description   = "The ID of the project in which to provision resources."
+  type          = string
+}
+
+variable "storage_bucket_location" {
+  description   = "Region of the GS bucket."
+  type          = string
+}
+
+variable "storage_bucket_name" {
+  description   = "GS bucket name where pipeline run metadata is stored."
+  type          = string
+}

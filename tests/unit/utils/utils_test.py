@@ -26,17 +26,17 @@ import pytest
 import pytest_mock
 import yaml
 
-import AutoMLOps.utils.utils
-from AutoMLOps.utils.utils import (
+import google_cloud_automlops.utils.utils
+from google_cloud_automlops.utils.utils import (
     delete_file,
     execute_process,
-    format_spec_dict,
     get_components_list,
     get_function_source_definition,
     is_component_config,
     make_dirs,
     read_file,
     read_yaml_file,
+    stringify_job_spec_list,
     update_params,
     validate_schedule,
     write_and_chmod,
@@ -313,7 +313,7 @@ def test_get_components_list(mocker: pytest_mock.MockerFixture,
             parameters.
     """
     if patch_cwd:
-        mocker.patch.object(AutoMLOps.utils.utils, 'CACHE_DIR', '.')
+        mocker.patch.object(google_cloud_automlops.utils.utils, 'CACHE_DIR', '.')
     if comp_path:
         for file in comp_path:
             with open(file=file, mode='w', encoding='utf-8') as f:
@@ -399,26 +399,26 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
 
 
 @pytest.mark.parametrize(
-    'sch_pattern, run_local, expectation',
+    'sch_pattern, use_ci, expectation',
     [
         ('No Schedule Specified', True, does_not_raise()),
         ('No Schedule Specified', False, does_not_raise()),
-        ('Schedule', True, pytest.raises(ValueError)),
-        ('Schedule', False, does_not_raise())
+        ('Schedule', False, pytest.raises(ValueError)),
+        ('Schedule', True, does_not_raise())
     ]
 )
-def test_validate_schedule(sch_pattern: str, run_local: bool, expectation):
+def test_validate_schedule(sch_pattern: str, use_ci: bool, expectation):
     """Tests validate_schedule, which validates the inputted schedule
     parameter. There are four test cases for this function, which tests each
     combination of sch_pattern and run_loc for the expected results.
 
     Args:
         sch_pattern (str): Cron formatted value used to create a Scheduled retrain job.
-        run_local (bool): Flag that determines whether to use Cloud Run CI/CD.
+        use_ci (bool): Flag that determines whether to use Cloud Run CI/CD.
         expectation: Any corresponding expected errors for each set of parameters.
     """
     with expectation:
-        validate_schedule(schedule_pattern=sch_pattern, run_local=run_local)
+        validate_schedule(schedule_pattern=sch_pattern, use_ci=use_ci)
 
 
 @pytest.mark.parametrize(
@@ -473,33 +473,50 @@ def test_get_function_source_definition(func: Callable, expected_output: str):
 
 
 @pytest.mark.parametrize(
-    'job_spec, expected_output',
+    'job_spec_list, expected_output',
     [
-        (
-            {'component_spec': 'train_model'},
-            '''{\n       'component_spec': train_model,\n    }\n'''
-        ),
-        (
-            {'component_spec': 'train_model', 'other_spec': 'other_value'},
-            '''{\n       'component_spec': train_model,\n       'other_spec': 'other_value',\n    }\n'''
-        ),
-        (
-            {},
-            '{\n    \n    }\n'
-        ),
-        (
-            {'{': '}'},
-            '''{\n       '{': '}',\n    }\n'''
-        )
+        ([{'component_spec': 'train_model',
+           'display_name': 'train-model-accelerated',
+           'machine_type': 'a2-highgpu-1g',
+           'accelerator_type': 'NVIDIA_TESLA_A100',
+           'accelerator_count': 1}],
+          [{'component_spec': 'train_model',
+            'spec_string':
+            '''{\n'''
+            '''        "accelerator_count": 1,\n'''
+            '''        "accelerator_type": "NVIDIA_TESLA_A100",\n'''
+            '''        "component_spec": train_model,\n'''
+            '''        "display_name": "train-model-accelerated",\n'''
+            '''        "machine_type": "a2-highgpu-1g"\n    }'''
+         }]),
     ]
 )
-def test_format_spec_dict(job_spec: dict, expected_output: dict):
-    """Tests format_spec_dict, which takes in a spec dictionary and removes
-    the quotes around the component op name.
+def test_stringify_job_spec_list(job_spec_list: List[dict], expected_output: List[dict]):
+    """Tests the stringify_job_spec_list function, takes in a list of custom training job spec
+    dictionaries and turns them into strings.
 
     Args:
-        job_spec (dict): Component spec dictionary.
-        expected_output (dict): Expected outcome.
+        job_spec: Dictionary with job spec info. e.g.
+            input = [{
+                       'component_spec': 'train_model',
+                       'display_name': 'train-model-accelerated',
+                       'machine_type': 'a2-highgpu-1g',
+                       'accelerator_type': 'NVIDIA_TESLA_A100',
+                       'accelerator_count': 1
+            }]
+        expected_output (List[dict]): Dictionary with key value pair for component_spec,
+            and a string representation of the full dictionary e.g.
+            output = [{
+                       'component_spec': 'train_model',
+                       'spec_string': '''{
+        "accelerator_count": 1,
+        "accelerator_type": "NVIDIA_TESLA_A100",
+        "component_spec": train_model,
+        "display_name": "train-model-accelerated",
+        "machine_type": "a2-highgpu-1g"
+    }'''
+            }]
     """
-    formatted_spec = format_spec_dict(job_spec=job_spec)
+
+    formatted_spec = stringify_job_spec_list(job_spec_list=job_spec_list)
     assert formatted_spec == expected_output

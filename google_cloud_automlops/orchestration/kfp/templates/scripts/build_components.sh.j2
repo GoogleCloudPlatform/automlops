@@ -1,0 +1,7 @@
+#!/bin/bash 
+{{generated_license}}
+# Submits a Cloud Build job that builds and deploys the components
+# This script should run from the {{base_dir}} directory
+# Change directory in case this is not the script root.
+
+gcloud builds submit .. --config cloudbuild.yaml --timeout=3600

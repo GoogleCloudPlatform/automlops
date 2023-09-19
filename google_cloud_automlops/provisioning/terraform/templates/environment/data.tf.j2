@@ -1,0 +1,29 @@
+{{generated_license}}
+#terraform {
+#  backend "remote" {
+#    organization = "***" ## provided by user
+#    workspaces {
+#      name = "***" ## provided by user
+#    }
+#  }
+#}
+
+data "archive_file" "archive_cloud_functions_submission_service" {
+  type        = "zip"
+  source_dir  = "../../services/submission_service"
+  output_path = "submission_service.zip"
+}
+
+/******************************************
+  Locals
+*****************************************/
+locals {
+  org_project = {
+    billing_account = "***"
+    folder          = "folders/***"
+
+    enable_apis = [{% for api in required_apis %}
+      "{{api}}",{% endfor %}
+    ]
+  }
+}

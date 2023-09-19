@@ -1,0 +1,40 @@
+{{generated_license}}
+
+config:
+  devops_plm_automlops_{{pipeline_model_name}}:general:
+    project_id: {{project_id}}
+    model_name: {{pipeline_model_name}}
+    environment: dev
+    default_region: {{region}}
+  devops_plm_automlops_{{pipeline_model_name}}:buckets:
+    - name: {{gcs_bucket_name}}
+      location: {{region}}
+      labels:
+        provider: {{pipeline_model_name}}
+  devops_plm_automlops_{{pipeline_model_name}}:service_accounts:
+    - account_id: pipeline-runner-sa
+      description: For submitting PipelineJobs
+      display_name: Pipeline Runner Service Account
+    - account_id: cloudbuild-runner-sa
+      description: For submitting Cloud Build Jobs
+      display_name: Cloud Build Runner Service Account
+  devops_plm_automlops_{{pipeline_model_name}}:service_accounts_iam:
+    - name: pipeline-runner-sa
+      account_id: serviceAccount:pipeline-runner-sa@{{project_id}}.iam.gserviceaccount.com
+      description: IAM roles for submitting PipelineJobs
+      role_bindings:
+        - roles/aiplatform.user
+        - roles/artifactregistry.reader
+        - roles/bigquery.user
+        - roles/bigquery.dataEditor
+        - roles/iam.serviceAccountUser
+        - roles/storage.admin
+        - roles/run.admin
+    - name: cloudbuild-runner-sa
+      account_id: serviceAccount:cloudbuild-runner-sa@{{project_id}}.iam.gserviceaccount.com
+      description: IAM roles for submitting Cloud Build Jobs
+      role_bindings:
+        - roles/run.admin
+        - roles/iam.serviceAccountUser
+        - roles/cloudtasks.enqueuer
+        - roles/cloudscheduler.admin

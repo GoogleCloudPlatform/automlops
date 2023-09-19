@@ -1,0 +1,190 @@
+#!/bin/bash 
+{{generated_license}}
+# This script will create an artifact registry and gs bucket if they do not already exist.
+
+GREEN='\033[0;32m'
+NC='\033[0m'
+ARTIFACT_REPO_LOCATION="{{artifact_repo_location}}"
+ARTIFACT_REPO_NAME="{{artifact_repo_name}}"
+BASE_DIR="{{base_dir}}"
+BUILD_TRIGGER_LOCATION="{{build_trigger_location}}"
+BUILD_TRIGGER_NAME="{{build_trigger_name}}"
+PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE="{{artifact_repo_location}}-docker.pkg.dev/{{project_id}}/{{artifact_repo_name}}/{{naming_prefix}}/submission_service:latest"
+PIPELINE_JOB_SUBMISSION_SERVICE_LOCATION="{{pipeline_job_submission_service_location}}"
+PIPELINE_JOB_SUBMISSION_SERVICE_NAME="{{pipeline_job_submission_service_name}}"
+PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_SHORT="{{pipeline_job_runner_service_account.split('@')[0]}}"
+PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG="{{pipeline_job_runner_service_account}}"
+PROJECT_ID="{{project_id}}"
+PUBSUB_TOPIC_NAME="{{pubsub_topic_name}}"
+SCHEDULE_NAME="{{schedule_name}}"
+SCHEDULE_PATTERN="{{schedule_pattern}}"
+SCHEDULE_LOCATION="{{schedule_location}}"
+SOURCE_REPO_NAME="{{source_repo_name}}"
+SOURCE_REPO_BRANCH="{{source_repo_branch}}"
+STORAGE_BUCKET_NAME="{{storage_bucket_name}}"
+STORAGE_BUCKET_LOCATION="{{storage_bucket_location}}"
+
+echo -e "$GREEN Setting up API services in project $PROJECT_ID $NC"
+gcloud services enable \{% for api in required_apis %}
+  {{api}} \{% endfor %}
+{% if artifact_repo_type == 'artifact-registry' %}
+echo -e "$GREEN Setting up Artifact Registry in project $PROJECT_ID $NC"
+if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$ARTIFACT_REPO_LOCATION | grep -E "(^|[[:blank:]])$ARTIFACT_REPO_NAME($|[[:blank:]])"); then
+
+  echo "Creating Artifact Registry: ${ARTIFACT_REPO_NAME} in project $PROJECT_ID"
+  gcloud artifacts repositories create "$ARTIFACT_REPO_NAME" \
+    --repository-format=docker \
+    --location=$ARTIFACT_REPO_LOCATION \
+    --project="$PROJECT_ID" \
+    --description="Artifact Registry ${ARTIFACT_REPO_NAME} in ${ARTIFACT_REPO_LOCATION}." 
+
+else
+
+  echo "Artifact Registry: ${ARTIFACT_REPO_NAME} already exists in project $PROJECT_ID"
+
+fi
+{% endif %}
+echo -e "$GREEN Setting up Storage Bucket in project $PROJECT_ID $NC"
+if !(gsutil ls -b gs://$STORAGE_BUCKET_NAME | grep --fixed-strings "$STORAGE_BUCKET_NAME"); then
+
+  echo "Creating GS Bucket: ${STORAGE_BUCKET_NAME} in project $PROJECT_ID"
+  gsutil mb -l ${STORAGE_BUCKET_LOCATION} gs://$STORAGE_BUCKET_NAME
+
+else
+
+  echo "GS Bucket: ${STORAGE_BUCKET_NAME} already exists in project $PROJECT_ID"
+
+fi
+
+echo -e "$GREEN Setting up Pipeline Job Runner Service Account in project $PROJECT_ID $NC"
+if ! (gcloud iam service-accounts list --project="$PROJECT_ID" | grep -E "(^|[[:blank:]])$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG($|[[:blank:]])"); then
+
+  echo "Creating Service Account: ${PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_SHORT} in project $PROJECT_ID"
+  gcloud iam service-accounts create $PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_SHORT \
+      --description="For submitting PipelineJobs" \
+      --display-name="Pipeline Runner Service Account"
+else
+
+  echo "Service Account: ${PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_SHORT} already exists in project $PROJECT_ID"
+
+fi
+
+echo -e "$GREEN Setting up IAM roles for Pipeline Job Runner Service Account in project $PROJECT_ID $NC"{% for role in required_iam_roles %}
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
+    --role="{{role}}" \
+    --no-user-output-enabled{% endfor %}
+{% if source_repo_type == 'cloud-source-repositories' %}
+echo -e "$GREEN Setting up Cloud Source Repository in project $PROJECT_ID $NC"
+if ! (gcloud source repos list --project="$PROJECT_ID" | grep -E "(^|[[:blank:]])$SOURCE_REPO_NAME($|[[:blank:]])"); then
+
+  echo "Creating Cloud Source Repository: ${SOURCE_REPO_NAME} in project $PROJECT_ID"
+  gcloud source repos create $SOURCE_REPO_NAME
+
+else
+
+  echo "Cloud Source Repository: ${SOURCE_REPO_NAME} already exists in project $PROJECT_ID"
+
+fi{% endif %}
+{% if use_ci %}
+# Create Pub/Sub Topic
+echo -e "$GREEN Setting up Queueing Service in project $PROJECT_ID $NC"
+if ! (gcloud pubsub topics list | grep -E "(^|[[:blank:]])projects/${PROJECT_ID}/topics/${PUBSUB_TOPIC_NAME}($|[[:blank:]])"); then
+
+  echo "Creating Pub/Sub Topic: ${PUBSUB_TOPIC_NAME} in project $PROJECT_ID"
+  gcloud pubsub topics create $PUBSUB_TOPIC_NAME
+
+else
+
+  echo "Pub/Sub Topic: ${PUBSUB_TOPIC_NAME} already exists in project $PROJECT_ID"
+
+fi
+{% if pipeline_job_submission_service_type == 'cloud-run' %}
+# Build and Push Submission Service image
+echo -e "$GREEN Building Pipeline Job Submission Service in project $PROJECT_ID $NC"
+gcloud builds submit ${BASE_DIR}services/submission_service \
+  --tag $PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE \
+  --region $BUILD_TRIGGER_LOCATION \
+  --suppress-logs
+
+# Deploy Cloud Run
+echo -e "$GREEN Deploying Cloud Run: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
+gcloud run deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
+  --no-allow-unauthenticated \
+  --image=$PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE \
+  --region=$PIPELINE_JOB_SUBMISSION_SERVICE_LOCATION \
+  --service-account=$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG{% if vpc_connector != 'No VPC Specified' %} \
+  --vpc-connector={{vpc_connector}}{% endif %}
+
+# Create Pub/Sub Subscription
+PUBSUB_SUBSCRIPTION_ID="gcr-{{pipeline_job_submission_service_name}}-{{pipeline_job_submission_service_location}}-{{pubsub_topic_name}}"
+PIPELINE_JOB_SUBMISSION_SERVICE_URL=`gcloud run services describe $PIPELINE_JOB_SUBMISSION_SERVICE_NAME --platform managed --region $PIPELINE_JOB_SUBMISSION_SERVICE_LOCATION --format 'value(status.url)'`
+echo -e "$GREEN Setting up Pub/Sub Subscription in project $PROJECT_ID $NC"
+if ! (gcloud pubsub subscriptions list | grep -E "(^|[[:blank:]])projects/${PROJECT_ID}/subscriptions/${PUBSUB_SUBSCRIPTION_ID}($|[[:blank:]])"); then
+
+  echo "Creating Pub/Sub Subscription: ${PUBSUB_SUBSCRIPTION_ID} in project $PROJECT_ID"
+  gcloud pubsub subscriptions create $PUBSUB_SUBSCRIPTION_ID \
+    --ack-deadline=600 \
+    --expiration-period="never" \
+    --max-retry-delay=600 \
+    --min-retry-delay=10 \
+    --push-auth-service-account=$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG \
+    --push-endpoint=$PIPELINE_JOB_SUBMISSION_SERVICE_URL \
+    --topic=$PUBSUB_TOPIC_NAME \
+    --topic-project=$PROJECT_ID
+
+else
+
+  echo "Pub/Sub Subscription: ${PUBSUB_SUBSCRIPTION_ID} already exists in project $PROJECT_ID"
+
+fi
+{% elif pipeline_job_submission_service_type == 'cloud-functions' %}
+# Deploy Cloud Function
+echo -e "$GREEN Deploying Cloud Functions: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
+gcloud functions deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
+  --no-allow-unauthenticated \
+  --trigger-topic=$PUBSUB_TOPIC_NAME \
+  --entry-point=process_request \
+  --runtime=python39 \
+  --region=$PIPELINE_JOB_SUBMISSION_SERVICE_LOCATION \
+  --memory=512MB \
+  --timeout=540s \
+  --source=${BASE_DIR}services/submission_service \
+  --service-account=$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG{% if vpc_connector != 'No VPC Specified' %} \
+  --vpc-connector={{vpc_connector}}{% endif %}
+{% endif %}{% if deployment_framework == 'cloud-build' and source_repo_type == 'cloud-source-repositories' %}
+# Create cloud build trigger
+echo -e "$GREEN Setting up Cloud Build Trigger in project $PROJECT_ID $NC"
+if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$BUILD_TRIGGER_LOCATION" | grep -E "(^|[[:blank:]])name: $BUILD_TRIGGER_NAME($|[[:blank:]])"); then
+
+  echo "Creating Cloudbuild Trigger on branch $SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
+  gcloud beta builds triggers create cloud-source-repositories \
+    --region=$BUILD_TRIGGER_LOCATION \
+    --name=$BUILD_TRIGGER_NAME \
+    --repo=$SOURCE_REPO_NAME \
+    --branch-pattern="$SOURCE_REPO_BRANCH" \
+    --build-config=${BASE_DIR}cloudbuild.yaml
+
+else
+
+  echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
+
+fi{% endif %}
+{% if schedule_pattern != 'No Schedule Specified' %}
+# Create Cloud Scheduler Job
+echo -e "$GREEN Setting up Cloud Scheduler Job in project $PROJECT_ID $NC"
+if ! (gcloud scheduler jobs list --location=$SCHEDULE_LOCATION | grep -E "(^|[[:blank:]])$SCHEDULE_NAME($|[[:blank:]])"); then
+
+  echo "Creating Cloud Scheduler Job: ${SCHEDULE_NAME} in project $PROJECT_ID"
+  gcloud scheduler jobs create pubsub $SCHEDULE_NAME \
+    --schedule="${SCHEDULE_PATTERN}" \
+    --location=$SCHEDULE_LOCATION \
+    --topic=$PUBSUB_TOPIC_NAME \
+    --message-body "$(cat ${BASE_DIR}{{generated_parameter_values_path}})"
+
+else
+
+  echo "Cloud Scheduler Job: ${SCHEDULE_NAME} already exists in project $PROJECT_ID"
+
+fi
+{% endif %}{% endif %}
