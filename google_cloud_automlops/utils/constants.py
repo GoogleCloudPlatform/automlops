@@ -128,5 +128,6 @@ IAM_ROLES_RUNNER_SA = set([
     'roles/bigquery.user',
     'roles/bigquery.dataEditor',
     'roles/iam.serviceAccountUser',
-    'roles/storage.admin'
+    'roles/storage.admin',
+    'roles/cloudfunctions.admin'
 ])
