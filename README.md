@@ -40,21 +40,21 @@ AutoMLOps provides 5 functions for building and maintaining MLOps pipelines:
 - `AutoMLOps.deploy(...)`: Builds and pushes component container, then triggers the pipeline job.
 - `AutoMLOps.launchAll(...)`: Runs `generate()`, `provision()`, and `deploy()` all in succession.
 
-For a full user-guide, please view these [slides](./AutoMLOps_User_Guide.pdf).
+For a full user-guide, please view these [slides](https://github.com/GoogleCloudPlatform/automlops/blob/main/AutoMLOps_User_Guide.pdf).
 
 # List of Examples
 
 Training
-- [00_introduction_training_example](./examples/training/00_introduction_training_example.ipynb) <- start here
-- [00_introduction_training_example_no_notebook](./examples/training/00_introduction_training_example_no_notebook.py)
-- [01_clustering_example](./examples/training/01_clustering_example.ipynb)
-- [02_tensorflow_transfer_learning_gpu_example](./examples/training/02_tensorflow_transfer_learning_gpu_example.ipynb)
-- [03_bqml_introduction_training_example](./examples/training/03_bqml_introduction_training_example.ipynb)
-- [04_bqml_forecasting-retail-demand](./examples/training/04_bqml_forecasting-retail-demand.ipynb)
+- [00_introduction_training_example](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/training/00_introduction_training_example.ipynb) <- start here
+- [00_introduction_training_example_no_notebook](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/training/00_introduction_training_example_no_notebook.py)
+- [01_clustering_example](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/training/01_clustering_example.ipynb)
+- [02_tensorflow_transfer_learning_gpu_example](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/training/02_tensorflow_transfer_learning_gpu_example.ipynb)
+- [03_bqml_introduction_training_example](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/training/03_bqml_introduction_training_example.ipynb)
+- [04_bqml_forecasting-retail-demand](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/training/04_bqml_forecasting-retail-demand.ipynb)
 
 Inferencing
-- [00_batch_prediction_example](./examples/inferencing/00_batch_prediction_example.ipynb)
-- [01_customer_churn_model_monitoring_example](./examples/inferencing/01_customer_churn_model_monitoring_example.ipynb)
+- [00_batch_prediction_example](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/inferencing/00_batch_prediction_example.ipynb)
+- [01_customer_churn_model_monitoring_example](https://github.com/GoogleCloudPlatform/automlops/blob/main/examples/inferencing/01_customer_churn_model_monitoring_example.ipynb)
 
 # Supported Tools and Technologies
 
@@ -342,7 +342,7 @@ AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `Auto
 AutoMLOps currently provides 2 primary options for provisioning infrastructure: `gcloud` and `terraform`. In the diagram below dashed boxes show areas users can select and customize their tooling. 
 
 <p align="center">
-    <img src="assets/provision/provision-default.png" alt="CICD" width="1000"/>
+    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/provision/provision-default.png" alt="CICD" width="1000"/>
 </p>
 
 
@@ -352,22 +352,22 @@ If `use_ci=True`, AutoMLOps will generate and use a fully featured CI/CD environ
 
 **<center>Cloud Build option:</center>**
 <p align="center">
-    <img src="assets/deploy/CICD-default.png" alt="CICD" width="1000"/>
+    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/deploy/CICD-default.png" alt="CICD" width="1000"/>
 </p>
 
 **<center>Github Actions option:</center>**
 <p align="center">
-    <img src="assets/deploy/CICD-github.png" alt="CICD" width="1000"/>
+    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/deploy/CICD-github.png" alt="CICD" width="1000"/>
 </p>
 
 **<center>Gitlab CI option:</center>**
 <p align="center">
-    <img src="assets/deploy/CICD-gitlab.png" alt="CICD" width="1000"/>
+    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/deploy/CICD-gitlab.png" alt="CICD" width="1000"/>
 </p>
 
 **<center>Bitbucket Pipelines option:</center>**
 <p align="center">
-    <img src="assets/deploy/CICD-bitbucket.png" alt="CICD" width="1000"/>
+    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/deploy/CICD-bitbucket.png" alt="CICD" width="1000"/>
 </p>
 
 # Other Customizations
