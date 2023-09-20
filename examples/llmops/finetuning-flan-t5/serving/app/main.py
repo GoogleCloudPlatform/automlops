@@ -5,8 +5,7 @@ from google.cloud import storage
 from fastapi import FastAPI, Request
 from transformers import AutoTokenizer, T5ForConditionalGeneration
 
-BUCKET_NAME = 'automlops-sandbox-bucket' # Update
-PREFIX = 'flan_t5_model/' # Update
+BUCKET_NAME = 'PROJECT_ID-MODEL_ID-bucket' # Update with f'{actual_project_id}-{actual_model_id}-bucket'
 OUTPUT_FOLDER = '../model-output-flan-t5-base'
 
 app = FastAPI()
@@ -17,7 +16,7 @@ def download_model_artifacts():
     '''
     storage_client = storage.Client()
     bucket = storage_client.get_bucket(BUCKET_NAME)
-    for blob in bucket.list_blobs(prefix=PREFIX):
+    for blob in bucket.list_blobs(prefix='model/'):
         if '.' in blob.name.split('/')[-1]:
             blob.download_to_filename(OUTPUT_FOLDER + '/' + blob.name.split('/')[-1])
 
