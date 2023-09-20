@@ -1,6 +1,24 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.1] - 2023-09-20
+
+### Added
+
+- Support for Vertex AI experiments
+- Added in an include statement for the build trigger (only runs on changes to AutoMLOps/**)
+ 
+### Changed
+
+- Set default cloud functions registry to artifact-registry
+- Changed recommended roles and permissions for deploying with `use_ci=False`.
+
+### Fixed
+ 
+- Fixed issues with `use_ci=False` provision directory not being created properly
+- Fixed issues with `use_ci=False` terraform config
+
+
 ## [1.2.0] - 2023-09-13
 
 ### Added

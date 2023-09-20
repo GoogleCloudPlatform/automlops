@@ -379,6 +379,19 @@ Use the `schedule_pattern` parameter to specify a cron job schedule to run the p
 schedule_pattern = '0 */12 * * *'
 ```
 
+**Use Vertex AI Experiments:**
+
+To use Vertex AI Experiments, include key-value pair for `vertex_experiment_tracking_name` in your pipeline parameters dictionary. An experiment will be created if one does not already exist with the specified name.
+```
+pipeline_params = {
+    'project_id': PROJECT_ID,
+    'region': 'us-central1',
+    'vertex_experiment_tracking_name': 'my-experiment-name'
+}
+AutoMLOps.generate(project_id=PROJECT_ID,
+                   pipeline_params=pipeline_params)
+```
+
 **Set pipeline compute resources:**
 
 Use the `base_image` and `custom_training_job_specs` parameter to specify resources for any custom component in the pipeline.
