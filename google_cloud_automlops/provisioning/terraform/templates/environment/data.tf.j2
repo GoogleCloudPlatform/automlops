@@ -8,12 +8,12 @@
 #  }
 #}
 
-data "archive_file" "archive_cloud_functions_submission_service" {
+{% if use_ci %}data "archive_file" "archive_cloud_functions_submission_service" {
   type        = "zip"
   source_dir  = "../../services/submission_service"
   output_path = "submission_service.zip"
 }
-
+{% endif %}
 /******************************************
   Locals
 *****************************************/

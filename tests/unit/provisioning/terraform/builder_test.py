@@ -36,34 +36,41 @@ from google_cloud_automlops.provisioning.terraform.builder import (
 
 
 @pytest.mark.parametrize(
-    'required_apis, is_included, expected_output_snippets',
+    'required_apis, use_ci, is_included, expected_output_snippets',
     [
         (
-            ['apiA', 'apiB'], True,
+            ['apiA', 'apiB'], True, True,
             [GENERATED_LICENSE, 'archive_cloud_functions_submission_service',
              'enable_apis = [\n'
              '      "apiA",\n'
              '      "apiB",\n'
              '    ]'
             ]
+        ),
+        (
+            ['apiA', 'apiB'], False, False,
+            ['archive_cloud_functions_submission_service']
         )
     ]
 )
 def test_create_environment_data_tf_jinja(
     required_apis: List,
+    use_ci: bool,
     is_included: bool,
     expected_output_snippets: List[str]):
     """Tests create_environment_data_tf_jinja, which generates code for environment/data.tf, 
        the terraform hcl script that contains terraform remote backend and org project details. 
-       There is one test case for this function:
+       There are two test cases for this function:
         1. Checks for the apache license and relevant terraform blocks.
+        2. Checks for that the archive statement is not included when use_ci=False.
 
     Args:
         required_apis: List of APIs that are required to run the service.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    data_tf_str = create_environment_data_tf_jinja(required_apis)
+    data_tf_str = create_environment_data_tf_jinja(required_apis, use_ci)
 
     for snippet in expected_output_snippets:
         if is_included:

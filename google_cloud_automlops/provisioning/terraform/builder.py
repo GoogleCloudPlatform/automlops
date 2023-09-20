@@ -79,7 +79,8 @@ def build(
     required_apis = list(get_required_apis(defaults))
     # create environment/data.tf
     write_file(f'{BASE_DIR}provision/environment/data.tf', create_environment_data_tf_jinja(
-        required_apis=required_apis), 'w')
+        required_apis=required_apis,
+        use_ci=config.use_ci,), 'w')
     # create environment/iam.tf
     write_file(f'{BASE_DIR}provision/environment/iam.tf', create_environment_iam_tf_jinja(), 'w')
     # create environment/main.tf
@@ -139,11 +140,14 @@ def build(
         storage_bucket_name=config.storage_bucket_name), 'w')
 
 
-def create_environment_data_tf_jinja(required_apis: list) -> str:
+def create_environment_data_tf_jinja(
+        required_apis: list,
+        use_ci: bool) -> str:
     """Generates code for environment/data.tf, the terraform hcl script that contains terraform remote backend and org project details.
 
     Args:
         required_apis: List of APIs that are required to run the service.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
 
     Returns:
         str: environment/data.tf file.
@@ -153,7 +157,8 @@ def create_environment_data_tf_jinja(required_apis: list) -> str:
         template = Template(f.read())
         return template.render(
             generated_license=GENERATED_LICENSE,
-            required_apis=required_apis)
+            required_apis=required_apis,
+            use_ci=use_ci)
 
 
 def create_environment_iam_tf_jinja() -> str:

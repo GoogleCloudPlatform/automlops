@@ -54,6 +54,11 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
             logging.error('Pipeline spec path not found, must have path to pipeline spec file.')
             return flask.make_response('Malformed request, received incorrect runtime parameters. '
                                        'No pipeline spec path parameter found', 400)
+        if 'vertex_experiment_tracking_name' in data_payload:
+            vertex_exp = data_payload['vertex_experiment_tracking_name']
+            del data_payload['vertex_experiment_tracking_name']
+        else:
+            vertex_exp = None
 
         logging.info('Calling submit_pipeline()')
         dashboard_uri, resource_name = submit_pipeline(
@@ -61,7 +66,8 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
             pipeline_root=PIPELINE_ROOT,
             pipeline_job_runner_service_account=PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT,
             pipeline_params=data_payload,
-            pipeline_spec_path=gs_pipeline_spec_path)
+            pipeline_spec_path=gs_pipeline_spec_path,
+            experiment=vertex_exp)
         return flask.make_response({
             'dashboard_uri': dashboard_uri,
             'resource_name': resource_name
@@ -77,6 +83,7 @@ def submit_pipeline(
     pipeline_job_runner_service_account: str,
     pipeline_params: dict,
     pipeline_spec_path: str,
+    experiment: str,
     display_name: str = 'mlops-pipeline-run',
     enable_caching: bool = False) -> Tuple[str, str]:
     """Submits a pipeline run.
@@ -87,6 +94,7 @@ def submit_pipeline(
         pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
         pipeline_params: Pipeline parameters values.
         pipeline_spec_path: Location of the pipeline spec JSON.
+        experiment: Optional name of Vertex AI experiment.
         display_name: Name to call the pipeline.
         enable_caching: Should caching be enabled (Boolean)
     """
@@ -101,7 +109,9 @@ def submit_pipeline(
         parameter_values = pipeline_params,
         enable_caching = enable_caching)
     logging.info('AI Platform job built. Submitting...')
-    job.submit(service_account=pipeline_job_runner_service_account)
+    job.submit(
+        experiment=experiment,
+        service_account=pipeline_job_runner_service_account)
     logging.info('Job sent!')
     dashboard_uri = job._dashboard_uri()
     resource_name = job.resource_name

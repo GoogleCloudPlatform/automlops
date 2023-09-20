@@ -625,7 +625,7 @@ def get_deploy_with_precheck_recommended_roles(defaults: dict) -> Set:
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
             recommended_roles.add('roles/source.writer')
     elif not defaults['tooling']['use_ci']:
-        recommended_roles.update(['roles/cloudbuild.builds.editor', 'roles/aiplatform.serviceAgent'])
+        recommended_roles.update(['roles/cloudbuild.builds.editor', 'roles/aiplatform.user'])
     return recommended_roles
 
 
@@ -667,7 +667,7 @@ def get_deploy_without_precheck_recommended_roles(defaults: dict) -> Set:
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
             recommended_roles.add('roles/source.writer')
     elif not defaults['tooling']['use_ci']:
-        recommended_roles.update(['roles/cloudbuild.builds.editor', 'roles/storage.admin', 'roles/aiplatform.serviceAgent'])
+        recommended_roles.update(['roles/cloudbuild.builds.editor', 'roles/storage.admin', 'roles/aiplatform.user'])
     return recommended_roles
 
 

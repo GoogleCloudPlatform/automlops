@@ -37,7 +37,6 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_CLOUDBUILD_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_DIRS,
-    GENERATED_PROVISION_DIRS,
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
@@ -256,7 +255,6 @@ def generate(
     # Make optional directories
     if use_ci:
         make_dirs(GENERATED_SERVICES_DIRS)
-        make_dirs(GENERATED_PROVISION_DIRS)
     if provisioning_framework == Provisioner.TERRAFORM.value:
         make_dirs(GENERATED_TERRAFORM_DIRS)
 

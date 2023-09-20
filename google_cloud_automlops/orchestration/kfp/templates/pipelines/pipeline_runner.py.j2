@@ -44,6 +44,13 @@ def run_pipeline(
     if 'gs_pipeline_spec_path' in pipeline_params:
         del pipeline_params['gs_pipeline_spec_path']
 
+    # Set up experiment
+    if 'vertex_experiment_tracking_name' in pipeline_params:
+        vertex_exp = pipeline_params['vertex_experiment_tracking_name']
+        del pipeline_params['vertex_experiment_tracking_name']
+    else:
+        vertex_exp = None
+
     aiplatform.init(project=project_id)
     job = aiplatform.PipelineJob(
         display_name = display_name,
@@ -52,7 +59,9 @@ def run_pipeline(
         parameter_values = pipeline_params,
         enable_caching = enable_caching)
     logging.debug('AI Platform job built. Submitting...')
-    job.submit(service_account=pipeline_job_runner_service_account)
+    job.submit(
+        experiment=vertex_exp,
+        service_account=pipeline_job_runner_service_account)
     logging.debug('Job sent!')
 
 if __name__ == '__main__':

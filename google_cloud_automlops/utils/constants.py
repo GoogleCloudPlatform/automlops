@@ -84,15 +84,12 @@ GENERATED_DIRS = [
     BASE_DIR + 'pipelines/runtime_parameters',
     BASE_DIR + 'scripts',
     BASE_DIR + 'scripts/pipeline_spec',
+    BASE_DIR + 'provision'
 ]
 
 GENERATED_SERVICES_DIRS = [
     BASE_DIR + 'services',
     BASE_DIR + 'services/submission_service'
-]
-
-GENERATED_PROVISION_DIRS = [
-    BASE_DIR + 'provision'
 ]
 
 GENERATED_TERRAFORM_DIRS = [
