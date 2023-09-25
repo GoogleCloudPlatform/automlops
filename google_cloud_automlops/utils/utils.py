@@ -466,7 +466,6 @@ def get_required_apis(defaults: dict) -> Set:
         'compute.googleapis.com',
         'iamcredentials.googleapis.com',
         'iam.googleapis.com',
-        'ml.googleapis.com',
         'pubsub.googleapis.com',
         'storage.googleapis.com'])
     if defaults['tooling']['orchestration_framework'] == Orchestrator.KFP.value:

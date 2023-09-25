@@ -143,7 +143,6 @@ fi
 echo -e "$GREEN Deploying Cloud Functions: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
 gcloud functions deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
   --no-allow-unauthenticated \
-  --docker-registry="artifact-registry" \
   --trigger-topic=$PUBSUB_TOPIC_NAME \
   --entry-point=process_request \
   --runtime=python39 \

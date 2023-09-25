@@ -169,7 +169,6 @@ Based on the above user selection, AutoMLOps will enable up to the following API
 - [compute.googleapis.com](https://cloud.google.com/compute/docs/reference/rest/v1)
 - [iam.googleapis.com](https://cloud.google.com/iam/docs/reference/rest)
 - [iamcredentials.googleapis.com](https://cloud.google.com/iam/docs/reference/credentials/rest)
-- [ml.googleapis.com](https://cloud.google.com/ai-platform/training/docs/reference/rest)
 - [pubsub.googleapis.com](https://cloud.google.com/pubsub/docs/reference/rest)
 - [run.googleapis.com](https://cloud.google.com/run/docs/reference/rest)
 - [storage.googleapis.com](https://cloud.google.com/storage/docs/apis)

@@ -1,6 +1,20 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2023-09-25
+
+### Added
+
+### Changed
+
+- Commented out change from 1.2.1 to set cloud functions default registry to artifact-registry; there appears to be an auth bug with this setting
+- Updated documentation
+
+### Fixed
+ 
+- Removed legacy ml.googleapis.com API that is deprecated as of 9/25/2023
+
+
 ## [1.2.1] - 2023-09-20
 
 ### Added
