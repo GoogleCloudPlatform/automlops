@@ -165,7 +165,6 @@ Based on the above user selection, AutoMLOps will enable up to the following API
 - [cloudfunctions.googleapis.com](https://cloud.google.com/functions/docs/reference/rest)
 - [cloudresourcemanager.googleapis.com](https://cloud.google.com/resource-manager/reference/rest)
 - [cloudscheduler.googleapis.com](https://cloud.google.com/scheduler/docs/reference/rest)
-- [cloudtasks.googleapis.com](https://cloud.google.com/tasks/docs/reference/rest)
 - [compute.googleapis.com](https://cloud.google.com/compute/docs/reference/rest/v1)
 - [iam.googleapis.com](https://cloud.google.com/iam/docs/reference/rest)
 - [iamcredentials.googleapis.com](https://cloud.google.com/iam/docs/reference/credentials/rest)
