@@ -50,7 +50,6 @@ from google_cloud_automlops.provisioning.configs import TerraformConfig
 
 def build(
     project_id: str,
-    deployment_framework: str,
     config: TerraformConfig,
 ):
     """Constructs and writes terraform scripts: Generates infrastructure using terraform hcl resource management style.
