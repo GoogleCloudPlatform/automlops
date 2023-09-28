@@ -124,7 +124,7 @@ resource "google_cloudfunctions_function" "pipeline_job_submission_service" {
     resource            = "projects/${var.project_id}/topics/${var.pubsub_topic_name}"
   }
 
-  depends_on            = [google_pubsub_topic.pubsub_topic]
+  depends_on            = [google_artifact_registry_repository.artifact_registry, google_pubsub_topic.pubsub_topic]
 }{% endif %}
 {% if deployment_framework == 'cloud-build' and source_repo_type == 'cloud-source-repositories' %}
 # Create Cloud Build Trigger
