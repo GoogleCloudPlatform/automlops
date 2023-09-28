@@ -23,9 +23,9 @@ from enum import Enum
 class Deployer(Enum):
     """Enum representing the available options for orchestration management."""
 
-    CLOUDBUILD = 'cloud_build'
-    GITHUB_ACTIONS = 'github_actions' 
-    # GITLAB_CI = 'gitlab_ci'   # roadmap item
+    CLOUDBUILD = 'cloud-build'
+    GITHUB_ACTIONS = 'github-actions' 
+    # GITLAB_CI = 'gitlab-ci'   # roadmap item
     # JENKINS = 'jenkins'   # roadmap item
 
 
