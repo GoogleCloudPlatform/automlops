@@ -52,6 +52,7 @@ def git_workflow():
        then pushes to the specified branch and triggers a build job.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    deployment_framework = defaults['tooling']['deployment_framework']
     source_repository_type = defaults['gcp']['source_repository_type']
     if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
         git_remote_origin_url = f'''https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['source_repository_name']}'''
@@ -107,7 +108,7 @@ def git_workflow():
     # pylint: disable=logging-fstring-interpolation
     logging.info(
         f'''Pushing code to {defaults['gcp']['source_repository_branch']} branch, triggering build...''')
-    if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
+    if deployment_framework == Deployer.CLOUDBUILD.value:
         logging.info(
             f'''Cloud Build job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')
 

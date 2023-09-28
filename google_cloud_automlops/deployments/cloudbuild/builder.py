@@ -63,8 +63,8 @@ def create_cloudbuild_jinja(
         project_id: str,
         pubsub_topic_name: str,
         use_ci: bool) -> str:
-    """Generates content for of the cloudbuild.yaml, to be written to the base_dir.
-        This file contains the ci/cd manifest for AutoMLOps.
+    """Generates content for the cloudbuild.yaml, to be written to the base_dir.
+       This file contains the ci/cd manifest for AutoMLOps.
 
     Args:
         artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).

@@ -24,7 +24,7 @@ class Provisioner(Enum):
     """Enum representing the available providers for infrastructure management."""
 
     TERRAFORM = 'terraform'
-    PULUMI = 'pulumi'
+    # PULUMI = 'pulumi' roadmap item
     GCLOUD = 'gcloud'
 
 

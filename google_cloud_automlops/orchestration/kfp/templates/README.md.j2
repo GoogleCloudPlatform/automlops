@@ -20,7 +20,7 @@ For a user-guide, please view these [slides](https://github.com/GoogleCloudPlatf
             ├──component_a.py                      : Python file containing code for the component.
             ├──...(for each component)
     ├──component_a                                 : Components specs generated using AutoMLOps
-        ├── component.yaml                         : Component yaml spec, acts and an I/O wrapper around the Docker container.
+        ├── component.yaml                         : Component yaml spec, acts as an I/O wrapper around the Docker container.
     ├──...(for each component)
 ├── configs                                        : Configurations for defining vertex ai pipeline and MLOps infra.
     ├── defaults.yaml                              : Runtime configuration variables.
@@ -31,7 +31,7 @@ For a user-guide, please view these [slides](https://github.com/GoogleCloudPlatf
     ├── requirements.txt                           : Package requirements for running pipeline.py.
     ├── runtime_parameters                         : Variables to be used in a PipelineJob.
         ├── pipeline_parameter_values.json         : Json containing pipeline parameters.
-├── provision                                      : Vertex ai pipeline definitions.
+├── provision                                      : Provision configurations and details.
     ├── provision_resources.sh                     : Provisions the necessary infra to run the MLOps pipeline.
     ├── provisioning_configs                       : (Optional) Relevant terraform/Pulumi config files for provisioning infa.
 ├── scripts                                        : Scripts for manually triggering the cloud run service.

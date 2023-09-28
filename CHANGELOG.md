@@ -1,6 +1,70 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.2] - 2023-09-25
+
+### Added
+
+### Changed
+
+- Commented out change from 1.2.1 to set cloud functions default registry to artifact-registry; there appears to be an auth bug with this setting
+- Updated documentation
+
+### Fixed
+ 
+- Removed legacy ml.googleapis.com API that is deprecated as of 9/25/2023
+
+
+## [1.2.1] - 2023-09-20
+
+### Added
+
+- Support for Vertex AI experiments
+- Added in an include statement for the build trigger (only runs on changes to AutoMLOps/**)
+ 
+### Changed
+
+- Set default cloud functions registry to artifact-registry
+- Changed recommended roles and permissions for deploying with `use_ci=False`.
+
+### Fixed
+ 
+- Fixed issues with `use_ci=False` provision directory not being created properly
+- Fixed issues with `use_ci=False` terraform config
+
+
+## [1.2.0] - 2023-09-13
+
+### Added
+
+Major version updates:
+- Code is now broken down into 5 main operations: generate, provision, deprovision, deploy, and launchAll
+- Uses jinja2 templates for storing code templates and writing to files
+- Additional package dependencies using Jinja2 templates and deploying with precheck function
+- Provides additional warnings and checks for giving IAM permissions visibility to the user
+- Creates a .gitignore by default
+- Support for cloud-functions in addition to cloud-run for the submission service
+- Added 2 new generated folders: provision/ and services/
+- Added naming_prefix parameter to allow for differentiating between AutoMLOps pipelines in the same project
+- Significant generalization in terms of tooling (now allows for specifying provisioning_frameworks, deployment_frameworks, etc.)
+- Renamed backend src code folder to google_cloud_automlops to avoid naming confusion
+- Added enum and config files, which is different than previous approach of class inheritance
+ 
+### Changed
+
+- Updated README.md and documentation
+- Templatized code has now been pulled out and placed into jinja2 templates.
+- Gitops workflow placed into separate folder and file, will only version AutoMLOps/ directory instead of the whole cwd.
+- Reworked deployment workflow and build configuration (submission service and cloud scheduler are now created as part of the provision step).
+- Update notebook examples
+- Changed wording and branding descriptions
+- Significant updates to unit tests
+
+### Fixed
+ 
+- Bugs related to provisioning with terraform
+
+
 ## [1.1.4] - 2023-07-25
 
 ### Added

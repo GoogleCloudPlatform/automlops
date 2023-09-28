@@ -54,6 +54,7 @@ DEFAULT_VPC_CONNECTOR = 'No VPC Specified'
 # Recommended software versions
 MIN_GCLOUD_BETA_VERSION = '2022.10.21'
 MIN_GCLOUD_SDK_VERSION = '420.0.0'
+MIN_RECOMMENDED_TERRAFORM_VERSION = '1.5.6'
 
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
@@ -86,6 +87,7 @@ GENERATED_DIRS = [
     BASE_DIR + 'pipelines/runtime_parameters',
     BASE_DIR + 'scripts',
     BASE_DIR + 'scripts/pipeline_spec',
+    BASE_DIR + 'provision'
 ]
 
 GENERATED_SERVICES_DIRS = [
@@ -93,8 +95,9 @@ GENERATED_SERVICES_DIRS = [
     BASE_DIR + 'services/submission_service'
 ]
 
-GENERATED_PROVISION_DIRS = [
-    BASE_DIR + 'provision',
+GENERATED_TERRAFORM_DIRS = [
+    BASE_DIR + 'provision/state_bucket',
+    BASE_DIR + 'provision/environment',
 ]
 
 # temporary files
@@ -121,5 +124,11 @@ GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.gitops.templates'
 
 # Required IAM Roles for pipeline runner service account
 IAM_ROLES_RUNNER_SA = set([
-    'roles/aiplatform.serviceAgent'
+    'roles/aiplatform.user',
+    'roles/artifactregistry.reader',
+    'roles/bigquery.user',
+    'roles/bigquery.dataEditor',
+    'roles/iam.serviceAccountUser',
+    'roles/storage.admin',
+    'roles/cloudfunctions.admin'
 ])

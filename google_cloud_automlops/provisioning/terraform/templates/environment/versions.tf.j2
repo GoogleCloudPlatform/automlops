@@ -11,4 +11,8 @@ terraform {
       version = "< 5.0"
     }
   }
+  backend "gcs" {
+    bucket =  "{{storage_bucket_name}}-bucket-tfstate"
+    prefix = "terraform/state"
+  }
 }

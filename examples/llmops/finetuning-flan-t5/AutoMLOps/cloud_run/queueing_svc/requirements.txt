@@ -1,5 +1,0 @@
-google-cloud
-google-cloud-tasks
-google-api-python-client
-google-cloud-run
-google-cloud-scheduler

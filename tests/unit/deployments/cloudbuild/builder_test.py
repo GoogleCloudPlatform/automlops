@@ -13,7 +13,6 @@
 # limitations under the License.
 
 # pylint: disable=line-too-long
-# pylint: disable=missing-function-docstring
 # pylint: disable=missing-module-docstring
 
 from typing import List
@@ -21,7 +20,6 @@ from typing import List
 import pytest
 
 from google_cloud_automlops.deployments.cloudbuild.builder import create_cloudbuild_jinja
-
 
 @pytest.mark.parametrize(
     '''artifact_repo_location, artifact_repo_name, naming_prefix,'''
@@ -67,10 +65,22 @@ def test_create_cloudbuild_jinja(
     use_ci: bool,
     is_included: bool,
     expected_output_snippets: List[str]):
-    # TODO SRASTATTER - update this docstring
-    """Tests the update_params function, which reformats the source code type
-    """
+    """Tests create_cloudbuild_jinja, which generates content for the cloudbuild.yaml. 
+       There are three test cases for this function:
+        1. Checks that expected strings are included when use_ci=True. 
+        2. Checks that expected strings are included when use_ci=False. 
+        3. Checks that certain strings are not included when use_ci=False. 
 
+    Args:
+        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
+        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
+        project_id: The project ID.
+        pubsub_topic_name: The name of the pubsub topic to publish to.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
     cloudbuild_config = create_cloudbuild_jinja(
         artifact_repo_location,
         artifact_repo_name,

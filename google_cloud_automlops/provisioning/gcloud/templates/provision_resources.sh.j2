@@ -114,7 +114,7 @@ gcloud run deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
   --image=$PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE \
   --region=$PIPELINE_JOB_SUBMISSION_SERVICE_LOCATION \
   --service-account=$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG{% if vpc_connector != 'No VPC Specified' %} \
-  --vpc_connector={{vpc_connector}}{% endif %}
+  --vpc-connector={{vpc_connector}}{% endif %}
 
 # Create Pub/Sub Subscription
 PUBSUB_SUBSCRIPTION_ID="gcr-{{pipeline_job_submission_service_name}}-{{pipeline_job_submission_service_location}}-{{pubsub_topic_name}}"
@@ -142,6 +142,7 @@ fi
 # Deploy Cloud Function
 echo -e "$GREEN Deploying Cloud Functions: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
 gcloud functions deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
+  --no-allow-unauthenticated \
   --trigger-topic=$PUBSUB_TOPIC_NAME \
   --entry-point=process_request \
   --runtime=python39 \
@@ -150,7 +151,7 @@ gcloud functions deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
   --timeout=540s \
   --source=${BASE_DIR}services/submission_service \
   --service-account=$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG{% if vpc_connector != 'No VPC Specified' %} \
-  --vpc_connector={{vpc_connector}}{% endif %}
+  --vpc-connector={{vpc_connector}}{% endif %}
 {% endif %}{% if deployment_framework == 'cloud-build' and source_repo_type == 'cloud-source-repositories' %}
 # Create cloud build trigger
 echo -e "$GREEN Setting up Cloud Build Trigger in project $PROJECT_ID $NC"
@@ -158,6 +159,7 @@ if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$BUILD_
 
   echo "Creating Cloudbuild Trigger on branch $SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
   gcloud beta builds triggers create cloud-source-repositories \
+    --included-files=${BASE_DIR}** \
     --region=$BUILD_TRIGGER_LOCATION \
     --name=$BUILD_TRIGGER_NAME \
     --repo=$SOURCE_REPO_NAME \

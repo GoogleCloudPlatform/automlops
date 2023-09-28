@@ -170,10 +170,12 @@ def build_pipeline(custom_training_job_specs: list,
     # Add indentation
     pipeline_scaffold_contents = textwrap.indent(pipeline_scaffold_contents, 4 * ' ')
     # Construct pipeline.py
+    project_id = defaults['gcp']['project_id']
     write_file(GENERATED_PIPELINE_FILE, pipeline_jinja(
         components_list,
         custom_training_job_specs,
-        pipeline_scaffold_contents), 'w')
+        pipeline_scaffold_contents,
+        project_id=project_id), 'w')
     # Construct pipeline_runner.py
     write_file(GENERATED_PIPELINE_RUNNER_FILE, pipeline_runner_jinja(), 'w')
     # Construct requirements.txt
@@ -310,7 +312,7 @@ def build_components_jinja() -> str:
 
 
 def run_pipeline_jinja() -> str:
-    """Generates code for build_pipeline_spec.sh which runs the pipeline locally.
+    """Generates code for run_pipeline.sh which runs the pipeline locally.
 
     Returns:
         str: run_pipeline.sh script.
@@ -324,7 +326,7 @@ def run_pipeline_jinja() -> str:
 
 
 def run_all_jinja() -> str:
-    """Generates code for build_pipeline_spec.sh which builds runs all other shell scripts.
+    """Generates code for run_all.sh which builds runs all other shell scripts.
 
     Returns:
         str: run_all.sh script.
@@ -351,6 +353,7 @@ def publish_to_topic_jinja(pubsub_topic_name: str) -> str:
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
+            base_dir=BASE_DIR,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
             pubsub_topic_name=pubsub_topic_name)
@@ -423,7 +426,8 @@ def pipeline_runner_jinja() -> str:
 def pipeline_jinja(
     components_list: list,
     custom_training_job_specs: list,
-    pipeline_scaffold_contents: str) -> str:
+    pipeline_scaffold_contents: str,
+    project_id: str) -> str:
     """Generates code for the pipeline.py file to be written to the pipelines directory.
 
     Args:
@@ -431,6 +435,7 @@ def pipeline_jinja(
         custom_training_job_specs: Specifies the specs to run the training job with.
         pipeline_scaffold_contents: The contents of the pipeline scaffold file,
             which can be found at PIPELINE_CACHE_FILE.
+        project_id: The project ID.
     
     Returns:
         str: pipeline.py file.
@@ -442,7 +447,8 @@ def pipeline_jinja(
             components_list=components_list,
             custom_training_job_specs=custom_training_job_specs,
             generated_license=GENERATED_LICENSE,
-            pipeline_scaffold_contents=pipeline_scaffold_contents)
+            pipeline_scaffold_contents=pipeline_scaffold_contents,
+            project_id=project_id)
 
 
 def pipeline_requirements_jinja() -> str:
