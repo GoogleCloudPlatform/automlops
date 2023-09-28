@@ -28,11 +28,11 @@ from google_cloud_automlops.utils.utils import write_file
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     DEFAULT_SOURCE_REPO_BRANCH,
-    GITHUB_ACTIONS_TEMPLATES_PATH,
     GENERATED_GITHUB_ACTIONS_FILE,
     GENERATED_COMPONENT_BASE,
     GENERATED_LICENSE,
-    GENERATED_PARAMETER_VALUES_PATH
+    GENERATED_PARAMETER_VALUES_PATH,
+    GITHUB_ACTIONS_TEMPLATES_PATH
 )
 
 from google_cloud_automlops.deployments.configs import GitHubActionsConfig
