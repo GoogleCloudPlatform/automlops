@@ -1,0 +1,23 @@
+{{generated_license}}
+##################################################################################
+## IAMMember - Pipeline Job Runner Service Account
+##################################################################################
+
+resource "google_service_account" "pipeline_job_runner_service_account" {
+  project                 = var.project_id
+  account_id              = var.pipeline_job_runner_service_account_short
+  display_name            = "Pipeline Runner Service Account"
+  description             = "For submitting PipelineJobs"
+
+  depends_on = [module.google_project_service,time_sleep.wait_60_seconds]
+}
+
+{% for role in required_iam_roles %}resource "google_project_iam_member" "pipeline_job_runner_service_account_{{role.replace('/', '_').replace('.', '_')}}" {
+  project = var.project_id
+  role    = "{{role}}"
+  member  = "serviceAccount:${google_service_account.pipeline_job_runner_service_account.email}"
+
+  depends_on = [google_service_account.pipeline_job_runner_service_account]
+}
+
+{% endfor %}

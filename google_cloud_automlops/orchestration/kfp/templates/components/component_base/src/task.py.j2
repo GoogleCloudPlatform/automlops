@@ -1,0 +1,28 @@
+{{generated_license}}
+import argparse
+import json
+from kfp.v2.components import executor{% if not kfp_spec_bool %}
+
+import kfp
+from kfp.v2 import dsl
+from kfp.v2.dsl import *
+from typing import *
+{% endif %}
+{{custom_code_contents}}
+def main():
+    """Main executor."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--executor_input', type=str)
+    parser.add_argument('--function_to_execute', type=str)
+
+    args, _ = parser.parse_known_args()
+    executor_input = json.loads(args.executor_input)
+    function_to_execute = globals()[args.function_to_execute]
+
+    executor.Executor(
+        executor_input=executor_input,
+        function_to_execute=function_to_execute).execute()
+
+if __name__ == '__main__':
+    main()
+

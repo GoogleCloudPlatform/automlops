@@ -1,0 +1,8 @@
+#!/bin/bash 
+{{generated_license}}
+# Publishes a message to a Pub/Sub topic to invoke the
+# pipeline job submission service.
+# This script should run from the {{base_dir}} directory
+# Change directory in case this is not the script root.
+
+gcloud pubsub topics publish {{pubsub_topic_name}} --message "$(cat {{generated_parameter_values_path}})"

@@ -1,0 +1,34 @@
+{{generated_license}}
+terraform {
+  required_version = ">= 0.13"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "< 5.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "< 5.0"
+    }
+  }
+}
+
+module "google_project_service" {
+  source                  = "terraform-google-modules/project-factory/google//modules/project_services"
+  version                 = "14.1.0"
+  project_id              = var.project_id
+  activate_apis           = ["storage.googleapis.com"]
+}
+
+# Create GCS bucket to hold state file
+resource "google_storage_bucket" "gcs_statefile_bucket" {
+  project                 = var.project_id
+  name                    = var.storage_bucket_name
+  location                = var.storage_bucket_location
+  force_destroy           = false
+  storage_class           = "STANDARD"
+  versioning {
+    enabled               = true
+  }
+  depends_on              = [module.google_project_service]
+}

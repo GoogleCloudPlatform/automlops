@@ -1,0 +1,59 @@
+{{generated_license}}
+"""Kubeflow Pipeline Definition"""
+
+import argparse
+from typing import *
+import os
+{% if custom_training_job_specs is not none %}
+from functools import partial
+from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component
+{% endif %}
+from google.cloud import storage
+import kfp
+from kfp.v2 import compiler, dsl
+from kfp.v2.dsl import *
+import yaml
+
+def upload_pipeline_spec(gs_pipeline_job_spec_path: str,
+                         pipeline_job_spec_path: str,
+                         storage_bucket_name: str):
+    '''Upload pipeline job spec from local to GCS'''
+    storage_client = storage.Client()
+    bucket = storage_client.get_bucket(storage_bucket_name)
+    filename = '/'.join(gs_pipeline_job_spec_path.split('/')[3:])
+    blob = bucket.blob(filename)
+    blob.upload_from_filename(pipeline_job_spec_path)
+
+def load_custom_component(component_name: str):
+    component_path = os.path.join('components',
+                                component_name,
+                              'component.yaml')
+    return kfp.components.load_component_from_file(component_path)
+
+def create_training_pipeline(pipeline_job_spec_path: str):{% for component in components_list %}
+    {{component}} = load_custom_component(component_name='{{component}}'){% endfor %}{% if custom_training_job_specs is not none %}
+{% for spec in custom_training_job_specs %}
+    {{spec['component_spec']}}_custom_training_job_specs = {{spec['spec_string']}}
+    {{spec['component_spec']}}_job_op = create_custom_training_job_op_from_component(**{{spec['component_spec']}}_custom_training_job_specs)
+    {{spec['component_spec']}} = partial({{spec['component_spec']}}_job_op, project='{{project_id}}')
+{% endfor %}{% endif %}
+
+{{pipeline_scaffold_contents}}
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', type=str,
+                       help='The config file for setting default values.')
+
+    args = parser.parse_args()
+
+    with open(args.config, 'r', encoding='utf-8') as config_file:
+        config = yaml.load(config_file, Loader=yaml.FullLoader)
+
+    create_training_pipeline(
+        pipeline_job_spec_path=config['pipelines']['pipeline_job_spec_path'])
+
+    upload_pipeline_spec(
+        gs_pipeline_job_spec_path=config['pipelines']['gs_pipeline_job_spec_path'],
+        pipeline_job_spec_path=config['pipelines']['pipeline_job_spec_path'],
+        storage_bucket_name=config['gcp']['storage_bucket_name'])
+

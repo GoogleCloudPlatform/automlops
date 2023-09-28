@@ -1,0 +1,8 @@
+#!/bin/bash
+{{generated_license}}
+# Submit terraform run creating all resources. 
+# ./scripts/provision_resources.sh state_bucket to create the state bucket.
+# ./scripts/provision_resources.sh environment to create the resources.
+terraform -chdir={{base_dir}}provision/$1 init
+terraform -chdir={{base_dir}}provision/$1 validate
+terraform -chdir={{base_dir}}provision/$1 apply -auto-approve
