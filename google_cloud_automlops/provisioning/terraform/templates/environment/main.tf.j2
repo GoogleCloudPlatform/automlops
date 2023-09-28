@@ -110,7 +110,7 @@ resource "google_storage_bucket_object" "archive_submission_service_code" {
 resource "google_cloudfunctions_function" "pipeline_job_submission_service" {
   name                  = var.pipeline_job_submission_service_name
   region                = var.pipeline_job_submission_service_location
-# docker_registry       = "ARTIFACT_REGISTRY"
+  docker_repository     = "projects/${var.project_id}/locations/${var.artifact_repo_location}/repositories/${var.artifact_repo_name}"
   service_account_email = google_service_account.pipeline_job_runner_service_account.email
   runtime               = "python39"
   entry_point           = "process_request"
