@@ -32,7 +32,7 @@ class Deployer(Enum):
 class CodeRepository(Enum):
     """Enum representing the available options for source code repositories."""
 
-    BITBUCKET = 'bitbucket'   # roadmap item``
+    BITBUCKET = 'bitbucket'   # roadmap item
     CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
     GITHUB = 'github'   # roadmap item
     GITLAB = 'gitlab'   # roadmap item
