@@ -203,7 +203,7 @@ def launchAll(
 def generate(
     project_id: str,
     pipeline_params: Dict,
-    project_number: Optional[str] = None, 
+    project_number: Optional[str] = None,
     artifact_repo_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     artifact_repo_name: Optional[str] = None,
     artifact_repo_type: Optional[str] = ArtifactRepository.ARTIFACT_REGISTRY.value,
@@ -232,7 +232,7 @@ def generate(
     use_ci: Optional[bool] = False,
     vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR,
     workload_identity_pool: Optional[str] = None, #TODO: integrate optional creation of pool and provider during provisioning stage
-    workload_identity_provider: Optional[str] = None, 
+    workload_identity_provider: Optional[str] = None,
     workload_identity_service_account: Optional[str] = None):
     """Generates relevant pipeline and component artifacts.
        Check constants file for variable default values.
@@ -389,7 +389,6 @@ def generate(
                 pubsub_topic_name=derived_pubsub_topic_name,
                 use_ci=use_ci))
     logging.info('Code Generation Complete.')
-    
     if deployment_framework == Deployer.GITHUB_ACTIONS.value:
         logging.info(f'Writing GitHub Actions config to {GENERATED_GITHUB_ACTIONS_FILE}')
         GithubActionsBuilder.build(GitHubActionsConfig(
@@ -398,7 +397,7 @@ def generate(
                 naming_prefix=naming_prefix,
                 project_id=project_id,
                 project_number=project_number, 
-                pubsub_topic_name=derived_pubsub_topic_name, 
+                pubsub_topic_name=derived_pubsub_topic_name,
                 use_ci=use_ci,
                 workload_identity_pool=workload_identity_pool,
                 workload_identity_provider=workload_identity_provider,

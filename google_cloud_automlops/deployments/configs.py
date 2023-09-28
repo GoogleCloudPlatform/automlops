@@ -63,3 +63,4 @@ class GitHubActionsConfig(BaseModel):
     workload_identity_pool: str
     workload_identity_provider: str
     workload_identity_service_account: str
+    
