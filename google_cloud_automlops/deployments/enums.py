@@ -23,16 +23,16 @@ from enum import Enum
 class Deployer(Enum):
     """Enum representing the available options for orchestration management."""
 
-    CLOUDBUILD = 'cloud-build'
-    # GITHUB_ACTIONS = 'github-actions'   # roadmap item
-    # GITLAB_CI = 'gitlab-ci'   # roadmap item
+    CLOUDBUILD = 'cloud_build'
+    GITHUB_ACTIONS = 'github_actions' 
+    # GITLAB_CI = 'gitlab_ci'   # roadmap item
     # JENKINS = 'jenkins'   # roadmap item
 
 
 class CodeRepository(Enum):
     """Enum representing the available options for source code repositories."""
 
-    BITBUCKET = 'bitbucket'   # roadmap item
+    BITBUCKET = 'bitbucket'   # roadmap item``
     CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
     GITHUB = 'github'   # roadmap item
     GITLAB = 'gitlab'   # roadmap item

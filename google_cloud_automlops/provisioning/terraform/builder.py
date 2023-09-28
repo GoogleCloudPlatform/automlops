@@ -42,10 +42,15 @@ from google_cloud_automlops.utils.constants import (
     TERRAFORM_TEMPLATES_PATH
 )
 
+from google_cloud_automlops.deployments.enums import (
+    Deployer
+)
+
 from google_cloud_automlops.provisioning.configs import TerraformConfig
 
 def build(
     project_id: str,
+    deployment_framework: str,
     config: TerraformConfig,
 ):
     """Constructs and writes terraform scripts: Generates infrastructure using terraform hcl resource management style.
@@ -105,25 +110,48 @@ def build(
     # create variables.tf
     write_file(f'{BASE_DIR}provision/variables.tf', create_variables_tf_jinja(), 'w')
     # create variables.auto.tfvars
-    write_file(f'{BASE_DIR}provision/variables.auto.tfvars', create_variables_auto_tfvars_jinja(
-        artifact_repo_location=config.artifact_repo_location,
-        artifact_repo_name=config.artifact_repo_name,
-        build_trigger_location=config.build_trigger_location,
-        build_trigger_name=config.build_trigger_name,
-        pipeline_job_runner_service_account=config.pipeline_job_runner_service_account,
-        pipeline_job_submission_service_location=config.pipeline_job_submission_service_location,
-        pipeline_job_submission_service_name=config.pipeline_job_submission_service_name,
-        project_id=project_id,
-        provision_credentials_key=config.provision_credentials_key,
-        pubsub_topic_name=config.pubsub_topic_name,
-        schedule_location=config.schedule_location,
-        schedule_name=config.schedule_name,
-        schedule_pattern=config.schedule_pattern,
-        source_repo_branch=config.source_repo_branch,
-        source_repo_name=config.source_repo_name,
-        storage_bucket_location=config.storage_bucket_location,
-        storage_bucket_name=config.storage_bucket_name,
-        vpc_connector=config.vpc_connector), 'w')
+    if deployment_framework == Deployer.CLOUDBUILD.value:
+        write_file(f'{BASE_DIR}provision/variables.auto.tfvars', create_variables_auto_tfvars_jinja(
+            artifact_repo_location=config.artifact_repo_location,
+            artifact_repo_name=config.artifact_repo_name,
+            build_trigger_location=config.build_trigger_location,
+            build_trigger_name=config.build_trigger_name,
+            pipeline_job_runner_service_account=config.pipeline_job_runner_service_account,
+            pipeline_job_submission_service_location=config.pipeline_job_submission_service_location,
+            pipeline_job_submission_service_name=config.pipeline_job_submission_service_name,
+            project_id=project_id,
+            provision_credentials_key=config.provision_credentials_key,
+            pubsub_topic_name=config.pubsub_topic_name,
+            schedule_location=config.schedule_location,
+            schedule_name=config.schedule_name,
+            schedule_pattern=config.schedule_pattern,
+            source_repo_branch=config.source_repo_branch,
+            source_repo_name=config.source_repo_name,
+            storage_bucket_location=config.storage_bucket_location,
+            storage_bucket_name=config.storage_bucket_name,
+            vpc_connector=config.vpc_connector), 'w')
+    #TODO: implement workload identity as optional
+    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+        write_file(f'{BASE_DIR}provision/variables.auto.tfvars', create_variables_auto_tfvars_jinja(
+            artifact_repo_location=config.artifact_repo_location,
+            artifact_repo_name=config.artifact_repo_name,
+            build_trigger_location=config.build_trigger_location,
+            build_trigger_name=config.build_trigger_name,
+            pipeline_job_runner_service_account=config.pipeline_job_runner_service_account,
+            pipeline_job_submission_service_location=config.pipeline_job_submission_service_location,
+            pipeline_job_submission_service_name=config.pipeline_job_submission_service_name,
+            project_id=project_id,
+            provision_credentials_key=config.provision_credentials_key,
+            pubsub_topic_name=config.pubsub_topic_name,
+            repository_id = config.repsitory_id,
+            schedule_location=config.schedule_location,
+            schedule_name=config.schedule_name,
+            schedule_pattern=config.schedule_pattern,
+            source_repo_branch=config.source_repo_branch,
+            source_repo_name=config.source_repo_name,
+            storage_bucket_location=config.storage_bucket_location,
+            storage_bucket_name=config.storage_bucket_name,
+            vpc_connector=config.vpc_connector), 'w')
     # create versions.tf
     write_file(f'{BASE_DIR}provision/versions.tf', create_versions_tf_jinja(), 'w')
     # create provision_resources.sh

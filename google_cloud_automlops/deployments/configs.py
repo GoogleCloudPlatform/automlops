@@ -37,3 +37,29 @@ class CloudBuildConfig(BaseModel):
     project_id: str
     pubsub_topic_name: str
     use_ci: bool
+
+class GitHubActionsConfig(BaseModel):
+    """Model representing the GitHub Actions config.
+
+    Args:
+        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
+        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
+        project_id: The project ID.
+        project_number: The project number.
+        pubsub_topic_name: The name of the pubsub topic to publish to.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_provider: Provider for workload identity federation.
+        workload_identity_service_account: Service account for workload identity federation. 
+    """
+    artifact_repo_location: str
+    artifact_repo_name: str
+    naming_prefix: str
+    project_id: str
+    project_number: str #TODO: Check if there's any other way to pass this, could use a util with the GCP client library. See https://github.com/GoogleCloudPlatform/java-docs-samples/blob/main/content-warehouse/src/main/java/contentwarehouse/v1/CreateDocument.java#L125-L135
+    pubsub_topic_name: str
+    use_ci: bool
+    workload_identity_pool: str
+    workload_identity_provider: str
+    workload_identity_service_account: str

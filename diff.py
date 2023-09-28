@@ -91,16 +91,16 @@ def git_workflow():
         raise RuntimeError(
             f'Expected remote origin url {git_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
 
-    # Add, commit, and push changes to CSR or GitHub
+    # Add, commit, and push changes to CSR
     write_file('.gitignore', _create_gitignore_jinja(), 'w')
     execute_process('git add .gitignore', to_null=False)
-    execute_process('''git commit -m 'init' ''', to_null=False)
+    # execute_process('''git commit -m 'init' ''', to_null=False)
     execute_process(
         f'''git push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
     
-    execute_process(f'git add {BASE_DIR} ', to_null=False) # TODO update based on Gitlab yaml ci files
-    execute_process(f'git add {GITHUB_DIR} ', to_null=False) # TODO update based on Gitlab yaml ci files
-    execute_process(f'git add . ', to_null=False) # TODO update based on Gitlab yaml ci files
+    execute_process(f'git add {BASE_DIR} ', to_null=False) # TODO update based on Gitlab and Github yaml ci files
+    execute_process(f'git add {GITHUB_DIR} ', to_null=False) # TODO update based on Gitlab and Github yaml ci files
+    execute_process(f'git add . ', to_null=False) # TODO update based on Gitlab and Github yaml ci files
 
 
     execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)

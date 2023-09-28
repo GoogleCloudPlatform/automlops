@@ -34,7 +34,11 @@ from google_cloud_automlops.utils.constants import (
     DEFAULT_SCHEDULE_PATTERN,
     DEFAULT_SOURCE_REPO_BRANCH,
     DEFAULT_VPC_CONNECTOR,
+    DEFAULT_WORKLOAD_IDENTITY_POOL,
+    DEFAULT_WORKLOAD_IDENTITY_PROVIDER,
+    DEFAULT_WORKLOAD_IDENTITY_SERVICE_ACCOUNT,
     GENERATED_CLOUDBUILD_FILE,
+    GENERATED_GITHUB_ACTIONS_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_DIRS,
     GENERATED_PROVISION_DIRS,
@@ -77,13 +81,15 @@ from google_cloud_automlops.provisioning.configs import (
 )
 # Deployment imports
 from google_cloud_automlops.deployments.cloudbuild import builder as CloudBuildBuilder
+from google_cloud_automlops.deployments.github_actions import builder as GithubActionsBuilder
 from google_cloud_automlops.deployments.enums import (
     ArtifactRepository,
     CodeRepository,
     Deployer
 )
 from google_cloud_automlops.deployments.configs import (
-    CloudBuildConfig
+    CloudBuildConfig,
+    GitHubActionsConfig
 )
 from google_cloud_automlops.deployments.gitops.git_utils import git_workflow
 
@@ -120,7 +126,7 @@ def launchAll(
     schedule_pattern: Optional[str] = DEFAULT_SCHEDULE_PATTERN,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
-    source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
+    source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value, 
     storage_bucket_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     storage_bucket_name: Optional[str] = None,
     hide_warnings: Optional[bool] = True,
@@ -200,6 +206,7 @@ def launchAll(
 def generate(
     project_id: str,
     pipeline_params: Dict,
+    project_number: Optional[str] = None, 
     artifact_repo_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     artifact_repo_name: Optional[str] = None,
     artifact_repo_type: Optional[str] = ArtifactRepository.ARTIFACT_REGISTRY.value,
@@ -226,7 +233,10 @@ def generate(
     storage_bucket_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     storage_bucket_name: Optional[str] = None,
     use_ci: Optional[bool] = False,
-    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR):
+    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR,
+    workload_identity_pool: Optional[str] = None,
+    workload_identity_provider: Optional[str] = None, 
+    workload_identity_service_account: Optional[str] = None):
     """Generates relevant pipeline and component artifacts.
        Check constants file for variable default values.
 
@@ -376,6 +386,21 @@ def generate(
                 project_id=project_id,
                 pubsub_topic_name=derived_pubsub_topic_name,
                 use_ci=use_ci))
+    logging.info('Code Generation Complete.')
+    
+    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+        logging.info(f'Writing GitHub Actions config to {GENERATED_GITHUB_ACTIONS_FILE}')
+        GithubActionsBuilder.build(GitHubActionsConfig(
+                artifact_repo_location=artifact_repo_location,
+                artifact_repo_name=derived_artifact_repo_name,
+                naming_prefix=naming_prefix,
+                project_id=project_id,
+                project_number=project_number, 
+                pubsub_topic_name=derived_pubsub_topic_name, 
+                use_ci=use_ci,
+                workload_identity_pool=workload_identity_pool,
+                workload_identity_provider=workload_identity_provider,
+                workload_identity_service_account=workload_identity_service_account))
     logging.info('Code Generation Complete.')
 
 
