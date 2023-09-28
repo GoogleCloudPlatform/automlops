@@ -123,7 +123,7 @@ def launchAll(
     schedule_pattern: Optional[str] = DEFAULT_SCHEDULE_PATTERN,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
-    source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value, 
+    source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
     storage_bucket_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     storage_bucket_name: Optional[str] = None,
     hide_warnings: Optional[bool] = True,
