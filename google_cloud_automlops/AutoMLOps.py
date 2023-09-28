@@ -231,7 +231,7 @@ def generate(
     storage_bucket_name: Optional[str] = None,
     use_ci: Optional[bool] = False,
     vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR,
-    workload_identity_pool: Optional[str] = None,
+    workload_identity_pool: Optional[str] = None, #TODO: integrate optional creation of pool and provider during provisioning stage
     workload_identity_provider: Optional[str] = None, 
     workload_identity_service_account: Optional[str] = None):
     """Generates relevant pipeline and component artifacts.
