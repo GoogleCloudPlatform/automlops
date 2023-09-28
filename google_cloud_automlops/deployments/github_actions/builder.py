@@ -73,7 +73,7 @@ def create_github_actions_jinja(
         workload_identity_pool: str,
         workload_identity_provider: str,
         workload_identity_service_account: str) -> str:
-    """Generates content for the github_actions.yaml, to be written to the .github directory.
+    """Generates content for the github_actions.yaml, to be written to the .github/workflows directory.
         This file contains the ci/cd manifest for AutoMLOps.
 
     Args:
