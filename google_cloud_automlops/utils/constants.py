@@ -50,12 +50,6 @@ DEFAULT_SCHEDULE_PATTERN = 'No Schedule Specified'
 DEFAULT_SOURCE_REPO_BRANCH = 'automlops'
 # Default vpc connector name
 DEFAULT_VPC_CONNECTOR = 'No VPC Specified'
-# # Default workload identity pool name 
-# DEFAULT_WORKLOAD_IDENTITY_POOL = 'github-pool'
-# # Default workload identity provider name
-# DEFAULT_WORKLOAD_IDENTITY_PROVIDER = 'github-provider'
-# # Default workload identity service account name 
-# DEFAULT_WORKLOAD_IDENTITY_SERVICE_ACCOUNT = 'service-account'
 
 # Recommended software versions
 MIN_GCLOUD_BETA_VERSION = '2022.10.21'
