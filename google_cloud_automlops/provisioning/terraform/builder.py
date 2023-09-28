@@ -133,7 +133,7 @@ def build(
             vpc_connector=config.vpc_connector), 'w')
     #TODO: implement workload identity as optional
     if deployment_framework == Deployer.GITHUB_ACTIONS.value:
-        write_file(f'{BASE_DIR}provision/environment/variables.auto.tfvars', create_variables_auto_tfvars_jinja(
+        write_file(f'{BASE_DIR}provision/environment/variables.auto.tfvars', create_environment_variables_auto_tfvars_jinja(
             artifact_repo_location=config.artifact_repo_location,
             artifact_repo_name=config.artifact_repo_name,
             build_trigger_location=config.build_trigger_location,
