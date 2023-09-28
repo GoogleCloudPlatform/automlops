@@ -100,8 +100,6 @@ def git_workflow():
     
     execute_process(f'git add {BASE_DIR} ', to_null=False) # TODO update based on Gitlab yaml ci files
     execute_process(f'git add {GITHUB_DIR} ', to_null=False) # TODO update based on Gitlab yaml ci files
-    execute_process(f'git add . ', to_null=False) # TODO update based on Gitlab yaml ci files
-
 
     execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
     execute_process(
