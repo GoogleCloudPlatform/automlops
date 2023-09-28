@@ -349,7 +349,7 @@ def generate(
 
     elif provisioning_framework == Provisioner.TERRAFORM.value:
         logging.info(f'Writing terraform provisioning code to {BASE_DIR}provision')
-        TerraformBuilder.build(project_id, TerraformConfig(
+        TerraformBuilder.build(project_id, deployment_framework, TerraformConfig(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=derived_artifact_repo_name,
             artifact_repo_type=artifact_repo_type,
