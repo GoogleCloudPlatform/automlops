@@ -144,7 +144,6 @@ def build(
             project_id=project_id,
             provision_credentials_key=config.provision_credentials_key,
             pubsub_topic_name=config.pubsub_topic_name,
-            repository_id = config.repsitory_id,
             schedule_location=config.schedule_location,
             schedule_name=config.schedule_name,
             schedule_pattern=config.schedule_pattern,

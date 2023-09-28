@@ -396,7 +396,7 @@ def generate(
                 artifact_repo_name=derived_artifact_repo_name,
                 naming_prefix=naming_prefix,
                 project_id=project_id,
-                project_number=project_number, 
+                project_number=project_number,
                 pubsub_topic_name=derived_pubsub_topic_name,
                 use_ci=use_ci,
                 workload_identity_pool=workload_identity_pool,

@@ -67,7 +67,7 @@ def create_github_actions_jinja(
         artifact_repo_name: str,
         naming_prefix: str,
         project_id: str,
-        project_number: str, 
+        project_number: str,
         pubsub_topic_name: str,
         use_ci: bool,
         workload_identity_pool: str,

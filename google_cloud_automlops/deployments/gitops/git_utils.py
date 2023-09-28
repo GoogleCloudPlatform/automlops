@@ -98,7 +98,6 @@ def git_workflow():
     execute_process('''git commit -m 'init' ''', to_null=False)
     execute_process(
         f'''git push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
-    
     execute_process(f'git add {BASE_DIR} ', to_null=False) # TODO update based on Gitlab yaml ci files
     execute_process(f'git add {GITHUB_DIR} ', to_null=False) # TODO update based on Gitlab yaml ci files
 
