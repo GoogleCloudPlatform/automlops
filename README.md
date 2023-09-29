@@ -388,6 +388,7 @@ AutoMLOps.generate(project_id=PROJECT_ID,
                    deployment_framework='github-actions',
                    project_number='<project_number>',
                    source_repo_type='github',
+                   source_repo_name='source/repo/string',
                    workload_identity_pool='identity_pool_string',
                    workload_identity_provider='identity_provider_string',
                    workload_identity_service_account='workload_identity_sa')
