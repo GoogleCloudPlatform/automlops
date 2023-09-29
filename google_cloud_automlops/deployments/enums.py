@@ -34,7 +34,7 @@ class CodeRepository(Enum):
 
     BITBUCKET = 'bitbucket'   # roadmap item
     CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
-    GITHUB = 'github'   # roadmap item
+    GITHUB = 'github'
     GITLAB = 'gitlab'   # roadmap item
 
 

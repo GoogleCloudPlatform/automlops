@@ -26,10 +26,9 @@ from jinja2 import Template
 
 from google_cloud_automlops.utils.utils import write_file
 from google_cloud_automlops.utils.constants import (
-    BASE_DIR,
     DEFAULT_SOURCE_REPO_BRANCH,
     GENERATED_GITHUB_ACTIONS_FILE,
-    GENERATED_COMPONENT_BASE,
+    COMPONENT_BASE_RELATIVE_PATH,
     GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH,
     GITHUB_ACTIONS_TEMPLATES_PATH
@@ -44,10 +43,13 @@ def build(config: GitHubActionsConfig):
         config.artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
         config.artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
         config.naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        config.project_id: The project ID.   
-        config.project_number: The project number.      
+        config.project_id: The project ID.
+        config.project_number: The project number.
         config.pubsub_topic_name: The name of the pubsub topic to publish to.
         config.use_ci: Flag that determines whether to use Cloud CI/CD.
+        config.workload_identity_pool: Pool for workload identity federation. 
+        config.workload_identity_provider: Provider for workload identity federation.
+        config.workload_identity_service_account: Service account for workload identity federation. 
     """
     # Write github actions config
     write_file(GENERATED_GITHUB_ACTIONS_FILE, create_github_actions_jinja(
@@ -80,9 +82,13 @@ def create_github_actions_jinja(
         artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
         artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
         naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        project_id: The project ID.        
+        project_id: The project ID.
+        project_number: The project number.
         pubsub_topic_name: The name of the pubsub topic to publish to.
         use_ci: Flag that determines whether to use Cloud CI/CD.
+        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_provider: Provider for workload identity federation.
+        workload_identity_service_account: Service account for workload identity federation. 
 
     Returns:
         str: Contents of github_actions.yaml.
@@ -93,8 +99,7 @@ def create_github_actions_jinja(
         return template.render(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=artifact_repo_name,
-            base_dir=BASE_DIR,
-            generated_component_base=GENERATED_COMPONENT_BASE,
+            component_base_relative_path=COMPONENT_BASE_RELATIVE_PATH,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
             naming_prefix=naming_prefix,

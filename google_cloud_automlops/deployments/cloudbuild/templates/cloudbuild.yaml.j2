@@ -8,7 +8,7 @@ steps:
   - name: "gcr.io/cloud-builders/docker"
     args: [ "build", "-t", "{{artifact_repo_location}}-docker.pkg.dev/{{project_id}}/{{artifact_repo_name}}/{{naming_prefix}}/components/component_base:latest",
             "--cache-from", "{{artifact_repo_location}}-docker.pkg.dev/{{project_id}}/{{artifact_repo_name}}/{{naming_prefix}}/components/component_base:latest", "." ]
-    dir: "{{component_base_path}}"
+    dir: "{{component_base_relative_path}}"
     id: "build_component_base"
     waitFor: ["-"]
 {% if use_ci %}
@@ -19,7 +19,7 @@ steps:
   # push the component_base image
   - name: "gcr.io/cloud-builders/docker"
     args: ["push", "{{artifact_repo_location}}-docker.pkg.dev/{{project_id}}/{{artifact_repo_name}}/{{naming_prefix}}/components/component_base:latest"]
-    dir: "{{component_base_path}}"
+    dir: "{{component_base_relative_path}}"
     id: "push_component_base"
     waitFor: ["build_component_base"]
 

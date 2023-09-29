@@ -25,39 +25,36 @@ from google_cloud_automlops.deployments.github_actions.builder import create_git
 
 @pytest.mark.parametrize(
     '''artifact_repo_location, artifact_repo_name, naming_prefix,'''
-    '''project_id, project_number, pubsub_topic_name, use_ci, workload_identity_provider, '''
+    '''project_id, project_number, pubsub_topic_name, use_ci, workload_identity_provider,'''
     ''' workload_identity_pool, workload_identity_service_account, is_included,'''
     '''expected_output_snippets''',
     [
         (
             'us-central1', 'my-artifact-repo', 'my-prefix',
-            'my-project', 'my-project-number', 'my-topic', 'my-provider',
-            'my-pool', 'my-sa', True, True,
+            'my-project', 'my-project-number', 'my-topic', True, 'my-provider',
+            'my-pool', 'my-sa', True,
             ['id: auth',
              'id: build-push-component-base',
              'id: install-pipeline-deps',
              'id: build-pipeline-spec',
              'id: publish-to-topic', 
              'us-central1-docker.pkg.dev/my-project/my-artifact-repo/my-prefix/components/component_base:latest',
-             'gcloud pubsub topics publish my-topic --message'
-             ]
+             'gcloud pubsub topics publish my-topic --message']
         ),
         (
             'us-central1', 'my-artifact-repo', 'my-prefix',
-            'my-project', 'my-project-number', 'my-topic', 'my-provider',
-            'my-pool', 'my-sa', True, True,
+            'my-project', 'my-project-number', 'my-topic', False,  'my-provider',
+            'my-pool', 'my-sa', True,
             ['id: build-push-component-base',
              'us-central1-docker.pkg.dev/my-project/my-artifact-repo/my-prefix/components/component_base:latest']
         ),
         (
             'us-central1', 'my-artifact-repo', 'my-prefix',
-            'my-project', 'my-project-number', 'my-topic', 'my-provider',
-            'my-pool', 'my-sa', True, True,
-            ['id: build-push-component-base',
-             'id: install-pipeline-deps',
+            'my-project', 'my-project-number', 'my-topic', False,  'my-provider',
+            'my-pool', 'my-sa', False,
+            ['id: install-pipeline-deps',
              'id: build-pipeline-spec',
              'id: publish-to-topic',
-             'us-central1-docker.pkg.dev/my-project/my-artifact-repo/my-prefix/components/component_base:latest',
              'gcloud pubsub topics publish my-topic --message']
         ),
     ]
@@ -70,12 +67,30 @@ def test_create_github_actions_jinja(
     project_number: str,
     pubsub_topic_name: str,
     use_ci: bool,
-    is_included: bool,
     workload_identity_pool: str,
     workload_identity_provider: str,
     workload_identity_service_account: str,
+    is_included: bool,
     expected_output_snippets: List[str]):
-    """Tests the update_params function, which reformats the source code type
+    """Tests create_github_actions_jinja, which generates content for the github actions file. 
+       There are three test cases for this function:
+        1. Checks that expected strings are included when use_ci=True. 
+        2. Checks that expected strings are included when use_ci=False. 
+        3. Checks that certain strings are not included when use_ci=False. 
+
+    Args:
+        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
+        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
+        project_id: The project ID.
+        project_number: The project number.
+        pubsub_topic_name: The name of the pubsub topic to publish to.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_provider: Provider for workload identity federation.
+        workload_identity_service_account: Service account for workload identity federation. 
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
 
     github_actions_config = create_github_actions_jinja(

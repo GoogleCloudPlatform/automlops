@@ -115,6 +115,7 @@ def launchAll(
     pipeline_job_submission_service_name: Optional[str] = None,
     pipeline_job_submission_service_type: Optional[str] = PipelineJobSubmitter.CLOUD_FUNCTIONS.value,
     precheck: Optional[bool] = True,
+    project_number: Optional[str] = None,
     provision_credentials_key: str = None,
     provisioning_framework: Optional[str] = Provisioner.GCLOUD.value,
     pubsub_topic_name: Optional[str] = None,
@@ -128,7 +129,10 @@ def launchAll(
     storage_bucket_name: Optional[str] = None,
     hide_warnings: Optional[bool] = True,
     use_ci: Optional[bool] = False,
-    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR):
+    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR,
+    workload_identity_pool: Optional[str] = None,
+    workload_identity_provider: Optional[str] = None,
+    workload_identity_service_account: Optional[str] = None):
     """Generates relevant pipeline and component artifacts,
        then provisions resources, builds, compiles, and submits the PipelineJob.
        Check constants file for variable default values.
@@ -151,6 +155,7 @@ def launchAll(
         pipeline_job_submission_service_name: The name of the cloud submission service.
         pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
         precheck: Boolean used to specify whether to check for provisioned resources before deploying.
+        project_number: The project number.
         provision_credentials_key: Either a path to or the contents of a service account key file in JSON format.
         provisioning_framework: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
         pubsub_topic_name: The name of the pubsub topic to publish to.
@@ -165,6 +170,9 @@ def launchAll(
         hide_warnings: Boolean used to specify whether to show provision/deploy permission warnings
         use_ci: Flag that determines whether to use Cloud CI/CD.
         vpc_connector: The name of the vpc connector to use.
+        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_provider: Provider for workload identity federation.
+        workload_identity_service_account: Service account for workload identity federation.
     """
     generate(
         project_id=project_id,
@@ -183,6 +191,7 @@ def launchAll(
         pipeline_job_submission_service_location=pipeline_job_submission_service_location,
         pipeline_job_submission_service_name=pipeline_job_submission_service_name,
         pipeline_job_submission_service_type=pipeline_job_submission_service_type,
+        project_number=project_number,
         provisioning_framework=provisioning_framework,
         provision_credentials_key=provision_credentials_key,
         pubsub_topic_name=pubsub_topic_name,
@@ -195,7 +204,10 @@ def launchAll(
         storage_bucket_location=storage_bucket_location,
         storage_bucket_name=storage_bucket_name,
         use_ci=use_ci,
-        vpc_connector=vpc_connector)
+        vpc_connector=vpc_connector,
+        workload_identity_pool=workload_identity_pool,
+        workload_identity_provider=workload_identity_provider,
+        workload_identity_service_account=workload_identity_service_account)
     provision(hide_warnings=hide_warnings)
     deploy(hide_warnings=hide_warnings, precheck=precheck)
 
@@ -203,7 +215,6 @@ def launchAll(
 def generate(
     project_id: str,
     pipeline_params: Dict,
-    project_number: Optional[str] = None,
     artifact_repo_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     artifact_repo_name: Optional[str] = None,
     artifact_repo_type: Optional[str] = ArtifactRepository.ARTIFACT_REGISTRY.value,
@@ -218,6 +229,7 @@ def generate(
     pipeline_job_submission_service_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     pipeline_job_submission_service_name: Optional[str] = None,
     pipeline_job_submission_service_type: Optional[str] = PipelineJobSubmitter.CLOUD_FUNCTIONS.value,
+    project_number: Optional[str] = None,
     provision_credentials_key: str = None,
     provisioning_framework: Optional[str] = Provisioner.GCLOUD.value,
     pubsub_topic_name: Optional[str] = None,
@@ -349,7 +361,7 @@ def generate(
 
     elif provisioning_framework == Provisioner.TERRAFORM.value:
         logging.info(f'Writing terraform provisioning code to {BASE_DIR}provision')
-        TerraformBuilder.build(project_id, deployment_framework, TerraformConfig(
+        TerraformBuilder.build(project_id, TerraformConfig(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=derived_artifact_repo_name,
             artifact_repo_type=artifact_repo_type,
@@ -388,8 +400,9 @@ def generate(
                 project_id=project_id,
                 pubsub_topic_name=derived_pubsub_topic_name,
                 use_ci=use_ci))
-    logging.info('Code Generation Complete.')
     if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+        if project_number is None:
+            raise ValueError('Project number must be specified in order to use to use Github Actions integration.')
         logging.info(f'Writing GitHub Actions config to {GENERATED_GITHUB_ACTIONS_FILE}')
         GithubActionsBuilder.build(GitHubActionsConfig(
                 artifact_repo_location=artifact_repo_location,

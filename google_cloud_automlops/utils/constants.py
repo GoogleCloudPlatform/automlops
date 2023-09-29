@@ -73,6 +73,7 @@ GENERATED_PIPELINE_FILE = BASE_DIR + 'pipelines/pipeline.py'
 GENERATED_PIPELINE_RUNNER_FILE = BASE_DIR + 'pipelines/pipeline_runner.py'
 GENERATED_COMPONENT_BASE = BASE_DIR + 'components/component_base'
 GENERATED_COMPONENT_BASE_SRC = BASE_DIR + 'components/component_base/src'
+COMPONENT_BASE_RELATIVE_PATH = 'components/component_base'
 GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
 GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
 GENERATED_DIRS = [

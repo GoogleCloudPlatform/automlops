@@ -50,8 +50,7 @@ from google_cloud_automlops.provisioning.configs import TerraformConfig
 
 def build(
     project_id: str,
-    deployment_framework: str,
-    config: TerraformConfig,
+    config: TerraformConfig
 ):
     """Constructs and writes terraform scripts: Generates infrastructure using terraform hcl resource management style.
 
@@ -111,7 +110,7 @@ def build(
     # create environment/variables.tf
     write_file(f'{BASE_DIR}provision/environment/variables.tf', create_environment_variables_tf_jinja(), 'w')
     # create environment/variables.auto.tfvars
-    if deployment_framework == Deployer.CLOUDBUILD.value:
+    if config.deployment_framework == Deployer.CLOUDBUILD.value:
         write_file(f'{BASE_DIR}provision/environment/variables.auto.tfvars', create_environment_variables_auto_tfvars_jinja(
             artifact_repo_location=config.artifact_repo_location,
             artifact_repo_name=config.artifact_repo_name,
@@ -132,7 +131,7 @@ def build(
             storage_bucket_name=config.storage_bucket_name,
             vpc_connector=config.vpc_connector), 'w')
     #TODO: implement workload identity as optional
-    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+    if config.deployment_framework == Deployer.GITHUB_ACTIONS.value:
         write_file(f'{BASE_DIR}provision/environment/variables.auto.tfvars', create_environment_variables_auto_tfvars_jinja(
             artifact_repo_location=config.artifact_repo_location,
             artifact_repo_name=config.artifact_repo_name,
