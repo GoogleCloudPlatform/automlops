@@ -58,7 +58,7 @@ MIN_RECOMMENDED_TERRAFORM_VERSION = '1.5.6'
 
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
-GITHUB_DIR ='.github/workflows/'
+GITHUB_DIR = '.github/workflows/'
 GENERATED_DEFAULTS_FILE = BASE_DIR + 'configs/defaults.yaml'
 GENERATED_PIPELINE_SPEC_SH_FILE = BASE_DIR + 'scripts/build_pipeline_spec.sh'
 GENERATED_BUILD_COMPONENTS_SH_FILE = BASE_DIR + 'scripts/build_components.sh'
