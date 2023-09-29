@@ -83,8 +83,7 @@ def create_cloudbuild_jinja(
         return template.render(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=artifact_repo_name,
-            base_dir=BASE_DIR,
-            generated_component_base=GENERATED_COMPONENT_BASE,
+            component_base_path='components/component_base',
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
             naming_prefix=naming_prefix,

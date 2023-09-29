@@ -132,13 +132,13 @@ resource "google_cloudbuild_trigger" "cloudbuild_trigger" {
   project                 = var.project_id
   name                    = var.build_trigger_name
   location                = var.build_trigger_location
-  included_files          = ["{{base_dir}}**"]
+  ignored-files           = [".gitignore"]
   trigger_template {
     branch_name           = var.source_repo_branch
     project_id            = var.project_id
     repo_name             = var.source_repo_name
   }
-  filename                = "{{base_dir}}cloudbuild.yaml"
+  filename                = "cloudbuild.yaml"
 
   depends_on              = [google_sourcerepo_repository.source_repo]
 }{% endif %}

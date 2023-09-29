@@ -160,12 +160,12 @@ if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$BUILD_
 
   echo "Creating Cloudbuild Trigger on branch $SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
   gcloud beta builds triggers create cloud-source-repositories \
-    --included-files=${BASE_DIR}** \
+    --ignored-files=.gitignore \
     --region=$BUILD_TRIGGER_LOCATION \
     --name=$BUILD_TRIGGER_NAME \
     --repo=$SOURCE_REPO_NAME \
     --branch-pattern="$SOURCE_REPO_BRANCH" \
-    --build-config=${BASE_DIR}cloudbuild.yaml
+    --build-config=cloudbuild.yaml
 
 else
 
