@@ -29,7 +29,7 @@ jobs:
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/{{project_number}}/locations/global/workloadIdentityPools/{{workload_identity_pool}}/providers/{{workload_identity_provider}}' # e.g. - projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider 
-          service_account: '{{workload_identity_service_account}}@{{project_id}}.iam.gserviceaccount.com'     # e.g. - my-service-account@my-project.iam.gserviceaccount.com
+          service_account: '{{workload_identity_service_account}}'     # e.g. - my-service-account@my-project.iam.gserviceaccount.com
 
       - name: Set up Cloud SDK
         id: setup-gcloud

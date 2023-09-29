@@ -275,7 +275,7 @@ A description of the parameters is below:
 - `deployment_framework`: The CI tool to use (e.g. cloud build, github actions, etc.)
 - `naming_prefix`: Unique value used to differentiate pipelines and services across AutoMLOps runs.
 - `orchestration_framework`: The orchestration framework to use (e.g. kfp, tfx, etc.)
-- `pipeline_job_runner_service_account`: Service Account to run PipelineJobs.
+- `pipeline_job_runner_service_account`: Service Account to run PipelineJobs (specify the full string).
 - `pipeline_job_submission_service_location`: The location of the cloud submission service.
 - `pipeline_job_submission_service_name`: The name of the cloud submission service.
 - `pipeline_job_submission_service_type`: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
@@ -297,7 +297,7 @@ A description of the parameters is below:
 - `vpc_connector`: The name of the vpc connector to use.
 - `workload_identity_pool`: Pool for workload identity federation. 
 - `workload_identity_provider`: Provider for workload identity federation.
-- `workload_identity_service_account`: Service account for workload identity federation.
+- `workload_identity_service_account`: Service account for workload identity federation (specify the full string).
 
 AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 
