@@ -1,6 +1,23 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.3] - 2023-09-29
+
+### Added
+
+- Support for Github Actions integration
+- Added workload identity federation integration
+
+### Changed
+
+- Updated documentation
+- .git and relevant files are now placed inside the AutoMLOps/ base directory
+
+### Fixed
+
+- Set default cloud functions registry to the artifact-registry that is created as part of the provision operation
+
+
 ## [1.2.2] - 2023-09-25
 
 ### Added

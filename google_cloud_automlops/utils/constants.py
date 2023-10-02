@@ -58,6 +58,7 @@ MIN_RECOMMENDED_TERRAFORM_VERSION = '1.5.6'
 
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
+GITHUB_DIR = BASE_DIR + '.github/workflows/'
 GENERATED_DEFAULTS_FILE = BASE_DIR + 'configs/defaults.yaml'
 GENERATED_PIPELINE_SPEC_SH_FILE = BASE_DIR + 'scripts/build_pipeline_spec.sh'
 GENERATED_BUILD_COMPONENTS_SH_FILE = BASE_DIR + 'scripts/build_components.sh'
@@ -66,15 +67,18 @@ GENERATED_RUN_ALL_SH_FILE = BASE_DIR + 'scripts/run_all.sh'
 GENERATED_RESOURCES_SH_FILE = BASE_DIR + 'provision/provision_resources.sh'
 GENERATED_PUBLISH_TO_TOPIC_FILE = BASE_DIR + 'scripts/publish_to_topic.sh'
 GENERATED_CLOUDBUILD_FILE = BASE_DIR + 'cloudbuild.yaml'
+GENERATED_GITHUB_ACTIONS_FILE = GITHUB_DIR + 'github_actions.yaml'
 GENERATED_PIPELINE_REQUIREMENTS_FILE = BASE_DIR + 'pipelines/requirements.txt'
 GENERATED_PIPELINE_FILE = BASE_DIR + 'pipelines/pipeline.py'
 GENERATED_PIPELINE_RUNNER_FILE = BASE_DIR + 'pipelines/pipeline_runner.py'
 GENERATED_COMPONENT_BASE = BASE_DIR + 'components/component_base'
 GENERATED_COMPONENT_BASE_SRC = BASE_DIR + 'components/component_base/src'
+COMPONENT_BASE_RELATIVE_PATH = 'components/component_base'
 GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
 GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
 GENERATED_DIRS = [
     BASE_DIR,
+    GITHUB_DIR,
     BASE_DIR + 'components',
     BASE_DIR + 'components/component_base',
     BASE_DIR + 'components/component_base/src',
@@ -116,6 +120,7 @@ PULUMI_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.pulumi.templates'
 GCLOUD_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.gcloud.templates'
 KFP_TEMPLATES_PATH = 'google_cloud_automlops.orchestration.kfp.templates'
 CLOUDBUILD_TEMPLATES_PATH = 'google_cloud_automlops.deployments.cloudbuild.templates'
+GITHUB_ACTIONS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.github_actions.templates'
 GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.gitops.templates'
 
 # Required IAM Roles for pipeline runner service account
