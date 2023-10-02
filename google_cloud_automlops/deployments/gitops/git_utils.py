@@ -76,9 +76,9 @@ def git_workflow():
         has_remote_branch = subprocess.check_output(
             [f'''git -C {BASE_DIR} ls-remote origin {defaults['gcp']['source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
+        write_file(f'{BASE_DIR}.gitignore', _create_gitignore_jinja(), 'w')
         # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
         if not has_remote_branch:
-            write_file(f'{BASE_DIR}.gitignore', _create_gitignore_jinja(), 'w')
             execute_process(f'git -C {BASE_DIR} add .gitignore', to_null=False)
             execute_process(f'''git -C {BASE_DIR} commit -m 'init' ''', to_null=False)
             execute_process(
