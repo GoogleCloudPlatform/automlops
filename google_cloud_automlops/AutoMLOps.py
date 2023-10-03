@@ -41,6 +41,7 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
+    GITHUB_DIR,
     OUTPUT_DIR
 )
 from google_cloud_automlops.utils.utils import (
@@ -276,6 +277,8 @@ def generate(
         make_dirs(GENERATED_SERVICES_DIRS)
     if provisioning_framework == Provisioner.TERRAFORM.value:
         make_dirs(GENERATED_TERRAFORM_DIRS)
+    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+        make_dirs(GITHUB_DIR)
 
     # Set derived vars if none were given for certain variables
     derived_artifact_repo_name = f'{naming_prefix}-artifact-registry' if artifact_repo_name is None else artifact_repo_name

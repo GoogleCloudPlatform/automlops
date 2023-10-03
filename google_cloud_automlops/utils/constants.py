@@ -78,7 +78,6 @@ GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_paramet
 GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
 GENERATED_DIRS = [
     BASE_DIR,
-    GITHUB_DIR,
     BASE_DIR + 'components',
     BASE_DIR + 'components/component_base',
     BASE_DIR + 'components/component_base/src',

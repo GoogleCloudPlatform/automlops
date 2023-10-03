@@ -24,14 +24,14 @@ steps:
     waitFor: ["build_component_base"]
 
   # Install dependencies
-  - name: python
+  - name: python:3.10
     entrypoint: pip
     args: ["install", "-r", "pipelines/requirements.txt", "--user"]
     id: "install_pipelines_deps"
     waitFor: ["push_component_base"]
 
   # Build pipeline spec
-  - name: python
+  - name: python:3.10
     entrypoint: python
     args: ["-m", "pipelines.pipeline", "--config", "configs/defaults.yaml"]
     id: "build_pipeline_spec"
