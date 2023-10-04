@@ -462,19 +462,19 @@ def get_required_apis(defaults: dict) -> Set:
         set: The set of required APIs
     """
     required_apis = set([
+        'cloudbuild.googleapis.com',
         'cloudresourcemanager.googleapis.com',
         'compute.googleapis.com',
         'iamcredentials.googleapis.com',
         'iam.googleapis.com',
-        'ml.googleapis.com',
         'pubsub.googleapis.com',
         'storage.googleapis.com'])
     if defaults['tooling']['orchestration_framework'] == Orchestrator.KFP.value:
         required_apis.add('aiplatform.googleapis.com')
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
         required_apis.add('artifactregistry.googleapis.com')
-    if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-        required_apis.add('cloudbuild.googleapis.com')
+    # if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
+    #     required_apis.add('cloudbuild.googleapis.com')
     if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
         required_apis.add('cloudscheduler.googleapis.com')
     if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:

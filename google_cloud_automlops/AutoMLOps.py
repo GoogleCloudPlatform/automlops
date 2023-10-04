@@ -35,11 +35,13 @@ from google_cloud_automlops.utils.constants import (
     DEFAULT_SOURCE_REPO_BRANCH,
     DEFAULT_VPC_CONNECTOR,
     GENERATED_CLOUDBUILD_FILE,
+    GENERATED_GITHUB_ACTIONS_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_DIRS,
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
+    GITHUB_DIR,
     OUTPUT_DIR
 )
 from google_cloud_automlops.utils.utils import (
@@ -77,13 +79,15 @@ from google_cloud_automlops.provisioning.configs import (
 )
 # Deployment imports
 from google_cloud_automlops.deployments.cloudbuild import builder as CloudBuildBuilder
+from google_cloud_automlops.deployments.github_actions import builder as GithubActionsBuilder
 from google_cloud_automlops.deployments.enums import (
     ArtifactRepository,
     CodeRepository,
     Deployer
 )
 from google_cloud_automlops.deployments.configs import (
-    CloudBuildConfig
+    CloudBuildConfig,
+    GitHubActionsConfig
 )
 from google_cloud_automlops.deployments.gitops.git_utils import git_workflow
 
@@ -112,6 +116,7 @@ def launchAll(
     pipeline_job_submission_service_name: Optional[str] = None,
     pipeline_job_submission_service_type: Optional[str] = PipelineJobSubmitter.CLOUD_FUNCTIONS.value,
     precheck: Optional[bool] = True,
+    project_number: Optional[str] = None,
     provision_credentials_key: str = None,
     provisioning_framework: Optional[str] = Provisioner.GCLOUD.value,
     pubsub_topic_name: Optional[str] = None,
@@ -125,7 +130,10 @@ def launchAll(
     storage_bucket_name: Optional[str] = None,
     hide_warnings: Optional[bool] = True,
     use_ci: Optional[bool] = False,
-    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR):
+    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR,
+    workload_identity_pool: Optional[str] = None,
+    workload_identity_provider: Optional[str] = None,
+    workload_identity_service_account: Optional[str] = None):
     """Generates relevant pipeline and component artifacts,
        then provisions resources, builds, compiles, and submits the PipelineJob.
        Check constants file for variable default values.
@@ -143,11 +151,12 @@ def launchAll(
         deployment_framework: The CI tool to use (e.g. cloud build, github actions, etc.)
         naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
         orchestration_framework: The orchestration framework to use (e.g. kfp, tfx, etc.)
-        pipeline_job_runner_service_account: Service Account to run PipelineJobs.
+        pipeline_job_runner_service_account: Service Account to run PipelineJobs (specify the full string).
         pipeline_job_submission_service_location: The location of the cloud submission service.
         pipeline_job_submission_service_name: The name of the cloud submission service.
         pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
         precheck: Boolean used to specify whether to check for provisioned resources before deploying.
+        project_number: The project number.
         provision_credentials_key: Either a path to or the contents of a service account key file in JSON format.
         provisioning_framework: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
         pubsub_topic_name: The name of the pubsub topic to publish to.
@@ -162,6 +171,9 @@ def launchAll(
         hide_warnings: Boolean used to specify whether to show provision/deploy permission warnings
         use_ci: Flag that determines whether to use Cloud CI/CD.
         vpc_connector: The name of the vpc connector to use.
+        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_provider: Provider for workload identity federation.
+        workload_identity_service_account: Service account for workload identity federation (specify the full string).
     """
     generate(
         project_id=project_id,
@@ -180,6 +192,7 @@ def launchAll(
         pipeline_job_submission_service_location=pipeline_job_submission_service_location,
         pipeline_job_submission_service_name=pipeline_job_submission_service_name,
         pipeline_job_submission_service_type=pipeline_job_submission_service_type,
+        project_number=project_number,
         provisioning_framework=provisioning_framework,
         provision_credentials_key=provision_credentials_key,
         pubsub_topic_name=pubsub_topic_name,
@@ -192,7 +205,10 @@ def launchAll(
         storage_bucket_location=storage_bucket_location,
         storage_bucket_name=storage_bucket_name,
         use_ci=use_ci,
-        vpc_connector=vpc_connector)
+        vpc_connector=vpc_connector,
+        workload_identity_pool=workload_identity_pool,
+        workload_identity_provider=workload_identity_provider,
+        workload_identity_service_account=workload_identity_service_account)
     provision(hide_warnings=hide_warnings)
     deploy(hide_warnings=hide_warnings, precheck=precheck)
 
@@ -214,6 +230,7 @@ def generate(
     pipeline_job_submission_service_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     pipeline_job_submission_service_name: Optional[str] = None,
     pipeline_job_submission_service_type: Optional[str] = PipelineJobSubmitter.CLOUD_FUNCTIONS.value,
+    project_number: Optional[str] = None,
     provision_credentials_key: str = None,
     provisioning_framework: Optional[str] = Provisioner.GCLOUD.value,
     pubsub_topic_name: Optional[str] = None,
@@ -226,7 +243,10 @@ def generate(
     storage_bucket_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     storage_bucket_name: Optional[str] = None,
     use_ci: Optional[bool] = False,
-    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR):
+    vpc_connector: Optional[str] = DEFAULT_VPC_CONNECTOR,
+    workload_identity_pool: Optional[str] = None, #TODO: integrate optional creation of pool and provider during provisioning stage
+    workload_identity_provider: Optional[str] = None,
+    workload_identity_service_account: Optional[str] = None):
     """Generates relevant pipeline and component artifacts.
        Check constants file for variable default values.
 
@@ -257,6 +277,8 @@ def generate(
         make_dirs(GENERATED_SERVICES_DIRS)
     if provisioning_framework == Provisioner.TERRAFORM.value:
         make_dirs(GENERATED_TERRAFORM_DIRS)
+    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+        make_dirs(GITHUB_DIR)
 
     # Set derived vars if none were given for certain variables
     derived_artifact_repo_name = f'{naming_prefix}-artifact-registry' if artifact_repo_name is None else artifact_repo_name
@@ -381,6 +403,21 @@ def generate(
                 project_id=project_id,
                 pubsub_topic_name=derived_pubsub_topic_name,
                 use_ci=use_ci))
+    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+        if project_number is None:
+            raise ValueError('Project number must be specified in order to use to use Github Actions integration.')
+        logging.info(f'Writing GitHub Actions config to {GENERATED_GITHUB_ACTIONS_FILE}')
+        GithubActionsBuilder.build(GitHubActionsConfig(
+                artifact_repo_location=artifact_repo_location,
+                artifact_repo_name=derived_artifact_repo_name,
+                naming_prefix=naming_prefix,
+                project_id=project_id,
+                project_number=project_number,
+                pubsub_topic_name=derived_pubsub_topic_name,
+                use_ci=use_ci,
+                workload_identity_pool=workload_identity_pool,
+                workload_identity_provider=workload_identity_provider,
+                workload_identity_service_account=workload_identity_service_account))
     logging.info('Code Generation Complete.')
 
 

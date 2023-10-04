@@ -24,7 +24,7 @@ class Deployer(Enum):
     """Enum representing the available options for orchestration management."""
 
     CLOUDBUILD = 'cloud-build'
-    # GITHUB_ACTIONS = 'github-actions'   # roadmap item
+    GITHUB_ACTIONS = 'github-actions'
     # GITLAB_CI = 'gitlab-ci'   # roadmap item
     # JENKINS = 'jenkins'   # roadmap item
 
@@ -34,7 +34,7 @@ class CodeRepository(Enum):
 
     BITBUCKET = 'bitbucket'   # roadmap item
     CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
-    GITHUB = 'github'   # roadmap item
+    GITHUB = 'github'
     GITLAB = 'gitlab'   # roadmap item
 
 

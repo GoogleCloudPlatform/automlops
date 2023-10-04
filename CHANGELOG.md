@@ -1,6 +1,49 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.4] - 2023-10-03
+
+### Added
+
+### Changed
+
+- Only will create .github/ directory if using github-actions
+
+### Fixed
+
+- Pinned the python docker container step for the cloudbuild yaml to python:3.10, this address some dependency issues with the latest python docker image
+
+## [1.2.3] - 2023-09-29
+
+### Added
+
+- Support for Github Actions integration
+- Added workload identity federation integration
+
+### Changed
+
+- Updated documentation
+- .git and relevant files are now placed inside the AutoMLOps/ base directory
+
+### Fixed
+
+- Set default cloud functions registry to the artifact-registry that is created as part of the provision operation
+
+
+## [1.2.2] - 2023-09-25
+
+### Added
+
+### Changed
+
+- Commented out change from 1.2.1 to set cloud functions default registry to artifact-registry; there appears to be an auth bug with this setting
+- Updated documentation
+
+### Fixed
+ 
+- Removed legacy ml.googleapis.com API that is deprecated as of 9/25/2023
+
+
 ## [1.2.1] - 2023-09-20
 
 ### Added

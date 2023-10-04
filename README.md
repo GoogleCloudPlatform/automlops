@@ -63,7 +63,7 @@ Inferencing
 
 **Deployment Frameworks**: Builds component docker containers, compiles pipelines, and submits Pipeline Jobs
 - Cloud Build
-- [coming soon] Github Actions
+- Github Actions
 - [coming soon] Gitlab CI
 - [coming soon] Bitbucket Pipelines
 - [coming soon] Jenkins
@@ -165,11 +165,9 @@ Based on the above user selection, AutoMLOps will enable up to the following API
 - [cloudfunctions.googleapis.com](https://cloud.google.com/functions/docs/reference/rest)
 - [cloudresourcemanager.googleapis.com](https://cloud.google.com/resource-manager/reference/rest)
 - [cloudscheduler.googleapis.com](https://cloud.google.com/scheduler/docs/reference/rest)
-- [cloudtasks.googleapis.com](https://cloud.google.com/tasks/docs/reference/rest)
 - [compute.googleapis.com](https://cloud.google.com/compute/docs/reference/rest/v1)
 - [iam.googleapis.com](https://cloud.google.com/iam/docs/reference/rest)
 - [iamcredentials.googleapis.com](https://cloud.google.com/iam/docs/reference/credentials/rest)
-- [ml.googleapis.com](https://cloud.google.com/ai-platform/training/docs/reference/rest)
 - [pubsub.googleapis.com](https://cloud.google.com/pubsub/docs/reference/rest)
 - [run.googleapis.com](https://cloud.google.com/run/docs/reference/rest)
 - [storage.googleapis.com](https://cloud.google.com/storage/docs/apis)
@@ -218,26 +216,30 @@ Optional parameters (defaults shown):
 12. `pipeline_job_submission_service_location: str = 'us-central1'`
 13. `pipeline_job_submission_service_name: str = f'{naming_prefix}-job-submission-svc'`
 14. `pipeline_job_submission_service_type: str = 'cloud-functions'`
-15. `provision_credentials_key: str = None`
-16. `provisioning_framework: str = 'gcloud'`
-17. `pubsub_topic_name: str = f'{naming_prefix}-queueing-svc'`
-18. `schedule_location: str = 'us-central1'`
-19. `schedule_name: str = f'{naming_prefix}-schedule'`
-20. `schedule_pattern: str = 'No Schedule Specified'`
-21. `source_repo_branch: str = 'automlops'`
-22. `source_repo_name: str = f'{naming_prefix}-repository'`
-23. `source_repo_type: str = 'cloud-source-repositories'`
-24. `storage_bucket_location: str = 'us-central1'`
-25. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
-26. `use_ci: bool = False`
-27. `vpc_connector: str = 'No VPC Specified'`
+15. `project_number: str = None`
+16. `provision_credentials_key: str = None`
+17. `provisioning_framework: str = 'gcloud'`
+18. `pubsub_topic_name: str = f'{naming_prefix}-queueing-svc'`
+19. `schedule_location: str = 'us-central1'`
+20. `schedule_name: str = f'{naming_prefix}-schedule'`
+21. `schedule_pattern: str = 'No Schedule Specified'`
+22. `source_repo_branch: str = 'automlops'`
+23. `source_repo_name: str = f'{naming_prefix}-repository'`
+24. `source_repo_type: str = 'cloud-source-repositories'`
+25. `storage_bucket_location: str = 'us-central1'`
+26. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
+27. `use_ci: bool = False`
+28. `vpc_connector: str = 'No VPC Specified'`
+29. `workload_identity_pool: str = None`
+30. `workload_identity_provider: str = None`
+31. `workload_identity_service_account: str = None`
 
 Parameter Options:
 - `artifact_repo_type=`:
     - 'artifact-registry' (default)
 - `deployment_framework=`:
     - 'cloud-build' (default)
-    - [coming soon] 'github-actions'
+    - 'github-actions'
     - [coming soon] 'gitlab-ci'
     - [coming soon] 'bitbucket-pipelines'
     - [coming soon] 'jenkins'
@@ -273,11 +275,12 @@ A description of the parameters is below:
 - `deployment_framework`: The CI tool to use (e.g. cloud build, github actions, etc.)
 - `naming_prefix`: Unique value used to differentiate pipelines and services across AutoMLOps runs.
 - `orchestration_framework`: The orchestration framework to use (e.g. kfp, tfx, etc.)
-- `pipeline_job_runner_service_account`: Service Account to run PipelineJobs.
+- `pipeline_job_runner_service_account`: Service Account to run PipelineJobs (specify the full string).
 - `pipeline_job_submission_service_location`: The location of the cloud submission service.
 - `pipeline_job_submission_service_name`: The name of the cloud submission service.
 - `pipeline_job_submission_service_type`: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
 - `precheck`: Boolean used to specify whether to check for provisioned resources before deploying.
+- `project_number`: The project number.
 - `provision_credentials_key`: Either a path to or the contents of a service account key file in JSON format.
 - `provisioning_framework`: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
 - `pubsub_topic_name`: The name of the pubsub topic to publish to.
@@ -292,6 +295,9 @@ A description of the parameters is below:
 - `hide_warnings`: Boolean used to specify whether to show provision/deploy permission warnings
 - `use_ci`: Flag that determines whether to use Cloud CI/CD.
 - `vpc_connector`: The name of the vpc connector to use.
+- `workload_identity_pool`: Pool for workload identity federation. 
+- `workload_identity_provider`: Provider for workload identity federation.
+- `workload_identity_service_account`: Service account for workload identity federation (specify the full string).
 
 AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 
@@ -335,7 +341,7 @@ AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `Auto
         ├── requirements.txt                       : Package requirements for the REST API service.
         ├── main.py                                : Python REST API source code.
 ├── README.md                                      : Readme markdown file describing the contents of the generated directories.
-└── cloudbuild.yaml                                : Cloudbuild configuration file for building custom components.
+└── Build config yaml                              : Build configuration file for building custom components.
 ```
 
 # Provisioning
@@ -371,6 +377,22 @@ If `use_ci=True`, AutoMLOps will generate and use a fully featured CI/CD environ
 </p>
 
 # Other Customizations
+
+**Using Github Actions:**
+
+To use Github Actions integration, you must first have a [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) set up properly. You must use a pre-existing Github repo, and you must also have already set up and registered your [ssh keys](https://docs.github.com/en/authentication/connecting-to-github-with-ssh/adding-a-new-ssh-key-to-your-github-account) with your Github Repo. If you meet all of these prerequisites, you can use github actions as follows:
+```
+AutoMLOps.generate(project_id=PROJECT_ID,
+                   pipeline_params=pipeline_params,
+                   use_ci=True,
+                   deployment_framework='github-actions',
+                   project_number='<project_number>',
+                   source_repo_type='github',
+                   source_repo_name='source/repo/string',
+                   workload_identity_pool='identity_pool_string',
+                   workload_identity_provider='identity_provider_string',
+                   workload_identity_service_account='workload_identity_sa')
+```
 
 **Set scheduled run:**
 

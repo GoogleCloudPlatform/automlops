@@ -62,45 +62,40 @@ def git_workflow():
     elif source_repository_type == CodeRepository.BITBUCKET.value:
         git_remote_origin_url = f'''git@bitbucket.org:{defaults['gcp']['source_repository_name']}.git'''
 
-    if not os.path.exists('.git'):
+    if not os.path.exists(f'{BASE_DIR}.git'):
         # Initialize git and configure credentials
-        execute_process('git init', to_null=False)
+        execute_process(f'git -C {BASE_DIR} init', to_null=False)
         if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
             execute_process(
-                '''git config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+                f'''git -C {BASE_DIR} config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
         # Add repo and branch
         execute_process(
-            f'''git remote add origin {git_remote_origin_url}''', to_null=False)
+            f'''git -C {BASE_DIR} remote add origin {git_remote_origin_url}''', to_null=False)
         execute_process(
-            f'''git checkout -B {defaults['gcp']['source_repository_branch']}''', to_null=False)
+            f'''git -C {BASE_DIR} checkout -B {defaults['gcp']['source_repository_branch']}''', to_null=False)
         has_remote_branch = subprocess.check_output(
-            [f'''git ls-remote origin {defaults['gcp']['source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+            [f'''git -C {BASE_DIR} ls-remote origin {defaults['gcp']['source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
+        write_file(f'{BASE_DIR}.gitignore', _create_gitignore_jinja(), 'w')
         # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
         if not has_remote_branch:
-            write_file('.gitignore', _create_gitignore_jinja(), 'w')
-            execute_process('git add .gitignore', to_null=False)
-            execute_process('''git commit -m 'init' ''', to_null=False)
+            execute_process(f'git -C {BASE_DIR} add .gitignore', to_null=False)
+            execute_process(f'''git -C {BASE_DIR} commit -m 'init' ''', to_null=False)
             execute_process(
-                f'''git push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
+                f'''git -C {BASE_DIR} push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
 
     # Check for remote origin url mismatch
     actual_remote = subprocess.check_output(
-        ['git config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+        [f'git -C {BASE_DIR} config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
     if actual_remote != git_remote_origin_url:
         raise RuntimeError(
             f'Expected remote origin url {git_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
 
     # Add, commit, and push changes to CSR
-    execute_process(f'git add {BASE_DIR} ', to_null=False)
-    # Gitlab CI and Github Actions are roadmap items
-    # if deployment_framework == Deployer.GITHUB_ACTIONS.value:
-    #     execute_process('git add .github/workflows/.github-ci.yml ', to_null=False)
-    # elif deployment_framework == Deployer.GITLAB_CI.value:
-    #     execute_process('git add .gitlab-ci.yml ', to_null=False)
-    execute_process('''git commit -m 'Run AutoMLOps' ''', to_null=False)
+    execute_process(f'git -C {BASE_DIR} add .', to_null=False)
+    execute_process(f'''git -C {BASE_DIR} commit -m 'Run AutoMLOps' ''', to_null=False)
     execute_process(
-        f'''git push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
+        f'''git -C {BASE_DIR} push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
     # pylint: disable=logging-fstring-interpolation
     logging.info(
         f'''Pushing code to {defaults['gcp']['source_repository_branch']} branch, triggering build...''')

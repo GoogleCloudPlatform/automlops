@@ -110,7 +110,7 @@ resource "google_storage_bucket_object" "archive_submission_service_code" {
 resource "google_cloudfunctions_function" "pipeline_job_submission_service" {
   name                  = var.pipeline_job_submission_service_name
   region                = var.pipeline_job_submission_service_location
-  docker_registry       = "ARTIFACT_REGISTRY"
+  docker_repository     = "projects/${var.project_id}/locations/${var.artifact_repo_location}/repositories/${var.artifact_repo_name}"
   service_account_email = google_service_account.pipeline_job_runner_service_account.email
   runtime               = "python39"
   entry_point           = "process_request"
@@ -124,7 +124,7 @@ resource "google_cloudfunctions_function" "pipeline_job_submission_service" {
     resource            = "projects/${var.project_id}/topics/${var.pubsub_topic_name}"
   }
 
-  depends_on            = [google_pubsub_topic.pubsub_topic]
+  depends_on            = [google_artifact_registry_repository.artifact_registry, google_pubsub_topic.pubsub_topic]
 }{% endif %}
 {% if deployment_framework == 'cloud-build' and source_repo_type == 'cloud-source-repositories' %}
 # Create Cloud Build Trigger
@@ -132,13 +132,13 @@ resource "google_cloudbuild_trigger" "cloudbuild_trigger" {
   project                 = var.project_id
   name                    = var.build_trigger_name
   location                = var.build_trigger_location
-  included_files          = ["{{base_dir}}**"]
+  ignored-files           = [".gitignore"]
   trigger_template {
     branch_name           = var.source_repo_branch
     project_id            = var.project_id
     repo_name             = var.source_repo_name
   }
-  filename                = "{{base_dir}}cloudbuild.yaml"
+  filename                = "cloudbuild.yaml"
 
   depends_on              = [google_sourcerepo_repository.source_repo]
 }{% endif %}

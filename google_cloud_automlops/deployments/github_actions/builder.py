@@ -26,57 +26,74 @@ from jinja2 import Template
 
 from google_cloud_automlops.utils.utils import write_file
 from google_cloud_automlops.utils.constants import (
-    CLOUDBUILD_TEMPLATES_PATH,
-    GENERATED_CLOUDBUILD_FILE,
+    DEFAULT_SOURCE_REPO_BRANCH,
+    GENERATED_GITHUB_ACTIONS_FILE,
     COMPONENT_BASE_RELATIVE_PATH,
     GENERATED_LICENSE,
-    GENERATED_PARAMETER_VALUES_PATH
+    GENERATED_PARAMETER_VALUES_PATH,
+    GITHUB_ACTIONS_TEMPLATES_PATH
 )
 
-from google_cloud_automlops.deployments.configs import CloudBuildConfig
+from google_cloud_automlops.deployments.configs import GitHubActionsConfig
 
-def build(config: CloudBuildConfig):
+def build(config: GitHubActionsConfig):
     """Constructs scripts for resource deployment and running Kubeflow pipelines.
 
     Args:
         config.artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
         config.artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
         config.naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        config.project_id: The project ID.        
+        config.project_id: The project ID.
+        config.project_number: The project number.
         config.pubsub_topic_name: The name of the pubsub topic to publish to.
         config.use_ci: Flag that determines whether to use Cloud CI/CD.
+        config.workload_identity_pool: Pool for workload identity federation. 
+        config.workload_identity_provider: Provider for workload identity federation.
+        config.workload_identity_service_account: Service account for workload identity federation. 
     """
-    # Write cloud build config
-    write_file(GENERATED_CLOUDBUILD_FILE, create_cloudbuild_jinja(
+    # Write github actions config
+    write_file(GENERATED_GITHUB_ACTIONS_FILE, create_github_actions_jinja(
         config.artifact_repo_location,
         config.artifact_repo_name,
         config.naming_prefix,
         config.project_id,
+        config.project_number,
         config.pubsub_topic_name,
-        config.use_ci), 'w')
+        config.use_ci,
+        config.workload_identity_pool,
+        config.workload_identity_provider,
+        config.workload_identity_service_account), 'w')
 
-def create_cloudbuild_jinja(
+def create_github_actions_jinja(
         artifact_repo_location: str,
         artifact_repo_name: str,
         naming_prefix: str,
         project_id: str,
+        project_number: str,
         pubsub_topic_name: str,
-        use_ci: bool) -> str:
-    """Generates content for the cloudbuild.yaml, to be written to the base_dir.
-       This file contains the ci/cd manifest for AutoMLOps.
+        use_ci: bool,
+        workload_identity_pool: str,
+        workload_identity_provider: str,
+        workload_identity_service_account: str) -> str:
+    """Generates content for the github_actions.yaml, to be written to the .github/workflows directory.
+        This file contains the ci/cd manifest for AutoMLOps.
 
     Args:
         artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
         artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
         naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        project_id: The project ID.        
+        project_id: The project ID.
+        project_number: The project number.
         pubsub_topic_name: The name of the pubsub topic to publish to.
         use_ci: Flag that determines whether to use Cloud CI/CD.
+        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_provider: Provider for workload identity federation.
+        workload_identity_service_account: Service account for workload identity federation. 
 
     Returns:
-        str: Contents of cloudbuild.yaml.
+        str: Contents of github_actions.yaml.
     """
-    template_file = import_files(CLOUDBUILD_TEMPLATES_PATH) / 'cloudbuild.yaml.j2'
+    template_file = import_files(GITHUB_ACTIONS_TEMPLATES_PATH) / 'github_actions.yaml.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
@@ -87,5 +104,10 @@ def create_cloudbuild_jinja(
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
             naming_prefix=naming_prefix,
             project_id=project_id,
+            project_number=project_number,
             pubsub_topic_name=pubsub_topic_name,
-            use_ci=use_ci)
+            source_repo_branch=DEFAULT_SOURCE_REPO_BRANCH,
+            use_ci=use_ci,
+            workload_identity_pool=workload_identity_pool,
+            workload_identity_provider=workload_identity_provider,
+            workload_identity_service_account=workload_identity_service_account)
