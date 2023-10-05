@@ -58,7 +58,6 @@ MIN_RECOMMENDED_TERRAFORM_VERSION = '1.5.6'
 
 # AutoMLOps file paths
 BASE_DIR = 'AutoMLOps/'
-GITHUB_DIR = BASE_DIR + '.github/workflows/'
 GENERATED_DEFAULTS_FILE = BASE_DIR + 'configs/defaults.yaml'
 GENERATED_PIPELINE_SPEC_SH_FILE = BASE_DIR + 'scripts/build_pipeline_spec.sh'
 GENERATED_BUILD_COMPONENTS_SH_FILE = BASE_DIR + 'scripts/build_components.sh'
@@ -67,7 +66,7 @@ GENERATED_RUN_ALL_SH_FILE = BASE_DIR + 'scripts/run_all.sh'
 GENERATED_RESOURCES_SH_FILE = BASE_DIR + 'provision/provision_resources.sh'
 GENERATED_PUBLISH_TO_TOPIC_FILE = BASE_DIR + 'scripts/publish_to_topic.sh'
 GENERATED_CLOUDBUILD_FILE = BASE_DIR + 'cloudbuild.yaml'
-GENERATED_GITHUB_ACTIONS_FILE = GITHUB_DIR + 'github_actions.yaml'
+GENERATED_GITHUB_ACTIONS_FILE = BASE_DIR + '.github/workflows/github_actions.yaml'
 GENERATED_PIPELINE_REQUIREMENTS_FILE = BASE_DIR + 'pipelines/requirements.txt'
 GENERATED_PIPELINE_FILE = BASE_DIR + 'pipelines/pipeline.py'
 GENERATED_PIPELINE_RUNNER_FILE = BASE_DIR + 'pipelines/pipeline_runner.py'
@@ -97,7 +96,12 @@ GENERATED_SERVICES_DIRS = [
 
 GENERATED_TERRAFORM_DIRS = [
     BASE_DIR + 'provision/state_bucket',
-    BASE_DIR + 'provision/environment',
+    BASE_DIR + 'provision/environment'
+]
+
+GENERATED_GITHUB_DIRS = [
+    BASE_DIR + '.github',
+    BASE_DIR + '.github/workflows'
 ]
 
 # temporary files
