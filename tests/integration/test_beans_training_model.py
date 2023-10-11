@@ -34,10 +34,12 @@ def execute_process(command: str, to_null: bool):
 
 
 # Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/), or locally by cloning the repo and running `pip install .`
-execute_process('pip3 install google-cloud-automlops --user', False)
+execute_process('pip3 install google-cloud-automlops', False)
 
 # Set your project ID below.
-PROJECT_ID = 'automlops-sandbox'  # @param {type:"string"}
+PROJECT_ID = 'airflow-sandbox-392816'  # @param {type:"string"}
+
+execute_process(f"gcloud config set project {PROJECT_ID}")
 
 # Set your Model ID below.
 MODEL_ID = 'dry-beans-dt'
@@ -259,8 +261,8 @@ import datetime
 pipeline_params = {
     'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
     'model_directory': f'gs://{PROJECT_ID}-bucket/trained_models/{datetime.datetime.now()}',
-    'data_path': f'gs://{PROJECT_ID}-bucket/data',
-    'project_id': f'{PROJECT_ID}',
+    'data_path': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/data.csv',
+    'project_id': PROJECT_ID,
     'region': 'us-central1'
 }
 
@@ -273,3 +275,7 @@ AutoMLOps.generate(project_id=PROJECT_ID,
                    naming_prefix=MODEL_ID,
                    schedule_pattern='59 11 * * 0' # retrain every Sunday at Midnight
 )
+
+AutoMLOps.provision(hide_warnings=False)            # hide_warnings is optional, defaults to True
+
+AutoMLOps.deploy(precheck=True, hide_warnings=False)
