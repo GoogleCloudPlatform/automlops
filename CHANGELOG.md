@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.5] - 2023-10-05
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Fixed bug with generating .github/workflows directories
+
 ## [1.2.4] - 2023-10-03
 
 ### Added
