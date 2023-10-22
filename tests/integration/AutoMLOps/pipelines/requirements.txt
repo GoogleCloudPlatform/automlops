@@ -1,0 +1,5 @@
+kfp<2.0.0
+google-cloud-aiplatform
+google-cloud-pipeline-components
+google-cloud-storage
+pyyaml

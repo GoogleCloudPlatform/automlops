@@ -1,0 +1,66 @@
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# DISCLAIMER: This code is generated as part of the AutoMLOps output.
+
+steps:
+# ==============================================================================
+# BUILD CUSTOM IMAGES
+# ==============================================================================
+
+  # build the component_base image
+  - name: "gcr.io/cloud-builders/docker"
+    args: [ "build", "-t", "us-central1-docker.pkg.dev/airflow-sandbox-392816/dry-beans-dt-artifact-registry/dry-beans-dt/components/component_base:latest",
+            "--cache-from", "us-central1-docker.pkg.dev/airflow-sandbox-392816/dry-beans-dt-artifact-registry/dry-beans-dt/components/component_base:latest", "." ]
+    dir: "components/component_base"
+    id: "build_component_base"
+    waitFor: ["-"]
+
+# ==============================================================================
+# PUSH CUSTOM IMAGES
+# ==============================================================================
+
+  # push the component_base image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "us-central1-docker.pkg.dev/airflow-sandbox-392816/dry-beans-dt-artifact-registry/dry-beans-dt/components/component_base:latest"]
+    dir: "components/component_base"
+    id: "push_component_base"
+    waitFor: ["build_component_base"]
+
+  # Install dependencies
+  - name: python:3.10
+    entrypoint: pip
+    args: ["install", "-r", "pipelines/requirements.txt", "--user"]
+    id: "install_pipelines_deps"
+    waitFor: ["push_component_base"]
+
+  # Build pipeline spec
+  - name: python:3.10
+    entrypoint: python
+    args: ["-m", "pipelines.pipeline", "--config", "configs/defaults.yaml"]
+    id: "build_pipeline_spec"
+    waitFor: ["install_pipelines_deps"]
+
+  # Publish PipelineJob to topic
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: bash
+    args:
+      - "-c"
+      - |
+          gcloud pubsub topics publish dry-beans-dt-queueing-svc --message \
+          "$(cat pipelines/runtime_parameters/pipeline_parameter_values.json)"
+    id: "publish_to_topic"
+    waitFor: ["build_pipeline_spec"]
+
+images:
+  # custom component images
+  - "us-central1-docker.pkg.dev/airflow-sandbox-392816/dry-beans-dt-artifact-registry/dry-beans-dt/components/component_base:latest"
