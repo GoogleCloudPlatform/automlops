@@ -280,16 +280,18 @@ def test_beans_training_model():
                     schedule_pattern='59 11 * * 0' # retrain every Sunday at Midnight
     )
 
-    expected_AMO_cache_files = ['create_dataset.yaml', 'pipeline_scaffold.py', 'train_model.yaml', 'deploy_model.yaml'] 
+    expected_AMO_cache_files = ['create_dataset.yaml', 'deploy_model.yaml', 'pipeline_scaffold.py', 'train_model.yaml']
+    expected_AMO_directory = ['.gitignore', 'README.md', 'cloudbuild.yaml', 'components', 'configs', 'images', 'pipelines', 'provision', 'scripts', 'services']
 
     # Assert that the files were created with the correct names.
-    assert os.listdir('./.AutoMLOps-cache') == expected_AMO_cache_files
+    assert sorted(os.listdir('./.AutoMLOps-cache')) == expected_AMO_cache_files
+    assert sorted(os.listdir('./AutoMLOps')) == expected_AMO_directory
     
     #Assert that all the correct directories were made in AutoMLOps folder
 
 
 
-    AutoMLOps.provision(hide_warnings=False)            # hide_warnings is optional, defaults to True
+    # AutoMLOps.provision(hide_warnings=False)            # hide_warnings is optional, defaults to True
     #Reach out and check that a few random infra pieces were created (ex: CSR repo, the Cloud Build trigger, Scheduler)
 
     # AutoMLOps.deploy(precheck=True, hide_warnings=False)
