@@ -26,7 +26,6 @@ from jinja2 import Template
 
 from google_cloud_automlops.utils.utils import write_file
 from google_cloud_automlops.utils.constants import (
-    DEFAULT_SOURCE_REPO_BRANCH,
     GENERATED_GITHUB_ACTIONS_FILE,
     COMPONENT_BASE_RELATIVE_PATH,
     GENERATED_LICENSE,
@@ -46,6 +45,7 @@ def build(config: GitHubActionsConfig):
         config.project_id: The project ID.
         config.project_number: The project number.
         config.pubsub_topic_name: The name of the pubsub topic to publish to.
+        config.source_repo_branch: The branch to use in the source repository.
         config.use_ci: Flag that determines whether to use Cloud CI/CD.
         config.workload_identity_pool: Pool for workload identity federation. 
         config.workload_identity_provider: Provider for workload identity federation.
@@ -59,6 +59,7 @@ def build(config: GitHubActionsConfig):
         config.project_id,
         config.project_number,
         config.pubsub_topic_name,
+        config.source_repo_branch,
         config.use_ci,
         config.workload_identity_pool,
         config.workload_identity_provider,
@@ -71,6 +72,7 @@ def create_github_actions_jinja(
         project_id: str,
         project_number: str,
         pubsub_topic_name: str,
+        source_repo_branch: str,
         use_ci: bool,
         workload_identity_pool: str,
         workload_identity_provider: str,
@@ -85,6 +87,7 @@ def create_github_actions_jinja(
         project_id: The project ID.
         project_number: The project number.
         pubsub_topic_name: The name of the pubsub topic to publish to.
+        source_repo_branch: The branch to use in the source repository.
         use_ci: Flag that determines whether to use Cloud CI/CD.
         workload_identity_pool: Pool for workload identity federation. 
         workload_identity_provider: Provider for workload identity federation.
@@ -106,7 +109,7 @@ def create_github_actions_jinja(
             project_id=project_id,
             project_number=project_number,
             pubsub_topic_name=pubsub_topic_name,
-            source_repo_branch=DEFAULT_SOURCE_REPO_BRANCH,
+            source_repo_branch=source_repo_branch,
             use_ci=use_ci,
             workload_identity_pool=workload_identity_pool,
             workload_identity_provider=workload_identity_provider,

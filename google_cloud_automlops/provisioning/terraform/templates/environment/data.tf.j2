@@ -25,5 +25,9 @@ locals {
     enable_apis = [{% for api in required_apis %}
       "{{api}}",{% endfor %}
     ]
+
+    pipeline_runner_service_account_iam_list = [{% for role in required_iam_roles %}
+      "{{role}}",{% endfor %}
+    ]
   }
 }

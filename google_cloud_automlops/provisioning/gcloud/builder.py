@@ -73,7 +73,7 @@ def build(
         config.vpc_connector: The name of the vpc connector to use.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-    required_apis = list(get_required_apis(defaults))
+    required_apis = get_required_apis(defaults)
     # create provision_resources.sh
     write_and_chmod(GENERATED_RESOURCES_SH_FILE, provision_resources_script_jinja(
         artifact_repo_location=config.artifact_repo_location,
