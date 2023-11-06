@@ -1,6 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.7] - 2023-11-06
+
+### Added
+
+### Changed
+
+- Updated state_bucket naming schema
+- Updated unit tests to reflect state_bucket naming schema
+- Updated outputs.tf block to not include csr if use_ci=False
+
+### Fixed
+
+
 ## [1.2.6] - 2023-10-05
 
 ### Added

@@ -12,7 +12,7 @@ terraform {
     }
   }
   backend "gcs" {
-    bucket =  "{{storage_bucket_name}}-bucket-tfstate"
+    bucket =  "{{storage_bucket_name}}-tfstate"
     prefix = "terraform/state"
   }
 }

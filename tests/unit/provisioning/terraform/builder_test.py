@@ -422,7 +422,7 @@ def test_create_environment_variables_tf_jinja(
 
 @pytest.mark.parametrize(
     'storage_bucket_name, is_included, expected_output_snippets',
-    [('my-storage-bucket', True, [GENERATED_LICENSE, 'bucket =  "my-storage-bucket-bucket-tfstate"'])]
+    [('my-storage-bucket', True, [GENERATED_LICENSE, 'bucket =  "my-storage-bucket-tfstate"'])]
 )
 def test_create_environment_versions_tf_jinja(
     storage_bucket_name: str,
