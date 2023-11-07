@@ -12,8 +12,9 @@ def assert_repository_exists(repository_name):
         AssertionError: If the repository doesn't exist.
     """
     output = subprocess.run([f"gcloud source repos list --filter={repository_name}"], shell=True, capture_output=True, text=True).stdout
-    match = re.search(r"\b" + re.escape(repository_name) + r"\b", output)
+    pattern = r"\b" + re.escape(repository_name) + r"\b"
+    match = re.search(pattern, output)
 
     # Access the matched string using group()
     matched_repository_name = match.group() if match else None
-    assert matched_repository_name is not None, f"Repository '{repository_name}' doesn't exist."
+    assert matched_repository_name == repository_name, f"Repository '{repository_name}' doesn't exist."
