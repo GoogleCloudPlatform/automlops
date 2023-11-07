@@ -16,6 +16,9 @@ import pytest
 import subprocess
 import os
 import logging
+import re
+from .. import helpers
+
 
 def test_beans_training_model(): 
         
@@ -283,16 +286,26 @@ def test_beans_training_model():
     expected_AMO_cache_files = ['create_dataset.yaml', 'deploy_model.yaml', 'pipeline_scaffold.py', 'train_model.yaml']
     expected_AMO_directory = ['.gitignore', 'README.md', 'cloudbuild.yaml', 'components', 'configs', 'images', 'pipelines', 'provision', 'scripts', 'services']
 
-    # Assert that the files were created with the correct names.
+    # Assert that files and directories were created with the correct names.
     assert sorted(os.listdir('./.AutoMLOps-cache')) == expected_AMO_cache_files
     assert sorted(os.listdir('./AutoMLOps')) == expected_AMO_directory
-    
-    #Assert that all the correct directories were made in AutoMLOps folder
-
-
 
     # AutoMLOps.provision(hide_warnings=False)            # hide_warnings is optional, defaults to True
     #Reach out and check that a few random infra pieces were created (ex: CSR repo, the Cloud Build trigger, Scheduler)
+
+    output = subprocess.run(["gcloud builds triggers list --region=us-central1"], shell=True, capture_output=True, text=True).stdout
+    match = re.search(r'\bdry-beans-dt-build-trigger\b', output).group()
+    assert match == 'dry-beans-dt-build-trigger'
+
+    output = subprocess.run(["gcloud scheduler jobs list --location=us-central1"], shell=True, capture_output=True, text=True).stdout
+    match = re.search(r'\bdry-beans-dt-schedule\b', output).group()
+    assert match == 'dry-beans-dt-schedule'
+
+
+
+
+
+
 
     # AutoMLOps.deploy(precheck=True, hide_warnings=False)
     #Hit the final beans endpoint and assert that the output makes sense 
