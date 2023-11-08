@@ -293,15 +293,9 @@ def test_beans_training_model():
     # AutoMLOps.provision(hide_warnings=False)            # hide_warnings is optional, defaults to True
     #Reach out and check that a few random infra pieces were created (ex: CSR repo, the Cloud Build trigger, Scheduler)
 
-    helpers.assert_repository_exists("dry-beans-dt-repository")
-
-    output = subprocess.run(["gcloud builds triggers list --region=us-central1"], shell=True, capture_output=True, text=True).stdout
-    match = re.search(r'\bdry-beans-dt-build\b', output).group()
-    assert match == 'dry-beans-dt-build-trigger'
-
-    output = subprocess.run(["gcloud scheduler jobs list --location=us-central1"], shell=True, capture_output=True, text=True).stdout
-    match = re.search(r'\bdry-beans-dt-schedule\b', output).group()
-    assert match == 'dry-beans-dt-schedule'
+    helpers.assert_repository_exists(repository_name="dry-beans-dt-repository")
+    helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
+    helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
 
 
 

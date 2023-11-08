@@ -39,18 +39,18 @@ STORAGE_BUCKET_LOCATION="us-central1"
 
 echo -e "$GREEN Setting up API services in project $PROJECT_ID $NC"
 gcloud services enable \
-  artifactregistry.googleapis.com \
-  aiplatform.googleapis.com \
-  cloudfunctions.googleapis.com \
-  compute.googleapis.com \
+  iam.googleapis.com \
   cloudbuild.googleapis.com \
+  iamcredentials.googleapis.com \
   sourcerepo.googleapis.com \
   cloudresourcemanager.googleapis.com \
-  iamcredentials.googleapis.com \
   storage.googleapis.com \
-  cloudscheduler.googleapis.com \
+  cloudfunctions.googleapis.com \
   pubsub.googleapis.com \
-  iam.googleapis.com \
+  aiplatform.googleapis.com \
+  compute.googleapis.com \
+  cloudscheduler.googleapis.com \
+  artifactregistry.googleapis.com \
 
 echo -e "$GREEN Setting up Artifact Registry in project $PROJECT_ID $NC"
 if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$ARTIFACT_REPO_LOCATION | grep -E "(^|[[:blank:]])$ARTIFACT_REPO_NAME($|[[:blank:]])"); then
@@ -96,11 +96,23 @@ fi
 echo -e "$GREEN Setting up IAM roles for Pipeline Job Runner Service Account in project $PROJECT_ID $NC"
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/bigquery.dataEditor" \
+    --role="roles/bigquery.user" \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
     --role="roles/cloudfunctions.admin" \
+    --no-user-output-enabled
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
+    --role="roles/iam.serviceAccountUser" \
+    --no-user-output-enabled
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
+    --role="roles/bigquery.dataEditor" \
+    --no-user-output-enabled
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
+    --role="roles/aiplatform.user" \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
@@ -109,18 +121,6 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
     --role="roles/artifactregistry.reader" \
-    --no-user-output-enabled
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/bigquery.user" \
-    --no-user-output-enabled
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/iam.serviceAccountUser" \
-    --no-user-output-enabled
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/aiplatform.user" \
     --no-user-output-enabled
 
 echo -e "$GREEN Setting up Cloud Source Repository in project $PROJECT_ID $NC"
