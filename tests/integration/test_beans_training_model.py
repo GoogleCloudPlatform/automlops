@@ -16,7 +16,7 @@ import pytest
 import subprocess
 import os
 import logging
-import re
+from google.cloud import aiplatform
 from .. import helpers
 
 
@@ -297,11 +297,32 @@ def test_beans_training_model():
     helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
     helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
 
-
-
-
-
-
-
     # AutoMLOps.deploy(precheck=True, hide_warnings=False)
     #Hit the final beans endpoint and assert that the output makes sense 
+
+    aiplatform.init(project=PROJECT_ID)
+    endpoint = aiplatform.Endpoint("projects/1063498356496/locations/us-central1/endpoints/4898581587462979584")
+    data = [[
+        28395.0,
+        610.291,
+        208.1781167,
+        173.888747,
+        1.197191424,
+        0.5498121871,
+        28715,
+        190.1410973,
+        0.7639225182,
+        0.9888559986,
+        0.9580271263,
+        0.9133577548,
+        0.007331506135,
+        0.003147289167,
+        0.8342223882,
+        0.998723889
+        ]]
+
+# Send the prediction request
+    prediction = endpoint.predict(instances=data)
+    prediction_value = int(prediction.predictions[0])
+
+    assert prediction_value == 5
