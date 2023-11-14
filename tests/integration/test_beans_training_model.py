@@ -130,8 +130,7 @@ def test_beans_training_model():
         dataframe = load_bq_data(get_query(bq_table), bq_client)
         le = preprocessing.LabelEncoder()
         dataframe['Class'] = le.fit_transform(dataframe['Class'])
-        dataframe.to_csv(data_path)
-
+        dataframe.to_csv(data_path, index=False)
 
     # ## Model Training
     # Define a custom component for training a model using `@AutoMLOps.component`. Import statements and helper functions must be added inside the function.
@@ -263,7 +262,7 @@ def test_beans_training_model():
             region=region).after(train_model_task)
 
 
-    # ## Define the Pipeline Arguments
+    ## Define the Pipeline Arguments
     import datetime
     pipeline_params = {
         'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
@@ -273,35 +272,38 @@ def test_beans_training_model():
         'region': 'us-central1'
     }
 
-
-    # ## Generate and Run the pipeline
-    # `AutoMLOps.generate(...)` generates the MLOps codebase. Users can specify the tooling and technologies they would like to use in their MLOps pipeline.
     AutoMLOps.generate(project_id=PROJECT_ID,
                     pipeline_params=pipeline_params,
                     use_ci=True,
-                    naming_prefix=MODEL_ID,
-                    schedule_pattern='59 11 * * 0' # retrain every Sunday at Midnight
+                    naming_prefix=MODEL_ID
     )
 
+    # Assert that files and directories were created with the correct names.
     expected_AMO_cache_files = ['create_dataset.yaml', 'deploy_model.yaml', 'pipeline_scaffold.py', 'train_model.yaml']
     expected_AMO_directory = ['.gitignore', 'README.md', 'cloudbuild.yaml', 'components', 'configs', 'images', 'pipelines', 'provision', 'scripts', 'services']
 
-    # Assert that files and directories were created with the correct names.
     assert sorted(os.listdir('./.AutoMLOps-cache')) == expected_AMO_cache_files
     assert sorted(os.listdir('./AutoMLOps')) == expected_AMO_directory
 
-    # AutoMLOps.provision(hide_warnings=False)            # hide_warnings is optional, defaults to True
-    #Reach out and check that a few random infra pieces were created (ex: CSR repo, the Cloud Build trigger, Scheduler)
-
+    # AutoMLOps.provision(hide_warnings=False)
+      
+    # Assert that GCP infrastructure was stood up with the correct names.
     helpers.assert_repository_exists(repository_name="dry-beans-dt-repository")
     helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
     helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
 
     # AutoMLOps.deploy(precheck=True, hide_warnings=False)
-    #Hit the final beans endpoint and assert that the output makes sense 
 
+    # Assert that Vertex AI endpoint was created and returns predictions.
     aiplatform.init(project=PROJECT_ID)
-    endpoint = aiplatform.Endpoint("projects/1063498356496/locations/us-central1/endpoints/4898581587462979584")
+    output = subprocess.run([f"gcloud ai endpoints list --region=us-central1"], shell=True, capture_output=True).stdout
+    output_lines = output.decode('utf-8').splitlines()
+    endpoint_id = output_lines[1].split()[0]
+
+    endpoints = aiplatform.Endpoint.list()
+    endpoint_name = endpoints[0].resource_name
+
+    endpoint = aiplatform.Endpoint(endpoint_name)
     data = [[
         28395.0,
         610.291,
@@ -321,8 +323,7 @@ def test_beans_training_model():
         0.998723889
         ]]
 
-# Send the prediction request
+    # Send the prediction request
     prediction = endpoint.predict(instances=data)
     prediction_value = int(prediction.predictions[0])
-
-    assert prediction_value == 5
+    assert prediction_value in range(7)

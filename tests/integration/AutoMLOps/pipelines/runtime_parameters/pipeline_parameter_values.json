@@ -1,6 +1,6 @@
 {
     "bq_table": "airflow-sandbox-392816.test_dataset.dry-beans",
-    "model_directory": "gs://airflow-sandbox-392816-bucket/trained_models/2023-11-10 04:43:29.770045",
+    "model_directory": "gs://airflow-sandbox-392816-bucket/trained_models/2023-11-14 04:36:34.286833",
     "data_path": "gs://airflow-sandbox-392816-dry-beans-dt-bucket/data.csv",
     "project_id": "airflow-sandbox-392816",
     "region": "us-central1",

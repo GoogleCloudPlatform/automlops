@@ -29,7 +29,7 @@ gcp:
   pubsub_topic_name: dry-beans-dt-queueing-svc
   schedule_location: us-central1
   schedule_name: dry-beans-dt-schedule
-  schedule_pattern: 59 11 * * 0
+  schedule_pattern: No Schedule Specified
   source_repository_branch: automlops
   source_repository_name: dry-beans-dt-repository
   source_repository_type: cloud-source-repositories

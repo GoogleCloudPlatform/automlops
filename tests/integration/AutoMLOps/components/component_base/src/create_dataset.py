@@ -66,7 +66,7 @@ def create_dataset(
     dataframe = load_bq_data(get_query(bq_table), bq_client)
     le = preprocessing.LabelEncoder()
     dataframe['Class'] = le.fit_transform(dataframe['Class'])
-    dataframe.to_csv(data_path)
+    dataframe.to_csv(data_path, index=False)
 
 def main():
     """Main executor."""

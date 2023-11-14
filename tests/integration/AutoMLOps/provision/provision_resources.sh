@@ -30,7 +30,7 @@ PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG="vertex-pipelines@airflow-sandbox-39281
 PROJECT_ID="airflow-sandbox-392816"
 PUBSUB_TOPIC_NAME="dry-beans-dt-queueing-svc"
 SCHEDULE_NAME="dry-beans-dt-schedule"
-SCHEDULE_PATTERN="59 11 * * 0"
+SCHEDULE_PATTERN="No Schedule Specified"
 SCHEDULE_LOCATION="us-central1"
 SOURCE_REPO_NAME="dry-beans-dt-repository"
 SOURCE_REPO_BRANCH="automlops"
@@ -39,18 +39,17 @@ STORAGE_BUCKET_LOCATION="us-central1"
 
 echo -e "$GREEN Setting up API services in project $PROJECT_ID $NC"
 gcloud services enable \
-  compute.googleapis.com \
-  artifactregistry.googleapis.com \
-  storage.googleapis.com \
-  aiplatform.googleapis.com \
-  cloudfunctions.googleapis.com \
-  sourcerepo.googleapis.com \
-  pubsub.googleapis.com \
-  cloudresourcemanager.googleapis.com \
-  cloudscheduler.googleapis.com \
-  iam.googleapis.com \
-  iamcredentials.googleapis.com \
   cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  sourcerepo.googleapis.com \
+  aiplatform.googleapis.com \
+  storage.googleapis.com \
+  cloudfunctions.googleapis.com \
+  cloudresourcemanager.googleapis.com \
+  compute.googleapis.com \
+  iamcredentials.googleapis.com \
+  pubsub.googleapis.com \
+  iam.googleapis.com \
 
 echo -e "$GREEN Setting up Artifact Registry in project $PROJECT_ID $NC"
 if ! (gcloud artifacts repositories list --project="$PROJECT_ID" --location=$ARTIFACT_REPO_LOCATION | grep -E "(^|[[:blank:]])$ARTIFACT_REPO_NAME($|[[:blank:]])"); then
@@ -100,11 +99,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/aiplatform.user" \
+    --role="roles/bigquery.dataEditor" \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/iam.serviceAccountUser" \
+    --role="roles/aiplatform.user" \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
@@ -112,15 +111,15 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/artifactregistry.reader" \
-    --no-user-output-enabled
-gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
-    --role="roles/bigquery.dataEditor" \
+    --role="roles/iam.serviceAccountUser" \
     --no-user-output-enabled
 gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
     --role="roles/storage.admin" \
+    --no-user-output-enabled
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
+    --role="roles/artifactregistry.reader" \
     --no-user-output-enabled
 
 echo -e "$GREEN Setting up Cloud Source Repository in project $PROJECT_ID $NC"
@@ -178,22 +177,5 @@ if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$BUILD_
 else
 
   echo "Cloudbuild Trigger already exists in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
-
-fi
-
-# Create Cloud Scheduler Job
-echo -e "$GREEN Setting up Cloud Scheduler Job in project $PROJECT_ID $NC"
-if ! (gcloud scheduler jobs list --location=$SCHEDULE_LOCATION | grep -E "(^|[[:blank:]])$SCHEDULE_NAME($|[[:blank:]])"); then
-
-  echo "Creating Cloud Scheduler Job: ${SCHEDULE_NAME} in project $PROJECT_ID"
-  gcloud scheduler jobs create pubsub $SCHEDULE_NAME \
-    --schedule="${SCHEDULE_PATTERN}" \
-    --location=$SCHEDULE_LOCATION \
-    --topic=$PUBSUB_TOPIC_NAME \
-    --message-body "$(cat ${BASE_DIR}pipelines/runtime_parameters/pipeline_parameter_values.json)"
-
-else
-
-  echo "Cloud Scheduler Job: ${SCHEDULE_NAME} already exists in project $PROJECT_ID"
 
 fi
