@@ -16,8 +16,10 @@ import pytest
 import subprocess
 import os
 import logging
+import time
 from google.cloud import aiplatform
 from .. import helpers
+
 
 
 def test_beans_training_model(): 
@@ -285,14 +287,16 @@ def test_beans_training_model():
     assert sorted(os.listdir('./.AutoMLOps-cache')) == expected_AMO_cache_files
     assert sorted(os.listdir('./AutoMLOps')) == expected_AMO_directory
 
-    # AutoMLOps.provision(hide_warnings=False)
+    AutoMLOps.provision(hide_warnings=False)
+    time.sleep(300)
       
     # Assert that GCP infrastructure was stood up with the correct names.
     helpers.assert_repository_exists(repository_name="dry-beans-dt-repository")
     helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
     helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
 
-    # AutoMLOps.deploy(precheck=True, hide_warnings=False)
+    AutoMLOps.deploy(precheck=True, hide_warnings=False)
+    time.sleep(600)
 
     # Assert that Vertex AI endpoint was created and returns predictions.
     aiplatform.init(project=PROJECT_ID)
