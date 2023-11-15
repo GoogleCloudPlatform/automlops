@@ -22,52 +22,17 @@ from .. import helpers
 
 
 
-def test_beans_training_model(): 
-        
-    def execute_process(command: str, to_null: bool):
-        """Executes an external shell process.
-
-        Args:
-            command: The string of the command to execute.
-            to_null: Determines where to send output.
-        Raises:
-            Exception: If an error occurs in executing the script.
-        """
-        stdout = subprocess.DEVNULL if to_null else None
-        try:
-            subprocess.run([command], shell=True, check=True,
-                stdout=stdout,
-                stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as err:
-            raise RuntimeError(f'Error executing process. {err}') from err
-
+def test_beans_training_model():
 
     # Install AutoMLOps from [PyPI](https://pypi.org/project/google-cloud-automlops/), or locally by cloning the repo and running `pip install .`
-    execute_process('pip3 install google-cloud-automlops', False)
+    helpers.execute_process('pip3 install google-cloud-automlops', False)
 
     # Set your project ID below.
     PROJECT_ID = 'airflow-sandbox-392816'  # @param {type:"string"}
-
-    execute_process(f"gcloud config set project {PROJECT_ID}", False)
+    helpers.execute_process(f"gcloud config set project {PROJECT_ID}", False)
 
     # Set your Model ID below.
     MODEL_ID = 'dry-beans-dt'
-
-    # # 1. AutoMLOps Pipeline
-    # This workflow will define and generate a pipeline using AutoMLOps. AutoMLOps provides 2 functions for defining MLOps pipelines:
-
-    # - `AutoMLOps.component(...)`: Defines a component, which is a containerized python function.
-    # - `AutoMLOps.pipeline(...)`: Defines a pipeline, which is a series of components.
-
-    # AutoMLOps provides 5 functions for building and maintaining MLOps pipelines:
-
-    # - `AutoMLOps.generate(...)`: Generates the MLOps codebase. Users can specify the tooling and technologies they would like to use in their MLOps pipeline.
-    # - `AutoMLOps.provision(...)`: Runs provisioning scripts to create and maintain necessary infra for MLOps.
-    # - `AutoMLOps.deprovision(...)`: Runs deprovisioning scripts to tear down MLOps infra created using AutoMLOps.
-    # - `AutoMLOps.deploy(...)`: Builds and pushes component container, then triggers the pipeline job.
-    # - `AutoMLOps.launchAll(...)`: Runs `generate()`, `provision()`, and `deploy()` all in succession.
-
-    # Please see the [readme](https://github.com/GoogleCloudPlatform/automlops/blob/main/README.md) for more information.
 
     # Import AutoMLOps
     from google_cloud_automlops import AutoMLOps
@@ -179,7 +144,6 @@ def test_beans_training_model():
         output_uri = os.path.join(model_directory, 'model.pkl')
         save_model(skmodel, output_uri)
 
-
     # ## Uploading & Deploying the Model
     # Define a custom component for uploading and deploying a model in Vertex AI, using `@AutoMLOps.component`. Import statements and helper functions must be added inside the function.
 
@@ -236,7 +200,6 @@ def test_beans_training_model():
         endpoint = uploaded_model.deploy(
             machine_type='n1-standard-4',
             deployed_model_display_name='deployed-beans-model')
-
 
     # ## Define the Pipeline
     # Define your pipeline using `@AutoMLOps.pipeline`. You can optionally give the pipeline a name and description. Define the structure by listing the components to be called in your pipeline; use `.after` to specify the order of execution.
@@ -300,13 +263,8 @@ def test_beans_training_model():
 
     # Assert that Vertex AI endpoint was created and returns predictions.
     aiplatform.init(project=PROJECT_ID)
-    output = subprocess.run([f"gcloud ai endpoints list --region=us-central1"], shell=True, capture_output=True).stdout
-    output_lines = output.decode('utf-8').splitlines()
-    endpoint_id = output_lines[1].split()[0]
-
     endpoints = aiplatform.Endpoint.list()
     endpoint_name = endpoints[0].resource_name
-
     endpoint = aiplatform.Endpoint(endpoint_name)
     data = [[
         28395.0,
