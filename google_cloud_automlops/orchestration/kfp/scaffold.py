@@ -64,6 +64,9 @@ def create_component_scaffold(func: Optional[Callable] = None,
     component_spec['name'] = name
     if description:
         component_spec['description'] = description
+    outputs = get_function_outputs(func)
+    if outputs:
+        component_spec['outputs'] = outputs
     component_spec['inputs'] = get_function_parameters(func)
     component_spec['implementation'] = {}
     component_spec['implementation']['container'] = {}
@@ -104,6 +107,37 @@ def get_packages_to_install_command(func: Optional[Callable] = None,
         f'''{newline}''')
     src_code = get_function_source_definition(func)
     return ['sh', '-c', install_python_packages_script, src_code]
+
+
+def get_function_outputs(func: Callable) -> dict:
+    """Returns a formatted list of parameters.
+
+    Args:
+        func: The python function to create a component from. The function
+            can optionally have type annotations for its return values.
+    Returns:
+        list: return value list with types converted to kubeflow spec.
+    Raises:
+        Exception: If return type if provided and not a NamedTuple.
+    """
+            
+    annotation = inspect.signature(func).return_annotation
+    annotation = maybe_strip_optional_from_annotation(annotation)
+
+    # No annotations provided
+    if annotation == inspect._empty:
+        return 
+    
+    if not (hasattr(annotation,'__annotations__') and isinstance(annotation.__annotations__, dict)):
+        raise TypeError(f'''Return type hint for function "{func.__name__}" must be a NamedTuple.''')
+
+    outputs = []
+    for name, type_ in annotation.__annotations__.items():
+        metadata = {}
+        metadata['name'] = name, 
+        metadata['type'] = type_    
+        metadata['description'] = None
+    return update_params(outputs)
 
 
 def get_function_parameters(func: Callable) -> dict:
@@ -214,3 +248,4 @@ def get_compile_step(func_name: str):
         f'    package_path=pipeline_job_spec_path)\n'
         f'\n'
     )
+
