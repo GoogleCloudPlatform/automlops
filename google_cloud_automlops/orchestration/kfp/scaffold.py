@@ -137,6 +137,7 @@ def get_function_outputs(func: Callable) -> dict:
         metadata['name'] = name, 
         metadata['type'] = type_    
         metadata['description'] = None
+        outputs.append(metadata)
     return update_params(outputs)
 
 
