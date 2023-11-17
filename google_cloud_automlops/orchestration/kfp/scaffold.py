@@ -109,7 +109,7 @@ def get_packages_to_install_command(func: Optional[Callable] = None,
     return ['sh', '-c', install_python_packages_script, src_code]
 
 
-def get_function_outputs(func: Callable) -> dict:
+def get_function_outputs(func: Callable) -> list:
     """Returns a formatted list of parameters.
 
     Args:
@@ -118,30 +118,30 @@ def get_function_outputs(func: Callable) -> dict:
     Returns:
         list: return value list with types converted to kubeflow spec.
     Raises:
-        Exception: If return type if provided and not a NamedTuple.
+        Exception: If return type is provided and not a NamedTuple.
     """
-            
     annotation = inspect.signature(func).return_annotation
     annotation = maybe_strip_optional_from_annotation(annotation)
 
     # No annotations provided
+    # pylint: disable=protected-access
     if annotation == inspect._empty:
-        return 
-    
+        return None
+
     if not (hasattr(annotation,'__annotations__') and isinstance(annotation.__annotations__, dict)):
         raise TypeError(f'''Return type hint for function "{func.__name__}" must be a NamedTuple.''')
 
     outputs = []
     for name, type_ in annotation.__annotations__.items():
         metadata = {}
-        metadata['name'] = name, 
-        metadata['type'] = type_    
+        metadata['name'] = name
+        metadata['type'] = type_
         metadata['description'] = None
         outputs.append(metadata)
     return update_params(outputs)
 
 
-def get_function_parameters(func: Callable) -> dict:
+def get_function_parameters(func: Callable) -> list:
     """Returns a formatted list of parameters.
 
     Args:
