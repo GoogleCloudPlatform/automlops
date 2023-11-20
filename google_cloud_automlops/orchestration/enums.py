@@ -26,7 +26,7 @@ class Orchestrator(Enum):
     KFP = 'kfp'
     # ARGO_WORKFLOWS = 'argo-workflows'   # roadmap item
     # TFX = 'tfx'   # roadmap item
-    # AIRFLOW = 'airflow'   # roadmap item
+    AIRFLOW = 'airflow'   # roadmap item
     # RAY = 'ray'   # roadmap item
 
 class PipelineJobSubmitter(Enum):

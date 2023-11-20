@@ -37,3 +37,21 @@ class KfpConfig(BaseModel):
     pipeline_params: Dict
     pubsub_topic_name: str
     use_ci: bool
+
+
+class AirflowConfig(BaseModel):
+    """Model representing the Airflow config.
+
+    Args:
+        base_image: The image to use in the component base dockerfile.
+        custom_training_job_specs: Specifies the specs to run the training job with.
+        pipeline_params: Dictionary containing runtime pipeline parameters.
+        pubsub_topic_name: The name of the pubsub topic to publish to.
+        use_ci: Flag that determines whether to use Cloud Run CI/CD.
+    """
+    # IN PROGRESS
+    base_image: str
+    custom_training_job_specs: Optional[List]
+    pipeline_params: Dict
+    pubsub_topic_name: str
+    use_ci: bool

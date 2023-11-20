@@ -335,6 +335,11 @@ def generate(
             pipeline_params=pipeline_params,
             pubsub_topic_name=derived_pubsub_topic_name,
             use_ci=use_ci))
+    elif orchestration_framework == Orchestrator.AIRFLOW.value:
+        # IN PROGRESS
+        logging.info(f'Writing README.md to {BASE_DIR}README.md')
+        #logging.info(f'Writing airflow DAG code to {BASE_DIR}pipelines, {BASE_DIR}components')
+        logging.info(f'Writing scripts to {BASE_DIR}scripts')
 
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:
