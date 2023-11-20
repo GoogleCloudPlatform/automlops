@@ -66,3 +66,9 @@ def build(config: AirflowConfig):
     """
 
     # IN PROGRESS
+    
+    # Write scripts for building DAG and running it
+    
+    # Create DAG operators and flow
+    
+    # Write a readme
