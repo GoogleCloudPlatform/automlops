@@ -64,7 +64,7 @@ def create_component_scaffold(func: Optional[Callable] = None,
     component_spec['name'] = name
     if description:
         component_spec['description'] = description
-    outputs = get_function_outputs(func)
+    outputs = get_function_return_types(func)
     if outputs:
         component_spec['outputs'] = outputs
     component_spec['inputs'] = get_function_parameters(func)
@@ -109,8 +109,8 @@ def get_packages_to_install_command(func: Optional[Callable] = None,
     return ['sh', '-c', install_python_packages_script, src_code]
 
 
-def get_function_outputs(func: Callable) -> list:
-    """Returns a formatted list of parameters.
+def get_function_return_types(func: Callable) -> list:
+    """Returns a formatted list of function return types.
 
     Args:
         func: The python function to create a component from. The function
@@ -121,7 +121,8 @@ def get_function_outputs(func: Callable) -> list:
         Exception: If return type is provided and not a NamedTuple.
     """
     annotation = inspect.signature(func).return_annotation
-    annotation = maybe_strip_optional_from_annotation(annotation)
+    if maybe_strip_optional_from_annotation(annotation) is not annotation:
+        raise TypeError('Return type cannot be Optional.')
 
     # No annotations provided
     # pylint: disable=protected-access
