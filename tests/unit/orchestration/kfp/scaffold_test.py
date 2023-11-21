@@ -70,15 +70,15 @@ def full_name() -> NamedTuple('output', [('first', str), ('last', str)]):
     """
     return 'jack', 'smith'
 
-def friends(a: Optional[float]) -> Optional[NamedTuple('output', [('count', int)])]:
+def optional_friend_count(count: Optional[float]) -> Optional[NamedTuple('output', [('count', int)])]:
     """Testing
 
     Args:
-        a (optional[float]): Float n
+        count (optional[float]): count of friends
     """
-    if not a:
+    if not count:
         return None
-    return a
+    return count
 
 def age() -> int:
     """Testing
@@ -297,7 +297,7 @@ def test_get_compile_step(func_name: str):
             does_not_raise()
         ),
         (
-            friends,
+            optional_friend_count,
             None,
             pytest.raises(TypeError)
         ),
