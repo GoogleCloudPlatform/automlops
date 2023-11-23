@@ -65,26 +65,6 @@ def div(a: float, b: float):
     """
     return a/b
 
-def full_name() -> NamedTuple('output', [('first', str), ('last', str)]):
-    """Testing
-    """
-    return 'jack', 'smith'
-
-def optional_friend_count(count: Optional[float]) -> Optional[NamedTuple('output', [('count', int)])]:
-    """Testing
-
-    Args:
-        count (optional[float]): count of friends
-    """
-    if not count:
-        return None
-    return count
-
-def age() -> int:
-    """Testing
-    """
-    return 65
-
 
 @pytest.mark.parametrize(
     'func, packages_to_install, expectation, has_return_type',
@@ -283,46 +263,56 @@ def test_get_compile_step(func_name: str):
 
 
 @pytest.mark.parametrize(
-    'func, return_types, expectation',
+    'return_annotation, return_types, expectation',
     [
         (
-            add,
+            NamedTuple('output', [('sum', int)]),
             [{'description': None, 'name': 'sum', 'type': 'Integer'},],
             does_not_raise()
         ),
         (
-            full_name,
+            NamedTuple('output', [('first', str), ('last', str)]),
             [{'description': None, 'name': 'first', 'type': 'String'},
              {'description': None, 'name': 'last', 'type': 'String'},],
             does_not_raise()
         ),
         (
-            optional_friend_count,
+            Optional[NamedTuple('output', [('count', int)])],
             None,
             pytest.raises(TypeError)
         ),
         (
-            age,
+            int,
             None,
             pytest.raises(TypeError)
         ),(
-           div,
+            None,
+            None,
+            pytest.raises(TypeError)
+        ),
+        (
+            'NO_ANNOTATION',
             None,
             does_not_raise()
         )
     ]
 )
-def test_get_function_return_types(func: Callable, return_types: List[dict], expectation):
+def test_get_function_return_types(return_annotation, return_types: List[dict], expectation):
     """Tests get_function_outputs, which returns a formatted list of
     return types.
 
     Args:
-        func (Callable): The python function to create a component from. The function
-            should either have a NamedTuple return type or no return type at all.
-        params (List[dict]): Params list with types converted to kubeflow spec.
+        annotation (Any): The return type to test.
+        return_types (List[dict]): The return type converted into the kubeflow output spec.
         expectation: Any corresponding expected errors for each
             set of parameters.
     """
+
+    def func():
+        ...
+
+    if return_annotation != 'NO_ANNOTATION':
+        func.__annotations__ = {'return' : return_annotation}
 
     with expectation:
         assert return_types == get_function_return_types(func=func)
