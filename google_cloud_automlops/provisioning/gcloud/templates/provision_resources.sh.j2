@@ -163,7 +163,7 @@ fi
 # Deploy Cloud Function
 echo -e "$GREEN Deploying Cloud Functions: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
 gcloud functions deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
---no-allow-unauthenticated \
+  --no-allow-unauthenticated \
   --docker-repository="projects/${PROJECT_ID}/locations/${ARTIFACT_REPO_LOCATION}/repositories/${ARTIFACT_REPO_NAME}" \
   --trigger-topic=$PUBSUB_TOPIC_NAME \
   --entry-point=process_request \
@@ -181,7 +181,7 @@ if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$BUILD_
 
   echo "Creating Cloudbuild Trigger on branch $SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
   gcloud beta builds triggers create cloud-source-repositories \
---ignored-files=.gitignore \
+    --ignored-files=.gitignore \
     --region=$BUILD_TRIGGER_LOCATION \
     --name=$BUILD_TRIGGER_NAME \
     --repo=$SOURCE_REPO_NAME \
