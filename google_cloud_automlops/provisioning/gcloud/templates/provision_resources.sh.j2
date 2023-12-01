@@ -44,6 +44,12 @@ else
 
 fi
 {% endif %}
+
+{% if deployment_framework == 'github-actions' %} 
+echo -e "$GREEN Configuring Docker credential helper in project $PROJECT_ID $NC"
+echo "Y" | gcloud auth configure-docker {{artifact_repo_location}}-docker.pkg.dev;
+{% endif %}
+
 echo -e "$GREEN Setting up Storage Bucket in project $PROJECT_ID $NC"
 if !(gsutil ls -b gs://$STORAGE_BUCKET_NAME | grep --fixed-strings "$STORAGE_BUCKET_NAME"); then
 
@@ -101,12 +107,26 @@ else
 
 fi
 {% if pipeline_job_submission_service_type == 'cloud-run' %}
+
+{% if deployment_framework == 'github-actions' %}
+echo -e "Beginning Docker build for submission service in project $PROJECT_ID $NC"
+docker build -t ${PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE} ${BASE_DIR}services/submission_service
+
+echo -e "$GREEN Beginning Docker tag to push Docker image to Artifact Registry in project $PROJECT_ID $NC" 
+docker image tag ${PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE} ${PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE}
+
+echo -e "$GREEN Beginning Docker push for submission service in project $PROJECT_ID $NC"
+docker image push ${PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE}
+{% endif %}
+
 # Build and Push Submission Service image
+{% if deployment_framework == 'cloud-build' %}
 echo -e "$GREEN Building Pipeline Job Submission Service in project $PROJECT_ID $NC"
 gcloud builds submit ${BASE_DIR}services/submission_service \
   --tag $PIPELINE_JOB_SUBMISSION_SERVICE_IMAGE \
   --region $BUILD_TRIGGER_LOCATION \
   --suppress-logs
+{% endif %}
 
 # Deploy Cloud Run
 echo -e "$GREEN Deploying Cloud Run: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
@@ -143,7 +163,7 @@ fi
 # Deploy Cloud Function
 echo -e "$GREEN Deploying Cloud Functions: ${PIPELINE_JOB_SUBMISSION_SERVICE_NAME} in project $PROJECT_ID $NC"
 gcloud functions deploy $PIPELINE_JOB_SUBMISSION_SERVICE_NAME \
-  --no-allow-unauthenticated \
+--no-allow-unauthenticated \
   --docker-repository="projects/${PROJECT_ID}/locations/${ARTIFACT_REPO_LOCATION}/repositories/${ARTIFACT_REPO_NAME}" \
   --trigger-topic=$PUBSUB_TOPIC_NAME \
   --entry-point=process_request \
@@ -161,7 +181,7 @@ if ! (gcloud beta builds triggers list --project="$PROJECT_ID" --region="$BUILD_
 
   echo "Creating Cloudbuild Trigger on branch $SOURCE_REPO_BRANCH in project $PROJECT_ID for repo ${SOURCE_REPO_NAME}"
   gcloud beta builds triggers create cloud-source-repositories \
-    --ignored-files=.gitignore \
+--ignored-files=.gitignore \
     --region=$BUILD_TRIGGER_LOCATION \
     --name=$BUILD_TRIGGER_NAME \
     --repo=$SOURCE_REPO_NAME \
