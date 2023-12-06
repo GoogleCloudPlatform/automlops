@@ -1,6 +1,23 @@
 import subprocess
 import re
-
+import google_cloud_automlops.utils.utils
+from google_cloud_automlops.utils.utils import (
+    delete_file,
+    execute_process,
+    get_components_list,
+    get_function_source_definition,
+    is_component_config,
+    make_dirs,
+    read_file,
+    read_yaml_file,
+    stringify_job_spec_list,
+    update_params,
+    validate_schedule,
+    write_and_chmod,
+    write_file,
+    write_yaml_file,
+    precheck_deployment_requirements
+)
 def execute_process(command: str, to_null: bool):
         """Executes an external shell process.
 
@@ -17,6 +34,16 @@ def execute_process(command: str, to_null: bool):
                 stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as err:
             raise RuntimeError(f'Error executing process. {err}') from err
+
+def assert_successful_provisioning(defaults):
+    try:
+        precheck_deployment_requirements(defaults)
+    except Exception as e:
+        # Assert False with informative error message
+        assert False, f"Unexpected error with provisioning: {e}"
+    else:
+        # No exception occurred, assert True
+        assert True
 
 def assert_repository_exists(repository_name):
     """

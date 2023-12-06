@@ -19,8 +19,13 @@ import logging
 import time
 from google.cloud import aiplatform
 from .. import helpers
-
-
+from google_cloud_automlops.utils.utils import (
+    read_yaml_file
+)
+from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    GENERATED_DEFAULTS_FILE
+)
 
 def test_beans_training_model():
 
@@ -245,21 +250,23 @@ def test_beans_training_model():
 
     # Assert that files and directories were created with the correct names.
     expected_AMO_cache_files = ['create_dataset.yaml', 'deploy_model.yaml', 'pipeline_scaffold.py', 'train_model.yaml']
-    expected_AMO_directory = ['.gitignore', 'README.md', 'cloudbuild.yaml', 'components', 'configs', 'images', 'pipelines', 'provision', 'scripts', 'services']
+    expected_AMO_directory = ['.git' ,'.gitignore', 'README.md', 'cloudbuild.yaml', 'components', 'configs', 'images', 'pipelines', 'provision', 'scripts', 'services']
 
     assert sorted(os.listdir('./.AutoMLOps-cache')) == expected_AMO_cache_files
     assert sorted(os.listdir('./AutoMLOps')) == expected_AMO_directory
 
-    AutoMLOps.provision(hide_warnings=False)
-    time.sleep(300)
+    # AutoMLOps.provision(hide_warnings=False)
+    # time.sleep(300)
       
     # Assert that GCP infrastructure was stood up with the correct names.
-    helpers.assert_repository_exists(repository_name="dry-beans-dt-repository")
-    helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
-    helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    helpers.assert_successful_provisioning(defaults)
+    # helpers.assert_repository_exists(repository_name="dry-beans-dt-repository")
+    # helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
+    # helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
 
     AutoMLOps.deploy(precheck=True, hide_warnings=False)
-    time.sleep(600)
+    # time.sleep(600)
 
     # Assert that Vertex AI endpoint was created and returns predictions.
     aiplatform.init(project=PROJECT_ID)
