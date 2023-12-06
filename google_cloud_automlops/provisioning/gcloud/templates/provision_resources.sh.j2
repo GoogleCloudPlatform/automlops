@@ -74,6 +74,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
     --member="serviceAccount:$PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT_LONG" \
     --role="{{role}}" \
     --no-user-output-enabled{% endfor %}
+{% if use_ci %}
 {% if source_repo_type == 'cloud-source-repositories' %}
 echo -e "$GREEN Setting up Cloud Source Repository in project $PROJECT_ID $NC"
 if ! (gcloud source repos list --project="$PROJECT_ID" | grep -E "(^|[[:blank:]])$SOURCE_REPO_NAME($|[[:blank:]])"); then
@@ -85,8 +86,8 @@ else
 
   echo "Cloud Source Repository: ${SOURCE_REPO_NAME} already exists in project $PROJECT_ID"
 
-fi{% endif %}
-{% if use_ci %}
+fi
+{% endif %}
 # Create Pub/Sub Topic
 echo -e "$GREEN Setting up Queueing Service in project $PROJECT_ID $NC"
 if ! (gcloud pubsub topics list | grep -E "(^|[[:blank:]])projects/${PROJECT_ID}/topics/${PUBSUB_TOPIC_NAME}($|[[:blank:]])"); then

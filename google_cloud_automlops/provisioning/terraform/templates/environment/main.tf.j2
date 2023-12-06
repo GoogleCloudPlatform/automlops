@@ -1,10 +1,11 @@
 {{generated_license}}
 # Enable Google Cloud APIs
 module "google_project_service" {
-  source                  = "terraform-google-modules/project-factory/google//modules/project_services"
-  version                 = "14.1.0"
-  project_id              = var.project_id
-  activate_apis           = local.org_project.enable_apis
+  source                      = "terraform-google-modules/project-factory/google//modules/project_services"
+  version                     = "14.1.0"
+  project_id                  = var.project_id
+  activate_apis               = local.org_project.enable_apis
+  disable_services_on_destroy = false
 }
 resource "time_sleep" "wait_60_seconds" {
   depends_on = [module.google_project_service]
@@ -34,6 +35,7 @@ resource "google_storage_bucket" "storage_bucket" {
   }
   depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
 }
+{% if use_ci %}
 {% if source_repo_type == 'cloud-source-repositories' %}
 # Create cloud source repository
 resource "google_sourcerepo_repository" "source_repo" {
@@ -42,7 +44,7 @@ resource "google_sourcerepo_repository" "source_repo" {
 
   depends_on              = [module.google_project_service,time_sleep.wait_60_seconds]
 }{% endif %}
-{% if use_ci %}{% if pipeline_job_submission_service_type == 'cloud-run' %}
+{% if pipeline_job_submission_service_type == 'cloud-run' %}
 # Build and Push Submission Service image
 resource "null_resource" "build_and_push_submission_service" {
   provisioner "local-exec" {
@@ -132,7 +134,7 @@ resource "google_cloudbuild_trigger" "cloudbuild_trigger" {
   project                 = var.project_id
   name                    = var.build_trigger_name
   location                = var.build_trigger_location
-  ignored-files           = [".gitignore"]
+  ignored_files           = [".gitignore"]
   trigger_template {
     branch_name           = var.source_repo_branch
     project_id            = var.project_id

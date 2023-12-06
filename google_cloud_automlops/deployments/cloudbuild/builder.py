@@ -26,6 +26,7 @@ from jinja2 import Template
 
 from google_cloud_automlops.utils.utils import write_file
 from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
     CLOUDBUILD_TEMPLATES_PATH,
     GENERATED_CLOUDBUILD_FILE,
     COMPONENT_BASE_RELATIVE_PATH,
@@ -76,13 +77,14 @@ def create_cloudbuild_jinja(
     Returns:
         str: Contents of cloudbuild.yaml.
     """
+    component_base_relative_path = COMPONENT_BASE_RELATIVE_PATH if use_ci else f'{BASE_DIR}{COMPONENT_BASE_RELATIVE_PATH}'
     template_file = import_files(CLOUDBUILD_TEMPLATES_PATH) / 'cloudbuild.yaml.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
             artifact_repo_location=artifact_repo_location,
             artifact_repo_name=artifact_repo_name,
-            component_base_relative_path=COMPONENT_BASE_RELATIVE_PATH,
+            component_base_relative_path=component_base_relative_path,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
             naming_prefix=naming_prefix,

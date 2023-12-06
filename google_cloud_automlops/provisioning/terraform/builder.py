@@ -80,7 +80,7 @@ def build(
         config.vpc_connector: The name of the vpc connector to use.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-    required_apis = list(get_required_apis(defaults))
+    required_apis = get_required_apis(defaults)
     # create environment/data.tf
     write_file(f'{BASE_DIR}provision/environment/data.tf', create_environment_data_tf_jinja(
         required_apis=required_apis,
@@ -184,6 +184,7 @@ def create_environment_data_tf_jinja(
         return template.render(
             generated_license=GENERATED_LICENSE,
             required_apis=required_apis,
+            required_iam_roles=IAM_ROLES_RUNNER_SA,
             use_ci=use_ci)
 
 
@@ -196,9 +197,7 @@ def create_environment_iam_tf_jinja() -> str:
     template_file = import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'iam.tf.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
-        return template.render(
-            generated_license=GENERATED_LICENSE,
-            required_iam_roles=IAM_ROLES_RUNNER_SA)
+        return template.render(generated_license=GENERATED_LICENSE)
 
 
 def create_environment_main_tf_jinja(

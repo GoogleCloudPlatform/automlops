@@ -26,7 +26,7 @@ import logging
 import os
 import subprocess
 import textwrap
-from typing import Callable, Set
+from typing import Callable
 
 from packaging import version
 import yaml
@@ -451,43 +451,43 @@ def create_default_config(artifact_repo_location: str,
         f'  use_ci: {use_ci}\n')
 
 
-def get_required_apis(defaults: dict) -> Set:
-    """Returns the set of required APIs based on the user tooling selection
+def get_required_apis(defaults: dict) -> list:
+    """Returns the list of required APIs based on the user tooling selection
        determined during the generate() step.
 
     Args:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of required APIs
+        list: The list of required APIs
     """
-    required_apis = set([
+    required_apis = [
         'cloudbuild.googleapis.com',
         'cloudresourcemanager.googleapis.com',
         'compute.googleapis.com',
         'iamcredentials.googleapis.com',
         'iam.googleapis.com',
         'pubsub.googleapis.com',
-        'storage.googleapis.com'])
+        'storage.googleapis.com']
     if defaults['tooling']['orchestration_framework'] == Orchestrator.KFP.value:
-        required_apis.add('aiplatform.googleapis.com')
+        required_apis.append('aiplatform.googleapis.com')
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
-        required_apis.add('artifactregistry.googleapis.com')
+        required_apis.append('artifactregistry.googleapis.com')
     # if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
     #     required_apis.add('cloudbuild.googleapis.com')
     if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
-        required_apis.add('cloudscheduler.googleapis.com')
+        required_apis.append('cloudscheduler.googleapis.com')
     if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
-        required_apis.add('run.googleapis.com')
+        required_apis.append('run.googleapis.com')
     if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
-        required_apis.add('cloudfunctions.googleapis.com')
+        required_apis.append('cloudfunctions.googleapis.com')
     if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-        required_apis.add('sourcerepo.googleapis.com')
+        required_apis.append('sourcerepo.googleapis.com')
     return required_apis
 
 
-def get_provision_min_permissions(defaults: dict) -> Set:
-    """Returns the set of minimum required permissions to run
+def get_provision_min_permissions(defaults: dict) -> list:
+    """Returns the list of minimum required permissions to run
        the provision() step based on the user tooling selection
        determined during the generate() step.
 
@@ -495,38 +495,37 @@ def get_provision_min_permissions(defaults: dict) -> Set:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of required permissions
+        list: The list of required permissions
     """
-    required_permissions = set([
+    required_permissions = [
         'serviceusage.services.enable',
         'serviceusage.services.use',
-        'storage.buckets.get',
-        'storage.buckets.create',
         'resourcemanager.projects.setIamPolicy',
         'iam.serviceAccounts.list',
         'iam.serviceAccounts.create',
         'iam.serviceAccounts.actAs',
-        'pubsub.topics.list',
-        'pubsub.topics.create',
-        'pubsub.subscriptions.list',
-        'pubsub.subscriptions.create'])
+        'storage.buckets.get',
+        'storage.buckets.create']
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
-        required_permissions.update(['artifactregistry.repositories.list', 'artifactregistry.repositories.create'])
-    if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-        required_permissions.update(['cloudbuild.builds.list', 'cloudbuild.builds.create'])
-    if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
-        required_permissions.update(['cloudscheduler.jobs.list', 'cloudscheduler.jobs.create'])
-    if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
-        required_permissions.update(['run.services.get', 'run.services.create'])
-    if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
-        required_permissions.update(['cloudfunctions.functions.get', 'cloudfunctions.functions.create'])
-    if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-        required_permissions.update(['source.repos.list', 'source.repos.create'])
+        required_permissions.extend(['artifactregistry.repositories.list', 'artifactregistry.repositories.create'])
+    if defaults['tooling']['use_ci']:
+        required_permissions.extend(['pubsub.topics.list', 'pubsub.topics.create',
+                                     'pubsub.subscriptions.list', 'pubsub.subscriptions.create'])
+        if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
+            required_permissions.extend(['cloudbuild.builds.list', 'cloudbuild.builds.create'])
+        if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
+            required_permissions.extend(['cloudscheduler.jobs.list', 'cloudscheduler.jobs.create'])
+        if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
+            required_permissions.extend(['run.services.get', 'run.services.create'])
+        if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
+            required_permissions.extend(['cloudfunctions.functions.get', 'cloudfunctions.functions.create'])
+        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+            required_permissions.extend(['source.repos.list', 'source.repos.create'])
     return required_permissions
 
 
-def get_provision_recommended_roles(defaults: dict) -> Set:
-    """Returns the set of recommended roles to run
+def get_provision_recommended_roles(defaults: dict) -> list:
+    """Returns the list of recommended roles to run
        the provision() step based on the user tooling selection
        determined during the generate() step. These roles have
        the minimum permissions required for provision.
@@ -535,139 +534,140 @@ def get_provision_recommended_roles(defaults: dict) -> Set:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of recommended roles
+        list: The list of recommended roles
     """
-    recommended_roles = set([
+    recommended_roles = [
         'roles/serviceusage.serviceUsageAdmin',
         'roles/resourcemanager.projectIamAdmin',
         'roles/iam.serviceAccountAdmin',
         'roles/iam.serviceAccountUser',
-        'roles/storage.admin',
-        'roles/pubsub.editor'])
+        'roles/storage.admin']
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
-        recommended_roles.add('roles/artifactregistry.admin')
-    if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-        recommended_roles.add('roles/cloudbuild.builds.editor')
-    if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
-        recommended_roles.add('roles/cloudscheduler.admin')
-    if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
-        recommended_roles.add('roles/run.admin')
-    if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
-        recommended_roles.add('roles/cloudfunctions.admin')
-    if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-        recommended_roles.add('roles/source.admin')
+        recommended_roles.append('roles/artifactregistry.admin')
+    if defaults['tooling']['use_ci']:
+        recommended_roles.append('roles/pubsub.editor')
+        if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
+            recommended_roles.append('roles/cloudbuild.builds.editor')
+        if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
+            recommended_roles.append('roles/cloudscheduler.admin')
+        if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
+            recommended_roles.append('roles/run.admin')
+        if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
+            recommended_roles.append('roles/cloudfunctions.admin')
+        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+            recommended_roles.append('roles/source.admin')
     return recommended_roles
 
 
-def get_deploy_with_precheck_min_permissions(defaults: dict) -> Set:
-    """Returns the set of minimum required permissions to run
+def get_deploy_with_precheck_min_permissions(defaults: dict) -> list:
+    """Returns the list of minimum required permissions to run
        the deploy() step based on the user tooling selection
        determined during the generate() step. This function is called
        when precheck=True, which makes several API calls to determine if the infra
-       exists to run deploy() and increases the required set of permissions.
+       exists to run deploy() and increases the required list of permissions.
 
     Args:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of minimum permissions to deploy with precheck=True
+        list: The list of minimum permissions to deploy with precheck=True
     """
-    recommended_permissions = set([
+    recommended_permissions = [
         'serviceusage.services.get',
         'resourcemanager.projects.getIamPolicy',
         'storage.buckets.update',
-        'iam.serviceAccounts.get'])
+        'iam.serviceAccounts.get']
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
-        recommended_permissions.add('artifactregistry.repositories.get')
+        recommended_permissions.append('artifactregistry.repositories.get')
     if defaults['tooling']['use_ci']:
-        recommended_permissions.update(['pubsub.topics.get', 'pubsub.subscriptions.get'])
+        recommended_permissions.extend(['pubsub.topics.get', 'pubsub.subscriptions.get'])
         if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-            recommended_permissions.add('cloudbuild.builds.get')
+            recommended_permissions.append('cloudbuild.builds.get')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
-            recommended_permissions.add('run.services.get')
+            recommended_permissions.append('run.services.get')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
-            recommended_permissions.add('cloudfunctions.functions.get')
+            recommended_permissions.append('cloudfunctions.functions.get')
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_permissions.add('source.repos.update')
+            recommended_permissions.append('source.repos.update')
     elif not defaults['tooling']['use_ci']:
-        recommended_permissions.update(['cloudbuild.builds.get', 'aiplatform.pipelineJobs.create'])
+        recommended_permissions.extend(['cloudbuild.builds.get', 'aiplatform.pipelineJobs.create'])
     return recommended_permissions
 
 
-def get_deploy_with_precheck_recommended_roles(defaults: dict) -> Set:
-    """Returns the set of recommended roles to run
+def get_deploy_with_precheck_recommended_roles(defaults: dict) -> list:
+    """Returns the list of recommended roles to run
        the deploy() step based on the user tooling selection
        determined during the generate() step. This function is called
        when precheck=True, which makes several API calls to determine if the infra
-       exists to run deploy() and increases the required set of permissions.
+       exists to run deploy() and increases the required list of permissions.
 
     Args:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of recommended roles to deploy with precheck=True
+        list: The list of recommended roles to deploy with precheck=True
     """
-    recommended_roles = set([
+    recommended_roles = [
         'roles/serviceusage.serviceUsageViewer',
         'roles/iam.roleViewer',
         'roles/storage.admin',
-        'roles/iam.serviceAccountUser'])
+        'roles/iam.serviceAccountUser']
     if defaults['gcp']['artifact_repo_type'] == ArtifactRepository.ARTIFACT_REGISTRY.value:
-        recommended_roles.add('roles/artifactregistry.reader')
+        recommended_roles.append('roles/artifactregistry.reader')
     if defaults['tooling']['use_ci']:
-        recommended_roles.add('roles/pubsub.viewer')
+        recommended_roles.append('roles/pubsub.viewer')
         if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-            recommended_roles.add('roles/cloudbuild.builds.editor')
+            recommended_roles.append('roles/cloudbuild.builds.editor')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
-            recommended_roles.add('roles/run.viewer')
+            recommended_roles.append('roles/run.viewer')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
-            recommended_roles.add('roles/cloudfunctions.viewer')
+            recommended_roles.append('roles/cloudfunctions.viewer')
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_roles.add('roles/source.writer')
+            recommended_roles.append('roles/source.writer')
     elif not defaults['tooling']['use_ci']:
-        recommended_roles.update(['roles/cloudbuild.builds.editor', 'roles/aiplatform.user'])
+        recommended_roles.extend(['roles/cloudbuild.builds.editor', 'roles/aiplatform.user'])
     return recommended_roles
 
 
-def get_deploy_without_precheck_min_permissions(defaults: dict) -> Set:
-    """Returns the set of minimum required permissions to run
+def get_deploy_without_precheck_min_permissions(defaults: dict) -> list:
+    """Returns the list of minimum required permissions to run
        the deploy() step based on the user tooling selection
        determined during the generate() step. This function is called
-       when precheck=False, which decreases the required set of permissions.
+       when precheck=False, which decreases the required list of permissions.
 
     Args:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of minimum permissions to deploy with precheck=False
+        list: The list of minimum permissions to deploy with precheck=False
     """
-    recommended_permissions = set()
+    recommended_permissions = []
     if defaults['tooling']['use_ci']:
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_permissions.add('source.repos.update')
+            recommended_permissions.append('source.repos.update')
     elif not defaults['tooling']['use_ci']:
-        recommended_permissions.update(['cloudbuild.builds.create', 'storage.buckets.update', 'aiplatform.pipelineJobs.create'])
+        recommended_permissions.extend(['cloudbuild.builds.create', 'storage.buckets.update', 'aiplatform.pipelineJobs.create'])
     return recommended_permissions
 
 
-def get_deploy_without_precheck_recommended_roles(defaults: dict) -> Set:
-    """Returns the set of recommended roles to run
+def get_deploy_without_precheck_recommended_roles(defaults: dict) -> list:
+    """Returns the list of recommended roles to run
        the deploy() step based on the user tooling selection
        determined during the generate() step. This function is called
-       when precheck=False, which decreases the required set of permissions.
+       when precheck=False, which decreases the required list of permissions.
 
     Args:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
 
     Returns:
-        set: The set of recommended roles to deploy with precheck=False
+        list: The list of recommended roles to deploy with precheck=False
     """
-    recommended_roles = set()
+    recommended_roles = []
     if defaults['tooling']['use_ci']:
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_roles.add('roles/source.writer')
+            recommended_roles.append('roles/source.writer')
     elif not defaults['tooling']['use_ci']:
-        recommended_roles.update(['roles/cloudbuild.builds.editor', 'roles/storage.admin', 'roles/aiplatform.user'])
+        recommended_roles.extend(['roles/cloudbuild.builds.editor', 'roles/storage.admin', 'roles/aiplatform.user'])
     return recommended_roles
 
 
@@ -816,9 +816,9 @@ def precheck_deployment_requirements(defaults: dict):
         for element in response['bindings']:
             if f'serviceAccount:{pipeline_job_runner_service_account}' in element['members']:
                 iam_roles.add(element['role'])
-        if not IAM_ROLES_RUNNER_SA.issubset(iam_roles):
+        if not set(IAM_ROLES_RUNNER_SA).issubset(iam_roles):
             raise RuntimeError('Missing the following IAM roles for service account '
-                              f'{pipeline_job_runner_service_account}: {IAM_ROLES_RUNNER_SA.difference(iam_roles)}. '
+                              f'{pipeline_job_runner_service_account}: {set(IAM_ROLES_RUNNER_SA).difference(iam_roles)}. '
                                'Please update service account roles and continue.')
     except Exception as err:
         raise RuntimeError(f'An error was encountered: {err}') from err

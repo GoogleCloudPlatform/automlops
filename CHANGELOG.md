@@ -1,6 +1,38 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.7] - 2023-11-06
+
+### Added
+
+### Changed
+
+- Updated state_bucket naming schema
+- Updated unit tests to reflect state_bucket naming schema
+- Updated outputs.tf block to not include csr if use_ci=False
+
+### Fixed
+
+
+## [1.2.6] - 2023-10-05
+
+### Added
+
+### Changed
+
+- Updated default to not disable api services
+- Changed required_permissions and recommend_roles from set to list
+- Updated required_permissions and recommend_roles lists to be dynamic based on user tooling selection
+- Changed google_project_iam_member block to use a local list for setting iam roles
+- Moved csr creation to only occur if use_ci=True
+- Updated github_actions config to use source_repo_branch parameter into of default `automlops` branch
+
+### Fixed
+
+- Fixed run local issue regarding dockerfile pathing
+- Fixed cloudbuild trigger terraform bug with ignored_files
+
+
 ## [1.2.5] - 2023-10-05
 
 ### Added
@@ -10,6 +42,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Fixed bug with generating .github/workflows directories
+
 
 ## [1.2.4] - 2023-10-03
 
@@ -22,6 +55,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Pinned the python docker container step for the cloudbuild yaml to python:3.10, this address some dependency issues with the latest python docker image
+
 
 ## [1.2.3] - 2023-09-29
 

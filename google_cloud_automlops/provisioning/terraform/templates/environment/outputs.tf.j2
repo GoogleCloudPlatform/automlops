@@ -24,12 +24,12 @@ output "create_storage_bucket_names" {
   description = "Bucket names."
   value       = google_storage_bucket.storage_bucket.name
 }
-{% if source_repo_type == 'cloud-source-repositories' %}
+{% if use_ci %}{% if source_repo_type == 'cloud-source-repositories' %}
 output "create_cloud_source_repository" {
   description = "Cloud Source Repository name."
   value = var.source_repo_name
 }
-{% endif %}{% if use_ci %}{% if pipeline_job_submission_service_type == 'cloud-run' %}
+{% endif %}{% if pipeline_job_submission_service_type == 'cloud-run' %}
 output "cloud_run_id" {
   description = "ID of the created service."
   value       = module.cloud_run

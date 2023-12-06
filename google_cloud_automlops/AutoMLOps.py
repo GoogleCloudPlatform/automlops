@@ -327,7 +327,8 @@ def generate(
         logging.info(f'Writing README.md to {BASE_DIR}README.md')
         logging.info(f'Writing kubeflow pipelines code to {BASE_DIR}pipelines, {BASE_DIR}components')
         logging.info(f'Writing scripts to {BASE_DIR}scripts')
-        logging.info(f'Writing submission service code to {BASE_DIR}services')
+        if use_ci:
+            logging.info(f'Writing submission service code to {BASE_DIR}services')
         KfpBuilder.build(KfpConfig(
             base_image=base_image,
             custom_training_job_specs=derived_custom_training_job_specs,
@@ -414,6 +415,7 @@ def generate(
                 project_id=project_id,
                 project_number=project_number,
                 pubsub_topic_name=derived_pubsub_topic_name,
+                source_repo_branch=source_repo_branch,
                 use_ci=use_ci,
                 workload_identity_pool=workload_identity_pool,
                 workload_identity_provider=workload_identity_provider,
