@@ -1,8 +1,8 @@
 import datetime
 import airflow
-from airflow.operators import bash_operator
+from airflow.operators.bash import bash_operator
 from airflow.operators.python import PythonOperator
-from airflow.operators.python_operator import PythonVirtualenvOperator
+from airflow.operators import PythonVirtualenvOperator
 
 # If you are running Airflow in more than one time zone
 # see https://airflow.apache.org/docs/apache-airflow/stable/timezone.html
