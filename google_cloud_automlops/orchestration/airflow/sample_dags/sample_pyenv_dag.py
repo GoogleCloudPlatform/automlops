@@ -22,14 +22,6 @@ default_args = {
     "start_date": YESTERDAY,
 }
 
-pipeline_params = {
-    'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
-    'model_directory': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/trained_models/{datetime.datetime.now()}',
-    'data_path': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/data.csv',
-    'project_id': PROJECT_ID,
-    'region': 'us-central1'
-}
-
 
 def create_dataset(
     bq_table: str,
@@ -79,11 +71,13 @@ def create_dataset(
     dataframe['Class'] = le.fit_transform(dataframe['Class'])
     dataframe.to_csv(data_path, index=False)
 
-def hello_world(name: str):
+def hello_world(name: str, pipeline_params):
     import pandas as pd
     df = pd.DataFrame({'name': ['Alice', 'Bob'], 'age': [25, 30]})
     print(df.to_string())
     print(f"hello world {name}")
+    print(pipeline_params["bq_table"])
+    print(pipeline_params["data_path"])
 
 def train_model(
     data_path: str,
@@ -176,11 +170,19 @@ with airflow.DAG(
     default_args=default_args,
 ) as dag:
 
+    pipeline_params = {
+        'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
+        'model_directory': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/trained_models/{datetime.datetime.now()}',
+        'data_path': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/data.csv',
+        'project_id': PROJECT_ID,
+        'region': 'us-central1'
+    }
+
     hello_world_task = PythonVirtualenvOperator(
         task_id='hello_world_task',
         python_callable=hello_world,
         requirements=['pandas', 'numpy'],
-        op_kwargs={'name': 'John'},
+        op_kwargs={'name': 'John', 'pipeline_params': pipeline_params},
     )
 
     create_dataset_task = PythonVirtualenvOperator(
