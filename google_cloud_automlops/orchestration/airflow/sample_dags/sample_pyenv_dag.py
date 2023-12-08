@@ -1,8 +1,8 @@
 import datetime
 import airflow
-from airflow.operators.bash import bash_operator
+from airflow.operators import bash_operator
 from airflow.operators.python import PythonOperator
-from airflow.operators import PythonVirtualenvOperator
+from airflow.operators.python_operator import PythonVirtualenvOperator
 
 # If you are running Airflow in more than one time zone
 # see https://airflow.apache.org/docs/apache-airflow/stable/timezone.html
@@ -170,9 +170,10 @@ with airflow.DAG(
     default_args=default_args,
 ) as dag:
 
+    timestamp = datetime.datetime.now()
     pipeline_params = {
         'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
-        'model_directory': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/trained_models/{datetime.datetime.now()}',
+        'model_directory': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/trained_models/{timestamp}',
         'data_path': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/data.csv',
         'project_id': PROJECT_ID,
         'region': 'us-central1'
