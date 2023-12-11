@@ -22,11 +22,20 @@ default_args = {
     "start_date": YESTERDAY,
 }
 
+def hello_world(name: str, pipeline_params, PROJECT_ID, MODEL_ID):
+    import pandas as pd
+    import datetime
+    print(pipeline_params['model_directory'])
+    df = pd.DataFrame({'name': ['Alice', 'Bob'], 'age': [25, 30]})
+    print(df.to_string())
+    print(f"hello world {name}")
+
 
 def create_dataset(
     bq_table: str,
     data_path: str,
-    project_id: str
+    project_id: str,
+    pipeline_params
 ):
     """Custom component that takes in a BQ table and writes it to GCS.
 
@@ -41,6 +50,8 @@ def create_dataset(
     from sklearn import preprocessing
     
     bq_client = bigquery.Client(project=project_id)
+    print(f"THIS IS THE TIME STAMP: {pipeline_params['model_directory']}")
+
 
     def get_query(bq_input_table: str) -> str:
         """Generates BQ Query to read data.
@@ -70,14 +81,6 @@ def create_dataset(
     le = preprocessing.LabelEncoder()
     dataframe['Class'] = le.fit_transform(dataframe['Class'])
     dataframe.to_csv(data_path, index=False)
-
-def hello_world(name: str, pipeline_params):
-    import pandas as pd
-    df = pd.DataFrame({'name': ['Alice', 'Bob'], 'age': [25, 30]})
-    print(df.to_string())
-    print(f"hello world {name}")
-    print(pipeline_params["bq_table"])
-    print(pipeline_params["data_path"])
 
 def train_model(
     data_path: str,
@@ -173,7 +176,7 @@ with airflow.DAG(
     timestamp = datetime.datetime.now()
     pipeline_params = {
         'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
-        'model_directory': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/trained_models/{timestamp}',
+        'model_directory': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/trained_models/airflow_model_test_run',
         'data_path': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/data.csv',
         'project_id': PROJECT_ID,
         'region': 'us-central1'
@@ -183,7 +186,11 @@ with airflow.DAG(
         task_id='hello_world_task',
         python_callable=hello_world,
         requirements=['pandas', 'numpy'],
-        op_kwargs={'name': 'John', 'pipeline_params': pipeline_params},
+        op_kwargs={
+            'name': 'John',
+            'pipeline_params': pipeline_params,
+            'PROJECT_ID': PROJECT_ID,
+            'MODEL_ID': MODEL_ID},
     )
 
     create_dataset_task = PythonVirtualenvOperator(
@@ -194,6 +201,7 @@ with airflow.DAG(
             "bq_table": pipeline_params["bq_table"],
             "data_path": pipeline_params["data_path"],
             "project_id": pipeline_params["project_id"],
+            'pipeline_params': pipeline_params
         },
     )
 
