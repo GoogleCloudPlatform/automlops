@@ -12,7 +12,7 @@ from google.cloud import aiplatform
 import google.cloud.logging
 
 {% if pipeline_job_submission_service_type == 'cloud-run' %}app = flask.Flask(__name__){% endif %}
-client = google.cloud.logging.Client(project="project")
+client = google.cloud.logging.Client(project='{{project_id}}')
 client.setup_logging()
 
 PROJECT_ID = '{{project_id}}'

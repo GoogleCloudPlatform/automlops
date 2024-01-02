@@ -267,7 +267,7 @@ def update_params(params: list) -> list:
         int: 'Integer',
         str: 'String',
         float: 'Float',
-        bool: 'Bool',
+        bool: 'Boolean',
         list: 'JsonArray',
         dict: 'JsonObject'
     }

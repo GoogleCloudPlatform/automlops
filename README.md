@@ -299,7 +299,7 @@ A description of the parameters is below:
 - `workload_identity_provider`: Provider for workload identity federation.
 - `workload_identity_service_account`: Service account for workload identity federation (specify the full string).
 
-AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the current working directory of the notebook into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
+AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the outputted AutoMLOps/ directory into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
 
 # Generating Code
 
