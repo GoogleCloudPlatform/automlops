@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.8] - 2024-1-09
+
+### Added
+
+- Support for Output annotations with AutoMLOps.component
+
+### Changed
+
+### Fixed
+
 ## [1.2.7] - 2023-11-06
 
 ### Added
