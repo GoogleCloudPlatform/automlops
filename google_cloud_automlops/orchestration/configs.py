@@ -30,10 +30,12 @@ class KfpConfig(BaseModel):
         custom_training_job_specs: Specifies the specs to run the training job with.
         pipeline_params: Dictionary containing runtime pipeline parameters.
         pubsub_topic_name: The name of the pubsub topic to publish to.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         use_ci: Flag that determines whether to use Cloud Run CI/CD.
     """
     base_image: str
     custom_training_job_specs: Optional[List]
     pipeline_params: Dict
     pubsub_topic_name: str
+    setup_model_monitoring: bool
     use_ci: bool

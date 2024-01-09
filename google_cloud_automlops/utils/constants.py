@@ -50,6 +50,11 @@ DEFAULT_SCHEDULE_PATTERN = 'No Schedule Specified'
 DEFAULT_SOURCE_REPO_BRANCH = 'automlops'
 # Default vpc connector name
 DEFAULT_VPC_CONNECTOR = 'No VPC Specified'
+# Header for the config/defaults.yaml
+DEFAULTS_HEADER = (
+    GENERATED_LICENSE +
+    '# These values are descriptive only - do not change.\n'
+    '# Rerun AutoMLOps.generate() to change these values.\n')
 
 # Recommended software versions
 MIN_GCLOUD_BETA_VERSION = '2022.10.21'
@@ -64,6 +69,7 @@ GENERATED_BUILD_COMPONENTS_SH_FILE = BASE_DIR + 'scripts/build_components.sh'
 GENERATED_RUN_PIPELINE_SH_FILE = BASE_DIR + 'scripts/run_pipeline.sh'
 GENERATED_RUN_ALL_SH_FILE = BASE_DIR + 'scripts/run_all.sh'
 GENERATED_RESOURCES_SH_FILE = BASE_DIR + 'provision/provision_resources.sh'
+GENERATED_MODEL_MONITORING_SH_FILE = BASE_DIR + 'scripts/create_model_monitoring_job.sh'
 GENERATED_PUBLISH_TO_TOPIC_FILE = BASE_DIR + 'scripts/publish_to_topic.sh'
 GENERATED_CLOUDBUILD_FILE = BASE_DIR + 'cloudbuild.yaml'
 GENERATED_GITHUB_ACTIONS_FILE = BASE_DIR + '.github/workflows/github_actions.yaml'
@@ -102,6 +108,10 @@ GENERATED_TERRAFORM_DIRS = [
 GENERATED_GITHUB_DIRS = [
     BASE_DIR + '.github',
     BASE_DIR + '.github/workflows'
+]
+
+GENERATED_MODEL_MONITORING_DIRS = [
+    BASE_DIR + 'model_monitoring',
 ]
 
 # temporary files

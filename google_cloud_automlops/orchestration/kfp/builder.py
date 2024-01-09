@@ -44,6 +44,7 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_DEFAULTS_FILE,
     GENERATED_COMPONENT_BASE,
     GENERATED_LICENSE,
+    GENERATED_MODEL_MONITORING_SH_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_FILE,
     GENERATED_PIPELINE_REQUIREMENTS_FILE,
@@ -66,6 +67,7 @@ def build(config: KfpConfig):
         config.custom_training_job_specs: Specifies the specs to run the training job with.
         config.pipeline_params: Dictionary containing runtime pipeline parameters.
         config.pubsub_topic_name: The name of the pubsub topic to publish to.
+        config.setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         config.use_ci: Flag that determines whether to use Cloud Run CI/CD.
     """
 
@@ -76,6 +78,9 @@ def build(config: KfpConfig):
     write_and_chmod(GENERATED_RUN_ALL_SH_FILE, run_all_jinja())
     if config.use_ci:
         write_and_chmod(GENERATED_PUBLISH_TO_TOPIC_FILE, publish_to_topic_jinja(pubsub_topic_name=config.pubsub_topic_name))
+    if config.setup_model_monitoring:
+        write_and_chmod(GENERATED_MODEL_MONITORING_SH_FILE, create_model_monitoring_job_jinja())
+        # write_file(GENERATED_MONITOR_PY_FILE, model_monitoring_monitor_jinja(), 'w')
 
     # Create components and pipelines
     components_path_list = get_components_list(full_path=True)
@@ -332,6 +337,21 @@ def run_all_jinja() -> str:
         str: run_all.sh script.
     """
     template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_all.sh.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(
+            generated_license=GENERATED_LICENSE,
+            base_dir=BASE_DIR)
+
+
+def create_model_monitoring_job_jinja() -> str:
+    """Generates code for create_model_monitoring_job.sh which creates a Vertex AI
+       model monitoring job.
+
+    Returns:
+        str: create_model_monitoring_job.sh script.
+    """
+    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'create_model_monitoring_job.sh.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(
