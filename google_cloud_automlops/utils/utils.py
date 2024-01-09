@@ -37,7 +37,6 @@ import google.auth
 from google_cloud_automlops.utils.constants import (
     CACHE_DIR,
     DEFAULT_SCHEDULE_PATTERN,
-    GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_JOB_SPEC_PATH,
     IAM_ROLES_RUNNER_SA,
