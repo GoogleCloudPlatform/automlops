@@ -231,20 +231,20 @@ def execute_process(command: str, to_null: bool):
         raise RuntimeError(f'Error executing process. {err}') from err
 
 
-def validate_use_ci(model_monitoring: bool, schedule_pattern: str, use_ci: str):
+def validate_use_ci(setup_model_monitoring: bool, schedule_pattern: str, use_ci: str):
     """Validates that the inputted schedule parameter and model_monitoring parameter align with the 
         use_ci configuration.
     Note: this function does not validate that schedule_pattern is a properly formatted cron value.
     Cron format validation is done in the backend by GCP.
     
     Args:
-        model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
         use_ci: Flag that determines whether to use Cloud CI/CD.
     Raises:
         Exception: If use_ci validation fails.
     """
-    if model_monitoring and not use_ci:
+    if setup_model_monitoring and not use_ci:
         raise ValueError('use_ci must be set to True to use Model Monitoring.')
     if schedule_pattern != DEFAULT_SCHEDULE_PATTERN and not use_ci:
         raise ValueError('use_ci must be set to True to use Cloud Scheduler.')
@@ -429,6 +429,7 @@ def create_default_config(artifact_repo_location: str,
         defaults['gcp']['pipeline_job_submission_service_name'] = pipeline_job_submission_service_name
         defaults['gcp']['pipeline_job_submission_service_type'] = pipeline_job_submission_service_type
     defaults['gcp']['project_id'] = project_id
+    defaults['gcp']['setup_model_monitoring'] = setup_model_monitoring
     if use_ci:
         defaults['gcp']['pubsub_topic_name'] = pubsub_topic_name
         defaults['gcp']['schedule_location'] = schedule_location
@@ -509,6 +510,8 @@ def get_required_apis(defaults: dict) -> list:
             required_apis.append('cloudfunctions.googleapis.com')
         if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
             required_apis.append('sourcerepo.googleapis.com')
+        if defaults['gcp']['setup_model_monitoring']:
+            required_apis.append('logging.googleapis.com')
     return required_apis
 
 
@@ -697,11 +700,50 @@ def get_deploy_without_precheck_recommended_roles(defaults: dict) -> list:
     return recommended_roles
 
 
+def get_model_monitoring_min_permissions(defaults: dict) -> list:
+    """Returns the list of minimum required permissions to run
+       the monitor() step based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        list: The list of minimum permissions to create a monitoring job.
+    """
+    recommended_permissions = [
+        'aiplatform.endpoints.list',
+        'aiplatform.modelDeploymentMonitoringJobs.list',
+        'aiplatform.modelDeploymentMonitoringJobs.create',
+        'aiplatform.modelDeploymentMonitoringJobs.update']
+    if defaults['monitoring']['auto_retraining_params']:
+        recommended_permissions.extend(['storage.buckets.update', 'logging.sinks.get', 'logging.sinks.create',
+                                        'logging.sinks.update', 'iam.serviceAccounts.setIamPolicy'])
+    return recommended_permissions
+
+
+def get_model_monitoring_recommended_roles(defaults: dict) -> list:
+    """Returns the list of recommended roles to run
+       the monitor() step based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        list: The list of recommended roles to create a monitoring job.
+    """
+    recommended_roles = ['roles/aiplatform.user']
+    if defaults['monitoring']['auto_retraining_params']:
+        recommended_roles.extend(['roles/storage.admin', 'roles/logging.configWriter', 'roles/iam.serviceAccountAdmin'])
+    return recommended_roles
+
+
 def account_permissions_warning(operation: str, defaults: dict):
     """Logs the current gcloud account and generates warnings based on the operation being performed.
 
     Args:
-        operation: Specifies which operation is being performed. Available options {provision, deploy_with_precheck, deploy_without_precheck}
+        operation: Specifies which operation is being performed. Available options {provision, deploy_with_precheck, deploy_without_precheck, model_monitoring}
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
     """
     bullet_nl = '\n-'
@@ -721,6 +763,11 @@ def account_permissions_warning(operation: str, defaults: dict):
         logging.warning(f'WARNING: Deploying requires these permissions:\n-{bullet_nl.join(i for i in get_deploy_without_precheck_min_permissions(defaults))}\n\n'
                         f'You are currently using: {gcp_account}. Please check your account permissions.\n'
                         f'The following are the recommended roles for deploying:\n-{bullet_nl.join(i for i in get_deploy_without_precheck_recommended_roles(defaults))}\n')
+
+    elif operation == 'model_monitoring':
+        logging.warning(f'WARNING: Creating monitoring jobs requires these permissions:\n-{bullet_nl.join(i for i in get_model_monitoring_min_permissions(defaults))}\n\n'
+                        f'You are currently using: {gcp_account}. Please check your account permissions.\n'
+                        f'The following are the recommended roles for creating monitoring jobs:\n-{bullet_nl.join(i for i in get_model_monitoring_recommended_roles(defaults))}\n')
 
 
 def check_installation_versions(provisioning_framework: str):

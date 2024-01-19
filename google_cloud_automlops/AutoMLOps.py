@@ -192,7 +192,6 @@ def launchAll(
         build_trigger_name=build_trigger_name,
         custom_training_job_specs=custom_training_job_specs,
         deployment_framework=deployment_framework,
-        setup_model_monitoring=setup_model_monitoring,
         naming_prefix=naming_prefix,
         orchestration_framework=orchestration_framework,
         pipeline_job_runner_service_account=pipeline_job_runner_service_account,
@@ -206,6 +205,7 @@ def launchAll(
         schedule_location=schedule_location,
         schedule_name=schedule_name,
         schedule_pattern=schedule_pattern,
+        setup_model_monitoring=setup_model_monitoring,
         source_repo_branch=source_repo_branch,
         source_repo_name=source_repo_name,
         source_repo_type=source_repo_type,
@@ -342,6 +342,8 @@ def generate(
         logging.info(f'Writing scripts to {BASE_DIR}scripts')
         if use_ci:
             logging.info(f'Writing submission service code to {BASE_DIR}services')
+        if setup_model_monitoring:
+            logging.info(f'Writing model monitoring code to {BASE_DIR}model_monitoring')
         KfpBuilder.build(KfpConfig(
             base_image=base_image,
             custom_training_job_specs=derived_custom_training_job_specs,
@@ -528,14 +530,45 @@ def monitor(
     alert_emails: Optional[list] = None,
     auto_retraining_params: Optional[dict] = None,
     drift_thresholds: Optional[dict] = None,
+    hide_warnings: Optional[bool] = True,
     job_display_name: Optional[str] = None,
     monitoring_interval: Optional[int] = 1,
     monitoring_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     sample_rate: Optional[float] = 0.8,
     skew_thresholds: Optional[dict] = None,
     training_dataset: Optional[str] = None):
-    """TODO
-        prereq: monitor.py and create_model_monitoring_job.sh must exist
+    """Creates or updates a Vertex AI Model Monitoring Job for a deployed model endpoint.
+       - The predicted target field and model endpoint are required.
+       - alert_emails, if specified, will send monitoring updates to the specified email(s)
+       - auto_retraining_params will set up automatic retraining by creating a Log Sink and
+            forwarding anomaly logs to the Pub/Sub Topic for retraining the model with the
+            params specified here. If this field is left Null, the model will not be
+            automatically retrained when an anomaly is detected.
+       - drift_thresholds and skew_thresholds are optional, but at least 1 of them 
+            must be specified.
+       - training_dataset must be specified if skew_thresholds are provided.
+       Defaults are stored in config/defaults.yaml.
+
+    Args:
+        target_field: Prediction target column name in training dataset.
+        model_endpoint: Endpoint resource name of the deployed model to monitoring.
+            Format: projects/{project}/locations/{location}/endpoints/{endpoint}
+        alert_emails: Optional list of emails to send monitoring alerts.
+            Email alerts not used if this value is set to None.
+        auto_retraining_params: Pipeline parameter values to use when retraining the model.
+            Defaults to None; if left None, the model will not be retrained if an alert is generated.
+        drift_thresholds: Compares incoming data to data previously seen to check for drift.
+        hide_warnings: Boolean that specifies whether to show permissions warnings before monitoring.
+        job_display_name: Display name of the ModelDeploymentMonitoringJob. The name can be up to 128 characters 
+            long and can be consist of any UTF-8 characters.
+        monitoring_interval: Configures model monitoring job scheduling interval in hours.
+            This defines how often the monitoring jobs are triggered.
+        monitoring_location: Location to retrieve ModelDeploymentMonitoringJob from.
+        sample_rate: Used for drift detection, specifies what percent of requests to the endpoint are randomly sampled
+            for drift detection analysis. This value most range between (0, 1].
+        skew_thresholds: Compares incoming data to the training dataset to check for skew.
+        training_dataset: Training dataset used to train the deployed model. This field is required if
+            using skew detection.
     """
     if not skew_thresholds and not drift_thresholds:
         raise ValueError('skew_thresolds and drift_thresholds cannot both be None.')
@@ -543,8 +576,10 @@ def monitor(
         raise ValueError('training_dataset must be set to use skew_thresolds.')
 
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-    if 'monitoring' not in defaults:
+    if not defaults['gcp']['setup_model_monitoring']:
         raise ValueError('Parameter setup_model_monitoring in .generate() must be set to True to use .monitor()')
+    if not hide_warnings:
+        account_permissions_warning(operation='model_monitoring', defaults=defaults)
 
     derived_job_display_name = f'''{defaults['gcp']['naming_prefix']}-model-monitoring-job''' if job_display_name is None else job_display_name
     derived_log_sink_name = f'''{defaults['gcp']['naming_prefix']}-model-monitoring-log-sink'''
@@ -565,13 +600,13 @@ def monitor(
     write_file(GENERATED_DEFAULTS_FILE, DEFAULTS_HEADER, 'w')
     write_yaml_file(GENERATED_DEFAULTS_FILE, defaults, 'a')
 
-    # os.chdir(BASE_DIR)
-    # try:
-    #     subprocess.run(['./scripts/create_model_monitoring_job.sh'], shell=True,
-    #                     check=True, stderr=subprocess.STDOUT)
-    # except subprocess.CalledProcessError as e:
-    #     logging.info(e) # graceful error exit to allow for cd-ing back
-    # os.chdir('../')
+    os.chdir(BASE_DIR)
+    try:
+        subprocess.run(['./scripts/create_model_monitoring_job.sh'], shell=True,
+                        check=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        logging.info(e) # graceful error exit to allow for cd-ing back
+    os.chdir('../')
 
 
 def component(func: Optional[Callable] = None,

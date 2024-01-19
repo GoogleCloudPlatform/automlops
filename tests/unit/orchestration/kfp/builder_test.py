@@ -34,6 +34,7 @@ from google_cloud_automlops.orchestration.kfp.builder import (
     build_services,
     build_pipeline_spec_jinja,
     build_components_jinja,
+    create_model_monitoring_job_jinja,
     run_pipeline_jinja,
     run_all_jinja,
     publish_to_topic_jinja,
@@ -61,7 +62,8 @@ DEFAULTS = {
         'artifact_repo_name': 'my_af_registry',
         'naming_prefix': 'my-prefix',
         'pipeline_job_runner_service_account': 'my-service-account@service.com',
-        'pipeline_job_submission_service_type': 'cloud-functions'
+        'pipeline_job_submission_service_type': 'cloud-functions',
+        'setup_model_monitoring': True
     },
     'pipelines': {
         'gs_pipeline_job_spec_path': 'gs://my-bucket/pipeline_root/my-prefix/pipeline_job.json',
@@ -471,10 +473,35 @@ def test_publish_to_topic_jinja(
 
 
 @pytest.mark.parametrize(
-    'use_ci, is_included, expected_output_snippets',
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'python3 -m model_monitoring.monitor --config $CONFIG_FILE'])]
+)
+def test_create_model_monitoring_job_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests create_model_monitoring_job_jinja, which generates code for create_model_monitoring_job.sh 
+       which creates a Model Monitoring Job in Vertex AI for a deployed model endpoint.
+       There is one test case for this function:
+        1. Checks for the apache license and the monitor command.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    create_model_monitoring_job_script = create_model_monitoring_job_jinja()
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in create_model_monitoring_job_script
+        elif not is_included:
+            assert snippet not in create_model_monitoring_job_script
+
+
+@pytest.mark.parametrize(
+    'setup_model_monitoring, use_ci, is_included, expected_output_snippets',
     [
         (
-            True, True,
+            False, True, True,
             ['AutoMLOps - Generated Code Directory',
              '├── components',
              '├── configs',
@@ -486,28 +513,46 @@ def test_publish_to_topic_jinja(
              '└── cloudbuild.yaml']
         ),
         (
-            False, False,
+            True, True, True,
+            ['AutoMLOps - Generated Code Directory',
+             '├── components',
+             '├── configs',
+             '├── images',
+             '├── model_monitoring',
+             '├── provision',
+             '├── scripts',
+             '├── services',
+             '├── README.md',
+             '└── cloudbuild.yaml']
+        ),
+        (
+            False, False, False,
             ['├── publish_to_topic.sh'
-             '├── services']
+             '├── services',
+             '├── create_model_monitoring_job.sh',
+             '├── model_monitoring']
         ),
     ]
 )
 def test_readme_jinja(
+    setup_model_monitoring: bool,
     use_ci: bool,
     is_included: bool,
     expected_output_snippets: List[str]):
     """Tests readme_jinja, which generates code for readme.md which
        is a readme markdown file to describe the contents of the
-       generated AutoMLOps code repo. There are two test cases for this function:
-        1. Checks that certain directories and files exist when use_ci=True.
-        2. Checks that certain directories and files do not exist when use_ci=False.
+       generated AutoMLOps code repo. There are three test cases for this function:
+        1. Checks that certain directories and files exist when use_ci=True and setup_model_monitoring=False.
+        2. Checks that certain directories and files exist when use_ci=True and setup_model_monitoring=True.
+        3. Checks that certain directories and files do not exist when use_ci=False.
 
     Args:
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         use_ci: Flag that determines whether to use Cloud CI/CD.
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    readme_str = readme_jinja(use_ci=use_ci)
+    readme_str = readme_jinja(setup_model_monitoring=setup_model_monitoring, use_ci=use_ci)
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -748,9 +793,9 @@ def test_submission_service_dockerfile_jinja(
 
 @pytest.mark.parametrize(
     'pipeline_job_submission_service_type, is_included, expected_output_snippets',
-    [('cloud-functions', True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform', 'functions-framework==3.*']),
+    [('cloud-functions', True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform', 'google-cloud-storage', 'functions-framework==3.*']),
      ('cloud-functions', False, ['gunicorn']),
-     ('cloud-run', True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform', 'gunicorn']),
+     ('cloud-run', True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform', 'google-cloud-storage', 'gunicorn']),
      ('cloud-run', False, ['functions-framework==3.*']),]
 )
 def test_submission_service_requirements_jinja(
@@ -760,9 +805,9 @@ def test_submission_service_requirements_jinja(
     """Tests submission_service_requirements_jinja, which generates code 
        for a requirements.txt to be written to the serivces/submission_service directory.
        There are four test cases for this function:
-        1. Checks for the pinned kfp version, the google-cloud-aiplatform and function-framework deps when set to cloud-functions.
+        1. Checks for the pinned kfp version, the google-cloud-aiplatform, google-cloud-storage and function-framework deps when set to cloud-functions.
         2. Checks that gunicorn dep is not included when set to cloud-functions.
-        3. Checks for the pinned kfp version, the google-cloud-aiplatform and gunicorn deps when set to cloud-run.
+        3. Checks for the pinned kfp version, the google-cloud-aiplatform, google-cloud-storage and gunicorn deps when set to cloud-run.
         4. Checks that functions-framework dep is not included when set to cloud-run.
 
     Args:
@@ -780,12 +825,12 @@ def test_submission_service_requirements_jinja(
 
 
 @pytest.mark.parametrize(
-    '''pipeline_root, pipeline_job_runner_service_account, pipeline_job_submission_service_type,'''
-    '''project_id, is_included, expected_output_snippets''',
+    '''naming_prefix, pipeline_root, pipeline_job_runner_service_account, pipeline_job_submission_service_type,'''
+    '''project_id, setup_model_monitoring, is_included, expected_output_snippets''',
     [
         (
-            'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-functions',
-            'my-project', True,
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-functions',
+            'my-project', False, True,
             [GENERATED_LICENSE,
              'from google.cloud import aiplatform',
              'import functions_framework',
@@ -794,18 +839,21 @@ def test_submission_service_requirements_jinja(
              '''base64_message = request_json['data']['data']''']
         ),
         (
-            'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-functions',
-            'my-project', False,
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-functions',
+            'my-project', False, False,
             ['app = flask.Flask',
              '''@app.route('/', methods=['POST'])''',
              'request = flask.request',
              '''base64_message = request_json['message']['data']''',
              '''if __name__ == '__main__':''',
-             '''app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))''']
+             '''app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))''',
+             'from google.cloud import storage',
+             'NAMING_PREFIX',
+             'def read_gs_auto_retraining_params_file()']
         ),
         (
-            'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
-            'my-project', True,
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
+            'my-project', False, True,
             [GENERATED_LICENSE,
              'from google.cloud import aiplatform',
              'app = flask.Flask',
@@ -816,43 +864,61 @@ def test_submission_service_requirements_jinja(
              '''app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))''']
         ),
         (
-            'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
-            'my-project', False,
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
+            'my-project', False, False,
             ['import functions_framework',
              '@functions_framework.http',
              'def process_request(request: flask.Request)',
-             '''base64_message = request_json['data']['data']''']
+             '''base64_message = request_json['data']['data']''',
+             'from google.cloud import storage',
+             'NAMING_PREFIX',
+             'def read_gs_auto_retraining_params_file()']
+        ),
+        (
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
+            'my-project', True, True,
+            ['from google.cloud import storage',
+             'NAMING_PREFIX',
+             'def read_gs_auto_retraining_params_file()',
+             '''if data_payload['logName'] == f'projects/{PROJECT_ID}/logs/aiplatform.googleapis.com%2Fmodel_monitoring_anomaly':''']
         ),
     ]
 )
 def test_submission_service_main_jinja(
+    naming_prefix: str,
     pipeline_root: str,
     pipeline_job_runner_service_account: str,
     pipeline_job_submission_service_type: str,
     project_id: str,
+    setup_model_monitoring: bool,
     is_included: bool,
     expected_output_snippets: List[str]):
     """Tests submission_service_main_jinja, which generates content
        for main.py to be written to the serivces/submission_service directory. 
-       There are four test cases for this function:
+       There are five test cases for this function:
         1. Checks for functions_framework code elements when set to cloud-functions.
         2. Checks that Flask app code elements are not included when set to cloud-functions.
         3. Checks for Flask app code elements when set to cloud-run.
         4. Checks that functions_framework code elements are not included when set to cloud-run.
+        5. Checks that model_monitoring auto retraining code elements exists when setup_model_monitoring is True.
 
     Args:
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
         pipeline_root: GS location where to store metadata from pipeline runs.
         pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
         pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
         project_id: The project ID.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
     submission_service_main_py = submission_service_main_jinja(
+        naming_prefix=naming_prefix,
         pipeline_root=pipeline_root,
         pipeline_job_runner_service_account=pipeline_job_runner_service_account,
         pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-        project_id=project_id)
+        project_id=project_id,
+        setup_model_monitoring=setup_model_monitoring)
 
     for snippet in expected_output_snippets:
         if is_included:

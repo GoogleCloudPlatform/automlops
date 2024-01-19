@@ -1,6 +1,6 @@
 # AutoMLOps
 
-AutoMLOps is a service that generates, provisions, and deploys CI/CD integrated MLOps pipelines, bridging the gap between Data Science and DevOps. AutoMLOps provides a repeatable process that dramatically reduces the time required to build MLOps pipelines. The service generates a containerized MLOps codebase, provides infrastructure-as-code to provision and maintain the underlying MLOps infra, and provides deployment functionalities to trigger and run MLOps pipelines.
+AutoMLOps is a service that generates, provisions, deploys, and monitors CI/CD integrated MLOps pipelines, bridging the gap between Data Science and DevOps. AutoMLOps provides a repeatable process that dramatically reduces the time required to build MLOps pipelines. The service generates a containerized MLOps codebase, provides infrastructure-as-code to provision and maintain the underlying MLOps infra, provides deployment functionalities to trigger and run MLOps pipelines, monitoring capabilities to monitor models deployed to live endpoints, and optional automatic retraining of models on a recurring basis or if anomalies are detected during monitoring.
 
 AutoMLOps gives flexibility over the tools and technologies used in the MLOps pipelines, allowing users to choose from a wide range of options for artifact repositories, build tools, provisioning tools, orchestration frameworks, and source code repositories. AutoMLOps can be configured to either use existing infra, or provision new infra, including source code repositories for versioning the generated MLOps codebase, build configs and triggers, artifact repositories for storing docker containers, storage buckets, service accounts, IAM permissions, APIs needed to run pipelines, RESTful services to allow for triggering and running pipelines asynchronous, and Cloud Scheduler jobs for triggering and running pipelines on a recurring basis.
 
@@ -32,13 +32,14 @@ AutoMLOps provides 2 functions for defining MLOps pipelines:
 - `@AutoMLOps.component(...)`: Defines a component, which is a containerized python function.
 - `@AutoMLOps.pipeline(...)`: Defines a pipeline, which is a series of components.
 
-AutoMLOps provides 5 functions for building and maintaining MLOps pipelines:
+AutoMLOps provides 6 functions for building and maintaining MLOps pipelines:
 
 - `AutoMLOps.generate(...)`: Generates the MLOps codebase. Users can specify the tooling and technologies they would like to use in their MLOps pipeline.
 - `AutoMLOps.provision(...)`: Runs provisioning scripts to create and maintain necessary infra for MLOps.
 - `AutoMLOps.deprovision(...)`: Runs deprovisioning scripts to tear down MLOps infra created using AutoMLOps.
 - `AutoMLOps.deploy(...)`: Builds and pushes component container, then triggers the pipeline job.
 - `AutoMLOps.launchAll(...)`: Runs `generate()`, `provision()`, and `deploy()` all in succession.
+- `AutoMLOps.monitor(...)`: Creates model monitoring jobs on deployed endpoints.
 
 For a full user-guide, please view these [slides](https://github.com/GoogleCloudPlatform/automlops/blob/main/AutoMLOps_User_Guide.pdf).
 
@@ -94,6 +95,7 @@ Inferencing
 ### Generate
 In order to use `AutoMLOps.generate(...)`, the following are required:
 - Python 3.7 - 3.10
+
 ### Provision
 In order to use `AutoMLOps.provision(...)` with `provisioning_framework='gcloud'`, the following are recommended:
 - [Google Cloud SDK 407.0.0](https://cloud.google.com/sdk/gcloud/reference)
@@ -120,6 +122,20 @@ In order to use `AutoMLOps.deploy(...)` with `use_ci=True`, the following are re
 ```
 - Registered and setup your SSH key if you are using Github, Gitlab, or Bitbucket
 - [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc) are set up if you are using Cloud Source Repositories. This can be done through the following commands:
+```
+gcloud auth application-default login
+gcloud config set account <account@example.com>
+```
+
+### Monitor
+In order to use `AutoMLOps.monitor(...)`, the following are required:
+- Local python environment with these packages installed:
+    - `google-cloud-aiplatform`
+    - `google-cloud-logging`
+    - `google-cloud-storage`
+    - `pyyaml`
+
+- [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc) are set up. This can be done through the following commands:
 ```
 gcloud auth application-default login
 gcloud config set account <account@example.com>
@@ -156,6 +172,10 @@ AutoMLOps will makes use of the following products based on user selected option
 7. if `use_ci=True` and `source_repo_type='cloud-source-repositories'`, AutoMLOps will use:
 - [Cloud Source Repositories](https://cloud.google.com/source-repositories/docs)
 
+8. if `use_ci=True` and `setup_model_monitoring=True`, AutoMLOps will use:
+- [Vertex AI Model Monitoring](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview)
+- [Cloud Logging](https://cloud.google.com/logging/docs/overview)
+
 
 # APIs & IAM
 Based on the above user selection, AutoMLOps will enable up to the following APIs during the provision step:
@@ -168,6 +188,7 @@ Based on the above user selection, AutoMLOps will enable up to the following API
 - [compute.googleapis.com](https://cloud.google.com/compute/docs/reference/rest/v1)
 - [iam.googleapis.com](https://cloud.google.com/iam/docs/reference/rest)
 - [iamcredentials.googleapis.com](https://cloud.google.com/iam/docs/reference/credentials/rest)
+- [logging.googleapis.com](https://cloud.google.com/logging/docs/reference/v2/rest)
 - [pubsub.googleapis.com](https://cloud.google.com/pubsub/docs/reference/rest)
 - [run.googleapis.com](https://cloud.google.com/run/docs/reference/rest)
 - [storage.googleapis.com](https://cloud.google.com/storage/docs/apis)
@@ -190,7 +211,8 @@ AutoMLOps provides a number of optional prechecks and warnings to provide visibi
 
 1. `AutoMLOps.provision(...hide_warnings=False)`: This will check installation versions and account permissions to determine if the current account has the permissions to provision successfully.
 2. `AutoMLOps.deploy(...hide_warnings=False)`: This will check installation versions and account permissions to determine if the current account has the permissions to deploy successfully.
-2. `AutoMLOps.deploy(...precheck=True)`: This will check for the necessary infrastructure to deploy successfully (e.g. does the specified artifact registry exist, does the specified storage bucket exist, etc.)
+3. `AutoMLOps.deploy(...precheck=True)`: This will check for the necessary infrastructure to deploy successfully (e.g. does the specified artifact registry exist, does the specified storage bucket exist, etc.)
+4. `AutoMLOps.monitor(...hide_warnings=False)`: This will check installation versions and account permissions to determine if the current account has the permissions to create model monitoring jobs successfully.
 
 # Code Generation Options
 
@@ -223,16 +245,17 @@ Optional parameters (defaults shown):
 19. `schedule_location: str = 'us-central1'`
 20. `schedule_name: str = f'{naming_prefix}-schedule'`
 21. `schedule_pattern: str = 'No Schedule Specified'`
-22. `source_repo_branch: str = 'automlops'`
-23. `source_repo_name: str = f'{naming_prefix}-repository'`
-24. `source_repo_type: str = 'cloud-source-repositories'`
-25. `storage_bucket_location: str = 'us-central1'`
-26. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
-27. `use_ci: bool = False`
-28. `vpc_connector: str = 'No VPC Specified'`
-29. `workload_identity_pool: str = None`
-30. `workload_identity_provider: str = None`
-31. `workload_identity_service_account: str = None`
+22. `setup_model_monitoring: Optional[bool] = False`
+23. `source_repo_branch: str = 'automlops'`
+24. `source_repo_name: str = f'{naming_prefix}-repository'`
+25. `source_repo_type: str = 'cloud-source-repositories'`
+26. `storage_bucket_location: str = 'us-central1'`
+27. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
+28. `use_ci: bool = False`
+29. `vpc_connector: str = 'No VPC Specified'`
+30. `workload_identity_pool: str = None`
+31. `workload_identity_provider: str = None`
+32. `workload_identity_service_account: str = None`
 
 Parameter Options:
 - `artifact_repo_type=`:
@@ -287,6 +310,7 @@ A description of the parameters is below:
 - `schedule_location`: The location of the scheduler resource.
 - `schedule_name`: The name of the scheduler resource.
 - `schedule_pattern`: Cron formatted value used to create a Scheduled retrain job.
+- `setup_model_monitoring`: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
 - `source_repo_branch`: The branch to use in the source repository.
 - `source_repo_name`: The name of the source repository to use.
 - `source_repo_type`: The type of source repository to use (e.g. gitlab, github, etc.)
@@ -299,11 +323,11 @@ A description of the parameters is below:
 - `workload_identity_provider`: Provider for workload identity federation.
 - `workload_identity_service_account`: Service account for workload identity federation (specify the full string).
 
-AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the outputted AutoMLOps/ directory into a Git repo and use it for the source repo. Additionally, if a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly.
+AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the outputted AutoMLOps/ directory into a Git repo and use it for the source repo. If a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. If `setup_model_monitoring` is set to true, a model_monitoring/ directory will be created and a monitoring section will be added to config/defaults.yaml with empty values. These values are then set by running `AutoMLOps.monitor()`.
 
 # Generating Code
 
-AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `AutoMLOps.generate(project_id='project-id', pipeline_params=pipeline_params, use_ci=True)`, a series of directories will be generated automatically:
+AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `AutoMLOps.generate(project_id='project-id', pipeline_params=pipeline_params, setup_model_monitoring=True, use_ci=True)`, a series of directories will be generated automatically:
 
 ```bash
 .
@@ -335,6 +359,10 @@ AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `Auto
     ├── run_pipeline.sh                            : Submit the PipelineJob to Vertex AI.
     ├── run_all.sh                                 : Builds components, compiles pipeline specs, and submits the PipelineJob.
     ├── publish_to_topic.sh                        : Publishes a message to a Pub/Sub topic to invoke the pipeline job submission service.
+    ├── create_model_monitoring_job.sh             : Creates or updated a Vertex AI model monitoring job for a given deployed model endpoint.
+├── model_monitoring                               : Code for building and maintaining model monitoring jobs.
+    ├── requirements.txt                           : Package requirements for creating and updating model monitoring jobs.
+    ├── monitor.py                                 : Creates a ModelDeploymentMonitoringJob and optionally creates a Log Sink for automatic retraining.
 ├── services                                       : MLOps services related to continuous training.
     ├── submission_service                         : REST API service used to submit pipeline jobs to Vertex AI.
         ├── Dockerfile                             : Dockerfile for running the REST API service.
@@ -374,6 +402,59 @@ If `use_ci=True`, AutoMLOps will generate and use a fully featured CI/CD environ
 **<center>Bitbucket Pipelines option:</center>**
 <p align="center">
     <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/deploy/CICD-bitbucket.png" alt="CICD" width="1000"/>
+</p>
+
+# Model Monitoring
+
+To use AutoMLOps for setting up and creating model monitoring jobs, the `setup_model_monitoring` parameter must be set to `True` during the generate step. This will create the necessary files under AutoMLOps/scripts and AutoMLOps/model_monitoring. From there, configurations can be set using `AutoMLOps.monitor`. This operation requires a functioning Vertex AI model endpoint, and the name of the endpoint's prediction column. Monitoring can be set to check for anomalies in 2 ways:
+1. Data Drift: This compares incoming feature distributions to past feature distributions that the model endpoint has seen, within a given window of time.
+2. Data Skew: This compares incoming feature distributions to feature distributions within the training dataset to check for training/serving skew.
+
+At least one of these monitoring types must be used. To specify drift and skew, provide a dictionary of feature names and their threshold values to the `drift_thresholds` and `skew_thresholds` parameters.
+
+When an anomaly is detected, actions can be taken in 2 ways:
+1. Generate email alerts: This will send an email to the specified email(s) informing the user of a detected data drift or skew.
+2. Automatically retrain the model: This will send anomaly alerts to the Pub/Sub Queueing service and trigger a retraining of the model, with the parameters specified, when a data drift or skew is detected.
+
+These can be configured using the `alert_emails` and `auto_retraining_params` parameters, which are left null by default. If `auto_retraining_params` are specified, `AutoMLOps.monitor` will set up a Log Sink to connect the Vertex AI Model Monitoring Job to the Pub/Sub Queueing service, and filter on only ModelMonitoringJob anomalies.
+
+### `AutoMLOps.monitor()` parameter list:
+
+Required parameters:
+1. `target_field: str`
+2. `model_endpoint: str`
+
+Optional parameters (defaults shown):
+1. `alert_emails: list = None`
+2. `auto_retraining_params: dict = None`
+3. `drift_thresholds: dict = None`
+4. `hide_warnings: bool = True`
+5. `job_display_name: str = f'{naming_prefix}-model-monitoring-job'`
+6. `monitoring_interval: int = 1`
+7. `monitoring_location: str = 'us-central1'`
+8. `sample_rate: float = 0.8`
+9. `skew_thresholds: dict = None`
+10. `training_dataset: str = None`
+
+A description of the parameters is below:
+- `target_field`: Prediction target column name in training dataset.
+- `model_endpoint`: Endpoint resource name of the deployed model to monitoring. Format: projects/{project}/locations/{location}/endpoints/{endpoint}
+- `alert_emails`: Optional list of emails to send monitoring alerts. Email alerts not used if this value is set to None.
+- `auto_retraining_params`: Pipeline parameter values to use when retraining the model. Defaults to None; if left None, the model will not be retrained if an alert is generated.
+- `drift_thresholds`: Compares incoming data to data previously seen to check for drift.
+- `hide_warnings`: Boolean that specifies whether to show permissions warnings before monitoring.
+- `job_display_name`: Display name of the ModelDeploymentMonitoringJob. The name can be up to 128 characters long and can be consist of any UTF-8 characters.
+- `monitoring_interval`: Configures model monitoring job scheduling interval in hours. This defines how often the monitoring jobs are triggered.
+- `monitoring_location`: Location to retrieve ModelDeploymentMonitoringJob from.
+- `sample_rate`: Used for drift detection, specifies what percent of requests to the endpoint are randomly sampled for drift detection analysis. This value most range between (0, 1].
+- `skew_thresholds`: Compares incoming data to the training dataset to check for skew.
+- `training_dataset`: Training dataset used to train the deployed model. This field is required if using skew detection.
+
+
+### Model Monitoring Diagram
+
+<p align="center">
+    <img src="assets/monitor/monitor-default.png" alt="CICD" width="1000"/>
 </p>
 
 # Other Customizations
