@@ -546,13 +546,21 @@ def create_dataset(
 
 [Ahmad Khan](mailto:ahmadkh@google.com): Engineer
 
-[Jesus Orozco](mailto:jesusfc@google.com): Cloud Engineer
+[Jesus Orozco](mailto:jesusfc@google.com): Engineer
 
-[Erin Horning](mailto:ehorning@google.com): Infrastructure Engineer
+[Erin Horning](mailto:ehorning@google.com): Engineer
 
 [Alex Ho](mailto:alexanderho@google.com): Engineer
 
-[Kyle Sorensen](mailto:kylesorensen@google.com): Cloud Engineer
+[Kyle Sorensen](mailto:kylesorensen@google.com): Engineer
+
+[Matt Sokoloff](mailto:msokoloff@google.com): Engineer
+
+[Andrew Chasin](mailto:andrewchasin@google.com): Engineer
+
+[Atulan Zaman](mailto:atulanz@google.com): Use Case Development
+
+[Nelly Wilson](mailto:nellywilson@google.com): Use Case Development
 
 # Disclaimer
 
