@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import pprint as pp
 import subprocess
 import yaml
 
@@ -99,13 +100,13 @@ def create_or_update_sink(sink_name: str,
                                    filter_=filter_,
                                    destination=destination)
         sink.update()
-        print(f'Updated Anomaly Log Sink {sink.name}.')
+        print(f'Updated Anomaly Log Sink {sink.name}.\n')
     else:
         sink = logging_client.sink(sink_name,
                                    filter_=filter_,
                                    destination=destination)
         sink.create()
-        print(f'Created Anomaly Log Sink {sink.name}.')
+        print(f'Created Anomaly Log Sink {sink.name}.\n')
 
 
 def create_or_update_monitoring_job(
@@ -236,7 +237,8 @@ def create_or_update_monitoring_job(
             filter_=monitoring_anomaly_log_filter)
 
         print(f'All anomaly logs for this model monitoring job are being routed to pub/sub topic {pubsub_topic_name} for automatic retraining.')
-        print(f'Retraining will use the following parameters located at {gs_auto_retraining_params_path}: \n{auto_retraining_params}')
+        print(f'Retraining will use the following parameters located at {gs_auto_retraining_params_path}: \n')
+        pp.pprint(auto_retraining_params)
 
         # Update service account to be able to publish to Pub/Sub
         cloud_logs_sa = 'cloud-logs@system.gserviceaccount.com'
@@ -245,7 +247,7 @@ def create_or_update_monitoring_job(
             f'''gcloud projects add-iam-policy-binding {project_id} \{newline}'''
             f'''--member="serviceAccount:{cloud_logs_sa}" \{newline}'''
             f'''--role="roles/pubsub.publisher"''')
-        print(f'Updating {cloud_logs_sa} with roles/pubsub.publisher')
+        print(f'\nUpdating {cloud_logs_sa} with roles/pubsub.publisher')
         execute_process(update_iam, to_null=True)
 
 
