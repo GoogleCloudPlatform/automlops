@@ -11,7 +11,6 @@ All notable changes to this project will be documented in this file.
 - Added in a monitoring section into the generated `config/defaults.yaml` file
 - Added `logging.googleapis.com` to the list of potentially required apis.
 - Created 2 new functions for giving warnings when running `AutoMLOps.monitor`: `get_model_monitoring_min_permissions` and `get_model_monitoring_recommended_roles` in utils.py
-- 
 
 ### Changed
 
