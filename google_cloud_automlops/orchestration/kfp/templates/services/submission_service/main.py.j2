@@ -59,11 +59,14 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
 
         logging.info('JSON Recieved:')
         logging.info(data_payload)
+
+        optional_labels = {}
         {% if setup_model_monitoring %}
         try:
             if data_payload['logName'] == f'projects/{PROJECT_ID}/logs/aiplatform.googleapis.com%2Fmodel_monitoring_anomaly':
                 logging.info('Model monitoring anomaly detected - triggering model retraining.')
                 data_payload = read_gs_auto_retraining_params_file()
+                optional_labels['trigger'] = 'monitoring_anomaly'
         except KeyError:
             pass
         {% endif %}
@@ -87,7 +90,8 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
             pipeline_job_runner_service_account=PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT,
             pipeline_params=data_payload,
             pipeline_spec_path=gs_pipeline_spec_path,
-            experiment=vertex_exp)
+            experiment=vertex_exp,
+            labels=optional_labels)
         return flask.make_response({
             'dashboard_uri': dashboard_uri,
             'resource_name': resource_name
@@ -105,7 +109,8 @@ def submit_pipeline(
     pipeline_spec_path: str,
     experiment: str,
     display_name: str = 'mlops-pipeline-run',
-    enable_caching: bool = False) -> Tuple[str, str]:
+    enable_caching: bool = False,
+    labels: dict = None) -> Tuple[str, str]:
     """Submits a pipeline run.
 
     Args:
@@ -117,6 +122,7 @@ def submit_pipeline(
         experiment: Optional name of Vertex AI experiment.
         display_name: Name to call the pipeline.
         enable_caching: Should caching be enabled (Boolean)
+        labels: Optional labels to be added to the PipelineJob.
     """
     logging.info('Pipeline Parms Configured:')
     logging.info(pipeline_params)
@@ -127,7 +133,8 @@ def submit_pipeline(
         template_path = pipeline_spec_path,
         pipeline_root = pipeline_root,
         parameter_values = pipeline_params,
-        enable_caching = enable_caching)
+        enable_caching = enable_caching,
+        labels = labels)
     logging.info('AI Platform job built. Submitting...')
     job.submit(
         experiment=experiment,
