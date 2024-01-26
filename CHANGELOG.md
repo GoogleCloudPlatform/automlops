@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Updated the `services/submission_service/main.py.j2` to include elements for automatic retraining based on monitoring anomaly logs.
+- Updated the `services/submission_service/main.py.j2` to include elements for automatic retraining based on monitoring anomaly logs, and adding in labels to the submit.
 - Updated `services/submission_service/requirements.txt` to include google-cloud-storage.
 - Updated the `README.md.j2` to reflect the optional creation of the new model_monitoring/ directory.
 - Changed the format for how `config/defaults.yaml` file gets written; this file is now written using the `write_yaml_file` function (yaml.safe_dump) in utils.py.
