@@ -77,7 +77,7 @@ def build(
 
     # create Pulumi.yaml
     write_file(
-        pulumi_folder + 'Pulumi.yaml', 
+        pulumi_folder + 'Pulumi.yaml',
         render_jinja(
             template_path=PULUMI_TEMPLATES_PATH / 'Pulumi.yaml.jinja',
             generated_license=GENERATED_LICENSE,
@@ -88,7 +88,7 @@ def build(
 
     # create Pulumi.dev.yaml
     write_file(
-        pulumi_folder + 'Pulumi.dev.yaml', 
+        pulumi_folder + 'Pulumi.dev.yaml',
         render_jinja(
             template_path=PULUMI_TEMPLATES_PATH / 'Pulumi.dev.yaml.jinja',
             generated_license=GENERATED_LICENSE,
@@ -102,7 +102,7 @@ def build(
     # create python __main__.py
     if config.pulumi_runtime == PulumiRuntime.PYTHON:
         write_file(
-            pulumi_folder + '__main__.py', 
+            pulumi_folder + '__main__.py',
             render_jinja(
                 template_path=PULUMI_TEMPLATES_PATH / 'python/__main__.py.jinja',
                 generated_license=GENERATED_LICENSE,
