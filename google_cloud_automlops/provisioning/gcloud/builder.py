@@ -77,7 +77,7 @@ def build(
     required_apis = get_required_apis(defaults)
     # create provision_resources.sh
     write_and_chmod(
-        GENERATED_RESOURCES_SH_FILE, 
+        GENERATED_RESOURCES_SH_FILE,
         render_jinja(
             template_path=import_files(GCLOUD_TEMPLATES_PATH) / 'provision_resources.sh.j2',
             artifact_repo_location=config.artifact_repo_location,

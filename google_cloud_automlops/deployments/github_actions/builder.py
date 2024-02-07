@@ -22,8 +22,6 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.utils import (
     render_jinja,
     write_file
@@ -57,7 +55,7 @@ def build(config: GitHubActionsConfig):
     """
     # Write github actions config
     write_file(
-        filepath=GENERATED_GITHUB_ACTIONS_FILE, 
+        filepath=GENERATED_GITHUB_ACTIONS_FILE,
         text=render_jinja(
             template_path=import_files(GITHUB_ACTIONS_TEMPLATES_PATH) / 'github_actions.yaml.j2',
             artifact_repo_location=config.artifact_repo_location,

@@ -18,8 +18,6 @@
 # pylint: disable=line-too-long
 # pylint: disable=unused-import
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.utils import (
     write_file,
     render_jinja,

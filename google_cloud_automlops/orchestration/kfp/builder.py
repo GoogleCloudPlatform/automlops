@@ -25,8 +25,6 @@ except ImportError:
 import re
 import textwrap
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.utils import (
     execute_process,
     get_components_list,
@@ -72,10 +70,10 @@ def build(config: KfpConfig):
 
     # Write scripts for building pipeline, building components, running pipeline, and running all files
     scripts_path = import_files(KFP_TEMPLATES_PATH + '.scripts')
-    
+
     # Write script for building pipeline
     write_and_chmod(
-        GENERATED_PIPELINE_SPEC_SH_FILE, 
+        GENERATED_PIPELINE_SPEC_SH_FILE,
         render_jinja(
             template_path=scripts_path / 'build_pipeline_spec.sh.j2',
             generated_license=GENERATED_LICENSE,
@@ -83,7 +81,7 @@ def build(config: KfpConfig):
 
     # Write script for building components
     write_and_chmod(
-        GENERATED_BUILD_COMPONENTS_SH_FILE, 
+        GENERATED_BUILD_COMPONENTS_SH_FILE,
         render_jinja(
             template_path=scripts_path / 'build_components.sh.j2',
             generated_license=GENERATED_LICENSE,
@@ -91,7 +89,7 @@ def build(config: KfpConfig):
 
     # Write script for running pipeline
     write_and_chmod(
-        GENERATED_RUN_PIPELINE_SH_FILE, 
+        GENERATED_RUN_PIPELINE_SH_FILE,
         render_jinja(
             template_path=scripts_path / 'run_pipeline.sh.j2',
             generated_license=GENERATED_LICENSE,
@@ -99,7 +97,7 @@ def build(config: KfpConfig):
 
     # Write script for running all files
     write_and_chmod(
-        GENERATED_RUN_ALL_SH_FILE, 
+        GENERATED_RUN_ALL_SH_FILE,
         render_jinja(
             template_path=scripts_path / 'run_all.sh.j2',
             generated_license=GENERATED_LICENSE,
@@ -108,7 +106,7 @@ def build(config: KfpConfig):
     # If using CI, write script for publishing to pubsub topic
     if config.use_ci:
         write_and_chmod(
-            GENERATED_PUBLISH_TO_TOPIC_FILE, 
+            GENERATED_PUBLISH_TO_TOPIC_FILE,
             render_jinja(
                 template_path=scripts_path / 'publish_to_topic.sh.j2',
                 base_dir=BASE_DIR,
@@ -130,7 +128,7 @@ def build(config: KfpConfig):
         f'{BASE_DIR}README.md', 
         render_jinja(
             template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
-            use_ci=config.use_ci), 
+            use_ci=config.use_ci),
         'w')
 
     # Write dockerfile to the component base directory
@@ -188,8 +186,7 @@ def build_component(component_path: str):
 
     # Write task script to component base
     write_file(
-        task_filepath, 
-        
+        task_filepath,
         render_jinja(
             template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
             custom_code_contents=custom_code_contents,
@@ -234,7 +231,7 @@ def build_pipeline(custom_training_job_specs: list,
     # Construct pipeline.py
     project_id = defaults['gcp']['project_id']
     write_file(
-        GENERATED_PIPELINE_FILE, 
+        GENERATED_PIPELINE_FILE,
         render_jinja(
             template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline.py.j2',
             components_list=components_list,
@@ -246,7 +243,7 @@ def build_pipeline(custom_training_job_specs: list,
 
     # Construct pipeline_runner.py
     write_file(
-        GENERATED_PIPELINE_RUNNER_FILE, 
+        GENERATED_PIPELINE_RUNNER_FILE,
         render_jinja(
             template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline_runner.py.j2',
             generated_license=GENERATED_LICENSE),
@@ -254,7 +251,7 @@ def build_pipeline(custom_training_job_specs: list,
 
     # Construct requirements.txt
     write_file(
-        GENERATED_PIPELINE_REQUIREMENTS_FILE, 
+        GENERATED_PIPELINE_REQUIREMENTS_FILE,
         render_jinja(
             template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'requirements.txt.j2',
             pinned_kfp_version=PINNED_KFP_VERSION),
@@ -305,7 +302,7 @@ def build_services():
             pipeline_root=defaults['pipelines']['pipeline_storage_path'],
             pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
             pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
-            project_id=defaults['gcp']['project_id']), 
+            project_id=defaults['gcp']['project_id']),
         'w')
 
 

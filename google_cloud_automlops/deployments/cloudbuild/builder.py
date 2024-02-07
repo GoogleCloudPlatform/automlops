@@ -22,8 +22,6 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.utils import (
     render_jinja,
     write_file
@@ -53,7 +51,7 @@ def build(config: CloudBuildConfig):
     # Write cloud build config
     component_base_relative_path = COMPONENT_BASE_RELATIVE_PATH if config.use_ci else f'{BASE_DIR}{COMPONENT_BASE_RELATIVE_PATH}'
     write_file(
-        filepath=GENERATED_CLOUDBUILD_FILE, 
+        filepath=GENERATED_CLOUDBUILD_FILE,
         text=render_jinja(
             template_path=import_files(CLOUDBUILD_TEMPLATES_PATH) / 'cloudbuild.yaml.j2',
             artifact_repo_location=config.artifact_repo_location,

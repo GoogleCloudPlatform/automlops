@@ -28,8 +28,6 @@ import logging
 import os
 import subprocess
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     GENERATED_DEFAULTS_FILE,
@@ -79,7 +77,7 @@ def git_workflow():
 
         write_file(
             f'{BASE_DIR}.gitignore',
-            render_jinja(template_path=import_files(GITOPS_TEMPLATES_PATH) / 'gitignore.j2'), 
+            render_jinja(template_path=import_files(GITOPS_TEMPLATES_PATH) / 'gitignore.j2'),
             'w')
 
         # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing

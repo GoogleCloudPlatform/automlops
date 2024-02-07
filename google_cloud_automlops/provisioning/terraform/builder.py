@@ -23,8 +23,6 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.utils import (
     get_required_apis,
     read_yaml_file,
@@ -85,7 +83,7 @@ def build(
 
     # create environment/data.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/environment/data.tf', 
+        filepath=f'{BASE_DIR}provision/environment/data.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'data.tf.j2',
             generated_license=GENERATED_LICENSE,
@@ -97,7 +95,7 @@ def build(
 
     # create environment/iam.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/environment/iam.tf', 
+        filepath=f'{BASE_DIR}provision/environment/iam.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'iam.tf.j2',
             generated_license=GENERATED_LICENSE
@@ -106,7 +104,7 @@ def build(
 
     # create environment/main.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/environment/main.tf', 
+        filepath=f'{BASE_DIR}provision/environment/main.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'main.tf.j2',
             artifact_repo_type=config.artifact_repo_type,
@@ -140,7 +138,7 @@ def build(
 
     # create environment/provider.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/environment/provider.tf', 
+        filepath=f'{BASE_DIR}provision/environment/provider.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'provider.tf.j2',
             generated_license=GENERATED_LICENSE
@@ -159,7 +157,7 @@ def build(
     # create environment/variables.auto.tfvars
     if config.deployment_framework == Deployer.CLOUDBUILD.value:
         write_file(
-            filepath=f'{BASE_DIR}provision/environment/variables.auto.tfvars', 
+            filepath=f'{BASE_DIR}provision/environment/variables.auto.tfvars',
             text=render_jinja(
                 template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'variables.auto.tfvars.j2',
                 artifact_repo_location=config.artifact_repo_location,
@@ -187,7 +185,7 @@ def build(
     #TODO: implement workload identity as optional
     if config.deployment_framework == Deployer.GITHUB_ACTIONS.value:
         write_file(
-            filepath=f'{BASE_DIR}provision/environment/variables.auto.tfvars', 
+            filepath=f'{BASE_DIR}provision/environment/variables.auto.tfvars',
             text=render_jinja(
                 template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'variables.auto.tfvars.j2',
                 artifact_repo_location=config.artifact_repo_location,
@@ -214,7 +212,7 @@ def build(
 
     # create environment/versions.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/environment/versions.tf', 
+        filepath=f'{BASE_DIR}provision/environment/versions.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'versions.tf.j2',
             generated_license=GENERATED_LICENSE,
@@ -224,7 +222,7 @@ def build(
 
     # create provision_resources.sh
     write_and_chmod(
-        filepath=GENERATED_RESOURCES_SH_FILE, 
+        filepath=GENERATED_RESOURCES_SH_FILE,
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH) / 'provision_resources.sh.j2',
             base_dir=BASE_DIR,
@@ -233,7 +231,7 @@ def build(
 
     # create state_bucket/main.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/state_bucket/main.tf', 
+        filepath=f'{BASE_DIR}provision/state_bucket/main.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'main.tf.j2',
             generated_license=GENERATED_LICENSE
@@ -242,7 +240,7 @@ def build(
 
     # create state_bucket/variables.tf
     write_file(
-        filepath=f'{BASE_DIR}provision/state_bucket/variables.tf', 
+        filepath=f'{BASE_DIR}provision/state_bucket/variables.tf',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'variables.tf.j2',
             generated_license=GENERATED_LICENSE
@@ -251,7 +249,7 @@ def build(
 
     # create state_bucket/variables.auto.tfvars
     write_file(
-        filepath=f'{BASE_DIR}provision/state_bucket/variables.auto.tfvars', 
+        filepath=f'{BASE_DIR}provision/state_bucket/variables.auto.tfvars',
         text=render_jinja(
             template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'variables.auto.tfvars.j2',
             project_id=project_id,
