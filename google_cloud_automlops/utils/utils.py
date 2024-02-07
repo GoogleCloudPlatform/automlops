@@ -30,6 +30,7 @@ from typing import Callable
 
 from packaging import version
 import yaml
+from jinja2 import Template
 
 from googleapiclient import discovery
 import google.auth
@@ -940,3 +941,18 @@ def resources_generation_manifest(defaults: dict):
         if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
             logging.info(
                 'Cloud Scheduler Job: https://console.cloud.google.com/cloudscheduler')
+
+def render_jinja(template_path, **template_vars):
+    """Renders a Jinja2 template with provided variables.
+
+    Args:
+        template_path (str): The path to the Jinja2 template file.
+        **template_vars: Keyword arguments representing variables to substitute 
+            in the template.
+
+    Returns:
+        str: The rendered template as a string.
+    """
+    with template_path.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(**template_vars)

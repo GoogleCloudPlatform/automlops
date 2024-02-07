@@ -29,6 +29,7 @@ from jinja2 import Template
 from google_cloud_automlops.utils.utils import (
     get_required_apis,
     read_yaml_file,
+    render_jinja,
     write_and_chmod
 )
 from google_cloud_automlops.utils.constants import (
@@ -75,118 +76,35 @@ def build(
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     required_apis = get_required_apis(defaults)
     # create provision_resources.sh
-    write_and_chmod(GENERATED_RESOURCES_SH_FILE, provision_resources_script_jinja(
-        artifact_repo_location=config.artifact_repo_location,
-        artifact_repo_name=config.artifact_repo_name,
-        artifact_repo_type=config.artifact_repo_type,
-        build_trigger_location=config.build_trigger_location,
-        build_trigger_name=config.build_trigger_name,
-        deployment_framework=config.deployment_framework,
-        naming_prefix=config.naming_prefix,
-        pipeline_job_runner_service_account=config.pipeline_job_runner_service_account,
-        pipeline_job_submission_service_location=config.pipeline_job_submission_service_location,
-        pipeline_job_submission_service_name=config.pipeline_job_submission_service_name,
-        pipeline_job_submission_service_type=config.pipeline_job_submission_service_type,
-        project_id=project_id,
-        pubsub_topic_name=config.pubsub_topic_name,
-        required_apis=required_apis,
-        schedule_location=config.schedule_location,
-        schedule_name=config.schedule_name,
-        schedule_pattern=config.schedule_pattern,
-        source_repo_branch=config.source_repo_branch,
-        source_repo_name=config.source_repo_name,
-        source_repo_type=config.source_repo_type,
-        storage_bucket_location=config.storage_bucket_location,
-        storage_bucket_name=config.storage_bucket_name,
-        use_ci=config.use_ci,
-        vpc_connector=config.vpc_connector))
-
-
-def provision_resources_script_jinja(
-    artifact_repo_location: str,
-    artifact_repo_name: str,
-    artifact_repo_type: str,
-    build_trigger_location: str,
-    build_trigger_name: str,
-    deployment_framework: str,
-    naming_prefix: str,
-    pipeline_job_runner_service_account: str,
-    pipeline_job_submission_service_location: str,
-    pipeline_job_submission_service_name: str,
-    pipeline_job_submission_service_type: str,
-    project_id: str,
-    pubsub_topic_name: str,
-    required_apis: list,
-    schedule_location: str,
-    schedule_name: str,
-    schedule_pattern: str,
-    source_repo_branch: str,
-    source_repo_name: str,
-    source_repo_type: str,
-    storage_bucket_location: str,
-    storage_bucket_name: str,
-    use_ci: bool,
-    vpc_connector: str) -> str:
-    """Generates code for provision_resources.sh which sets up the project's environment.
-
-    Args:
-        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
-        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
-        artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
-        build_trigger_location: The location of the build trigger (for cloud build).
-        build_trigger_name: The name of the build trigger (for cloud build).
-        deployment_framework: The CI tool to use (e.g. cloud build, github actions, etc.)
-        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        pipeline_job_runner_service_account: Service Account to run PipelineJobs.
-        pipeline_job_submission_service_location: The location of the cloud submission service.
-        pipeline_job_submission_service_name: The name of the cloud submission service.
-        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
-        project_id: The project ID.
-        pubsub_topic_name: The name of the pubsub topic to publish to.
-        required_apis: List of APIs that are required to run the service.
-        schedule_location: The location of the scheduler resource.
-        schedule_name: The name of the scheduler resource.
-        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
-        source_repo_branch: The branch to use in the source repository.
-        source_repo_name: The name of the source repository to use.
-        source_repo_type: The type of source repository to use (e.g. gitlab, github, etc.)
-        storage_bucket_location: Region of the GS bucket.
-        storage_bucket_name: GS bucket name where pipeline run metadata is stored.
-        use_ci: Flag that determines whether to use Cloud CI/CD.
-        vpc_connector: The name of the vpc connector to use.
-
-    Returns:
-        str: provision_resources.sh shell script.
-    """
-    template_file = import_files(GCLOUD_TEMPLATES_PATH) / 'provision_resources.sh.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            artifact_repo_location=artifact_repo_location,
-            artifact_repo_name=artifact_repo_name,
-            artifact_repo_type=artifact_repo_type,
+    write_and_chmod(
+        GENERATED_RESOURCES_SH_FILE, 
+        render_jinja(
+            template_path=import_files(GCLOUD_TEMPLATES_PATH) / 'provision_resources.sh.j2',
+            artifact_repo_location=config.artifact_repo_location,
+            artifact_repo_name=config.artifact_repo_name,
+            artifact_repo_type=config.artifact_repo_type,
             base_dir=BASE_DIR,
-            build_trigger_location=build_trigger_location,
-            build_trigger_name=build_trigger_name,
-            deployment_framework=deployment_framework,
+            build_trigger_location=config.build_trigger_location,
+            build_trigger_name=config.build_trigger_name,
+            deployment_framework=config.deployment_framework,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
-            naming_prefix=naming_prefix,
-            pipeline_job_runner_service_account=pipeline_job_runner_service_account,
-            pipeline_job_submission_service_location=pipeline_job_submission_service_location,
-            pipeline_job_submission_service_name=pipeline_job_submission_service_name,
-            pipeline_job_submission_service_type=pipeline_job_submission_service_type,
+            naming_prefix=config.naming_prefix,
+            pipeline_job_runner_service_account=config.pipeline_job_runner_service_account,
+            pipeline_job_submission_service_location=config.pipeline_job_submission_service_location,
+            pipeline_job_submission_service_name=config.pipeline_job_submission_service_name,
+            pipeline_job_submission_service_type=config.pipeline_job_submission_service_type,
             project_id=project_id,
-            pubsub_topic_name=pubsub_topic_name,
+            pubsub_topic_name=config.pubsub_topic_name,
             required_apis=required_apis,
             required_iam_roles=IAM_ROLES_RUNNER_SA,
-            schedule_location=schedule_location,
-            schedule_name=schedule_name,
-            schedule_pattern=schedule_pattern,
-            source_repo_branch=source_repo_branch,
-            source_repo_name=source_repo_name,
-            source_repo_type=source_repo_type,
-            storage_bucket_location=storage_bucket_location,
-            storage_bucket_name=storage_bucket_name,
-            use_ci=use_ci,
-            vpc_connector=vpc_connector)
+            schedule_location=config.schedule_location,
+            schedule_name=config.schedule_name,
+            schedule_pattern=config.schedule_pattern,
+            source_repo_branch=config.source_repo_branch,
+            source_repo_name=config.source_repo_name,
+            source_repo_type=config.source_repo_type,
+            storage_bucket_location=config.storage_bucket_location,
+            storage_bucket_name=config.storage_bucket_name,
+            use_ci=config.use_ci,
+            vpc_connector=config.vpc_connector))

@@ -33,6 +33,7 @@ from google_cloud_automlops.utils.utils import (
     make_dirs,
     read_file,
     read_yaml_file,
+    render_jinja,
     is_using_kfp_spec,
     write_and_chmod,
     write_file,
@@ -70,12 +71,50 @@ def build(config: KfpConfig):
     """
 
     # Write scripts for building pipeline, building components, running pipeline, and running all files
-    write_and_chmod(GENERATED_PIPELINE_SPEC_SH_FILE, build_pipeline_spec_jinja())
-    write_and_chmod(GENERATED_BUILD_COMPONENTS_SH_FILE, build_components_jinja())
-    write_and_chmod(GENERATED_RUN_PIPELINE_SH_FILE, run_pipeline_jinja())
-    write_and_chmod(GENERATED_RUN_ALL_SH_FILE, run_all_jinja())
+    scripts_path = import_files(KFP_TEMPLATES_PATH + '.scripts')
+    
+    # Write script for building pipeline
+    write_and_chmod(
+        GENERATED_PIPELINE_SPEC_SH_FILE, 
+        render_jinja(
+            template_path=scripts_path / 'build_pipeline_spec.sh.j2',
+            generated_license=GENERATED_LICENSE,
+            base_dir=BASE_DIR))
+
+    # Write script for building components
+    write_and_chmod(
+        GENERATED_BUILD_COMPONENTS_SH_FILE, 
+        render_jinja(
+            template_path=scripts_path / 'build_components.sh.j2',
+            generated_license=GENERATED_LICENSE,
+            base_dir=BASE_DIR))
+
+    # Write script for running pipeline
+    write_and_chmod(
+        GENERATED_RUN_PIPELINE_SH_FILE, 
+        render_jinja(
+            template_path=scripts_path / 'run_pipeline.sh.j2',
+            generated_license=GENERATED_LICENSE,
+            base_dir=BASE_DIR))
+
+    # Write script for running all files
+    write_and_chmod(
+        GENERATED_RUN_ALL_SH_FILE, 
+        render_jinja(
+            template_path=scripts_path / 'run_all.sh.j2',
+            generated_license=GENERATED_LICENSE,
+            base_dir=BASE_DIR))
+
+    # If using CI, write script for publishing to pubsub topic
     if config.use_ci:
-        write_and_chmod(GENERATED_PUBLISH_TO_TOPIC_FILE, publish_to_topic_jinja(pubsub_topic_name=config.pubsub_topic_name))
+        write_and_chmod(
+            GENERATED_PUBLISH_TO_TOPIC_FILE, 
+            render_jinja(
+                template_path=scripts_path / 'publish_to_topic.sh.j2',
+                base_dir=BASE_DIR,
+                generated_license=GENERATED_LICENSE,
+                generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
+                pubsub_topic_name=config.pubsub_topic_name))
 
     # Create components and pipelines
     components_path_list = get_components_list(full_path=True)
@@ -87,10 +126,21 @@ def build(config: KfpConfig):
     write_file(f'{BASE_DIR}scripts/pipeline_spec/.gitkeep', '', 'w')
 
     # Write readme.md to description the contents of the directory
-    write_file(f'{BASE_DIR}README.md', readme_jinja(config.use_ci), 'w')
+    write_file(
+        f'{BASE_DIR}README.md', 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
+            use_ci=config.use_ci), 
+        'w')
 
     # Write dockerfile to the component base directory
-    write_file(f'{GENERATED_COMPONENT_BASE}/Dockerfile', component_base_dockerfile_jinja(config.base_image), 'w')
+    write_file(
+        f'{GENERATED_COMPONENT_BASE}/Dockerfile', 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base') / 'Dockerfile.j2',
+            base_image=config.base_image,
+            generated_license=GENERATED_LICENSE),
+        'w')
 
     # Write requirements.txt to the component base directory
     write_file(f'{GENERATED_COMPONENT_BASE}/requirements.txt', create_component_base_requirements(), 'w')
@@ -137,7 +187,15 @@ def build_component(component_path: str):
                      + '.py')
 
     # Write task script to component base
-    write_file(task_filepath, component_base_task_file_jinja(custom_code_contents, kfp_spec_bool), 'w')
+    write_file(
+        task_filepath, 
+        
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
+            custom_code_contents=custom_code_contents,
+            generated_license=GENERATED_LICENSE,
+            kfp_spec_bool=kfp_spec_bool),
+        'w')
 
     # Update component_spec to include correct image and startup command
     component_spec['implementation']['container']['image'] = compspec_image
@@ -163,25 +221,48 @@ def build_pipeline(custom_training_job_specs: list,
         pipeline_parameter_values: Dictionary of runtime parameters for the PipelineJob.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+
     # Get the names of the components
     components_list = get_components_list(full_path=False)
+
     # Read pipeline definition
     pipeline_scaffold_contents = read_file(PIPELINE_CACHE_FILE)
+
     # Add indentation
     pipeline_scaffold_contents = textwrap.indent(pipeline_scaffold_contents, 4 * ' ')
+
     # Construct pipeline.py
     project_id = defaults['gcp']['project_id']
-    write_file(GENERATED_PIPELINE_FILE, pipeline_jinja(
-        components_list,
-        custom_training_job_specs,
-        pipeline_scaffold_contents,
-        project_id=project_id), 'w')
+    write_file(
+        GENERATED_PIPELINE_FILE, 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline.py.j2',
+            components_list=components_list,
+            custom_training_job_specs=custom_training_job_specs,
+            generated_license=GENERATED_LICENSE,
+            pipeline_scaffold_contents=pipeline_scaffold_contents,
+            project_id=project_id),
+        'w')
+
     # Construct pipeline_runner.py
-    write_file(GENERATED_PIPELINE_RUNNER_FILE, pipeline_runner_jinja(), 'w')
+    write_file(
+        GENERATED_PIPELINE_RUNNER_FILE, 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline_runner.py.j2',
+            generated_license=GENERATED_LICENSE),
+        'w')
+
     # Construct requirements.txt
-    write_file(GENERATED_PIPELINE_REQUIREMENTS_FILE, pipeline_requirements_jinja(), 'w')
+    write_file(
+        GENERATED_PIPELINE_REQUIREMENTS_FILE, 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'requirements.txt.j2',
+            pinned_kfp_version=PINNED_KFP_VERSION),
+        'w')
+
     # Add pipeline_spec_path to dict
     pipeline_parameter_values['gs_pipeline_spec_path'] = defaults['pipelines']['gs_pipeline_job_spec_path']
+
     # Construct pipeline_parameter_values.json
     serialized_params = json.dumps(pipeline_parameter_values, indent=4)
     write_file(BASE_DIR + GENERATED_PARAMETER_VALUES_PATH, serialized_params, 'w')
@@ -198,18 +279,34 @@ def build_services():
     submission_service_base = BASE_DIR + 'services/submission_service'
 
     # Write cloud run dockerfile
-    write_file(f'{submission_service_base}/Dockerfile', submission_service_dockerfile_jinja(), 'w')
+    write_file(
+        f'{submission_service_base}/Dockerfile', 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2',
+            base_dir=BASE_DIR,
+            generated_license=GENERATED_LICENSE),
+        'w')
 
     # Write requirements files for cloud run base and queueing svc
-    write_file(f'{submission_service_base}/requirements.txt', submission_service_requirements_jinja(
-        pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type']), 'w')
+    write_file(
+        f'{submission_service_base}/requirements.txt', 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'requirements.txt.j2',
+            pinned_kfp_version=PINNED_KFP_VERSION,
+            pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type']),
+        'w')
 
     # Write main code files for cloud run base and queueing svc
-    write_file(f'{submission_service_base}/main.py', submission_service_main_jinja(
-                    pipeline_root=defaults['pipelines']['pipeline_storage_path'],
-                    pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
-                    pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
-                    project_id=defaults['gcp']['project_id']), 'w')
+    write_file(
+        f'{submission_service_base}/main.py', 
+        render_jinja(
+            template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
+            generated_license=GENERATED_LICENSE,
+            pipeline_root=defaults['pipelines']['pipeline_storage_path'],
+            pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
+            pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
+            project_id=defaults['gcp']['project_id']), 
+        'w')
 
 
 def create_component_base_requirements():
@@ -281,242 +378,3 @@ def create_component_base_requirements():
     # Stringify and sort
     reqs_str = ''.join(r+'\n' for r in sorted(set_of_requirements))
     return reqs_str
-
-
-def build_pipeline_spec_jinja() -> str:
-    """Generates code for build_pipeline_spec.sh which builds the pipeline specs.
-
-    Returns:
-        str: build_pipeline_spec.sh script.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'build_pipeline_spec.sh.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            generated_license=GENERATED_LICENSE,
-            base_dir=BASE_DIR)
-
-
-def build_components_jinja() -> str:
-    """Generates code for build_components.sh which builds the components.
-
-    Returns:
-        str: build_components.sh script.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'build_components.sh.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            generated_license=GENERATED_LICENSE,
-            base_dir=BASE_DIR)
-
-
-def run_pipeline_jinja() -> str:
-    """Generates code for run_pipeline.sh which runs the pipeline locally.
-
-    Returns:
-        str: run_pipeline.sh script.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_pipeline.sh.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            generated_license=GENERATED_LICENSE,
-            base_dir=BASE_DIR)
-
-
-def run_all_jinja() -> str:
-    """Generates code for run_all.sh which builds runs all other shell scripts.
-
-    Returns:
-        str: run_all.sh script.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_all.sh.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            generated_license=GENERATED_LICENSE,
-            base_dir=BASE_DIR)
-
-
-def publish_to_topic_jinja(pubsub_topic_name: str) -> str:
-    """Generates code for publish_to_topic.sh which submits a message to the
-       pipeline job submission service.
-
-    Args:
-        pubsub_topic_name: The name of the pubsub topic to publish to.
-
-    Returns:
-        str: publish_to_topic.sh script.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'publish_to_topic.sh.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            base_dir=BASE_DIR,
-            generated_license=GENERATED_LICENSE,
-            generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
-            pubsub_topic_name=pubsub_topic_name)
-
-
-def readme_jinja(use_ci: str) -> str:
-    """Generates code for readme.md which is a readme markdown file to describe the contents of the
-        generated AutoMLOps code repo.
-
-    Args:
-        use_ci: Flag that determines whether to use Cloud CI/CD.
-
-    Returns:
-        str: README.md file.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH) / 'README.md.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(use_ci=use_ci)
-
-
-def component_base_dockerfile_jinja(base_image: str) -> str:
-    """Generates code for a Dockerfile to be written to the component_base directory.
-
-    Args:
-        base_image: The image to use in the component base dockerfile.
-
-    Returns:
-        str: Dockerfile file.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.components.component_base') / 'Dockerfile.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            base_image=base_image,
-            generated_license=GENERATED_LICENSE)
-
-
-def component_base_task_file_jinja(custom_code_contents: str, kfp_spec_bool: str) -> str:
-    """Generates code for the task.py file to be written to the component_base/src directory.
-
-    Args:
-        custom_code_contents: Code inside of the component, specified by the user.
-        kfp_spec_bool: Boolean that specifies whether components are defined using kfp.
-
-    Returns:
-        str: Contents of the task.py file.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            custom_code_contents=custom_code_contents,
-            generated_license=GENERATED_LICENSE,
-            kfp_spec_bool=kfp_spec_bool)
-
-
-def pipeline_runner_jinja() -> str:
-    """Generates code for the pipeline_runner.py file to be written to the pipelines directory.
-
-    Returns:
-        str: pipeline_runner.py file.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline_runner.py.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(generated_license=GENERATED_LICENSE)
-
-
-def pipeline_jinja(
-    components_list: list,
-    custom_training_job_specs: list,
-    pipeline_scaffold_contents: str,
-    project_id: str) -> str:
-    """Generates code for the pipeline.py file to be written to the pipelines directory.
-
-    Args:
-        components_list: Contains the names or paths of all component yamls in the dir.
-        custom_training_job_specs: Specifies the specs to run the training job with.
-        pipeline_scaffold_contents: The contents of the pipeline scaffold file,
-            which can be found at PIPELINE_CACHE_FILE.
-        project_id: The project ID.
-    
-    Returns:
-        str: pipeline.py file.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline.py.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            components_list=components_list,
-            custom_training_job_specs=custom_training_job_specs,
-            generated_license=GENERATED_LICENSE,
-            pipeline_scaffold_contents=pipeline_scaffold_contents,
-            project_id=project_id)
-
-
-def pipeline_requirements_jinja() -> str:
-    """Generates code for a requirements.txt to be written to the pipelines directory.
-
-    Returns:
-        str: requirements.txt file for pipelines.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'requirements.txt.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(pinned_kfp_version=PINNED_KFP_VERSION)
-
-
-def submission_service_dockerfile_jinja() -> str:
-    """Generates code for a Dockerfile to be written to the serivces/submission_service directory.
-
-    Returns:
-        str: Dockerfile file.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            base_dir=BASE_DIR,
-            generated_license=GENERATED_LICENSE)
-
-
-def submission_service_requirements_jinja(pipeline_job_submission_service_type: str) -> str:
-    """Generates code for a requirements.txt to be written to the serivces/submission_service directory.
-    
-    Args:
-        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
-
-    Returns:
-        str: requirements.txt file for submission_service.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'requirements.txt.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            pinned_kfp_version=PINNED_KFP_VERSION,
-            pipeline_job_submission_service_type=pipeline_job_submission_service_type)
-
-
-def submission_service_main_jinja(
-    pipeline_root: str,
-    pipeline_job_runner_service_account: str,
-    pipeline_job_submission_service_type: str,
-    project_id: str) -> str:
-    """Generates content for main.py to be written to the serivces/submission_service directory. 
-       This file contains code for running a flask service that will act as a pipeline job submission service.
-
-    Args:
-        pipeline_root: GS location where to store metadata from pipeline runs.
-        pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
-        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
-        project_id: The project ID.
-
-    Returns:
-        str: Content of serivces/submission_service main.py.
-    """
-    template_file = import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            generated_license=GENERATED_LICENSE,
-            pipeline_root=pipeline_root,
-            pipeline_job_runner_service_account=pipeline_job_runner_service_account,
-            pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-            project_id=project_id)

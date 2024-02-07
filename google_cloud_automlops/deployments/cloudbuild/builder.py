@@ -24,7 +24,10 @@ except ImportError:
 
 from jinja2 import Template
 
-from google_cloud_automlops.utils.utils import write_file
+from google_cloud_automlops.utils.utils import (
+    render_jinja,
+    write_file
+)
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     CLOUDBUILD_TEMPLATES_PATH,
@@ -48,46 +51,18 @@ def build(config: CloudBuildConfig):
         config.use_ci: Flag that determines whether to use Cloud CI/CD.
     """
     # Write cloud build config
-    write_file(GENERATED_CLOUDBUILD_FILE, create_cloudbuild_jinja(
-        config.artifact_repo_location,
-        config.artifact_repo_name,
-        config.naming_prefix,
-        config.project_id,
-        config.pubsub_topic_name,
-        config.use_ci), 'w')
-
-def create_cloudbuild_jinja(
-        artifact_repo_location: str,
-        artifact_repo_name: str,
-        naming_prefix: str,
-        project_id: str,
-        pubsub_topic_name: str,
-        use_ci: bool) -> str:
-    """Generates content for the cloudbuild.yaml, to be written to the base_dir.
-       This file contains the ci/cd manifest for AutoMLOps.
-
-    Args:
-        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
-        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
-        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        project_id: The project ID.        
-        pubsub_topic_name: The name of the pubsub topic to publish to.
-        use_ci: Flag that determines whether to use Cloud CI/CD.
-
-    Returns:
-        str: Contents of cloudbuild.yaml.
-    """
-    component_base_relative_path = COMPONENT_BASE_RELATIVE_PATH if use_ci else f'{BASE_DIR}{COMPONENT_BASE_RELATIVE_PATH}'
-    template_file = import_files(CLOUDBUILD_TEMPLATES_PATH) / 'cloudbuild.yaml.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            artifact_repo_location=artifact_repo_location,
-            artifact_repo_name=artifact_repo_name,
+    component_base_relative_path = COMPONENT_BASE_RELATIVE_PATH if config.use_ci else f'{BASE_DIR}{COMPONENT_BASE_RELATIVE_PATH}'
+    write_file(
+        filepath=GENERATED_CLOUDBUILD_FILE, 
+        text=render_jinja(
+            template_path=import_files(CLOUDBUILD_TEMPLATES_PATH) / 'cloudbuild.yaml.j2',
+            artifact_repo_location=config.artifact_repo_location,
+            artifact_repo_name=config.artifact_repo_name,
             component_base_relative_path=component_base_relative_path,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
-            naming_prefix=naming_prefix,
-            project_id=project_id,
-            pubsub_topic_name=pubsub_topic_name,
-            use_ci=use_ci)
+            naming_prefix=config.naming_prefix,
+            project_id=config.project_id,
+            pubsub_topic_name=config.pubsub_topic_name,
+            use_ci=config.use_ci),
+        mode='w')
