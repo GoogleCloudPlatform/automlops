@@ -953,6 +953,6 @@ def render_jinja(template_path, **template_vars):
     Returns:
         str: The rendered template as a string.
     """
-    with template_path.open('r', encoding='utf-8') as f:
+    with open(template_path, 'r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(**template_vars)
