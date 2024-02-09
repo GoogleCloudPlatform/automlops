@@ -19,6 +19,7 @@
 
 from contextlib import nullcontext as does_not_raise
 import os
+import tempfile
 from typing import Callable, List
 
 import pandas as pd
@@ -36,6 +37,7 @@ from google_cloud_automlops.utils.utils import (
     make_dirs,
     read_file,
     read_yaml_file,
+    render_jinja,
     stringify_job_spec_list,
     update_params,
     validate_schedule,
@@ -520,3 +522,26 @@ def test_stringify_job_spec_list(job_spec_list: List[dict], expected_output: Lis
 
     formatted_spec = stringify_job_spec_list(job_spec_list=job_spec_list)
     assert formatted_spec == expected_output
+
+@pytest.mark.parametrize(
+    'template_string, template_vars, expected_output',
+    [
+        ('Hello {{ name1 }} my name is {{ name2 }}', {'name1': 'Alice', 'name2': 'John'}, 'Hello Alice my name is John'),
+        ('The answer is: {{ result }}', {'result': 42}, 'The answer is: 42'),
+    ]
+)
+def test_render_jinja(template_string, template_vars, expected_output):
+    """Tests the render_jinja function using temporary files."""
+
+    with tempfile.TemporaryDirectory() as tmpdirname:  # Creates temp directory
+        template_path = os.path.join(tmpdirname, 'template.txt.j2')
+
+        # Write the template to the temporary file
+        with open(template_path, 'w', encoding='utf-8') as f:
+            f.write(template_string)
+
+        # Call the render_jinja function
+        result = render_jinja(template_path, **template_vars)
+
+        # Assertion
+        assert result == expected_output
