@@ -418,6 +418,8 @@ When an anomaly is detected, actions can be taken in 2 ways:
 
 These can be configured using the `alert_emails` and `auto_retraining_params` parameters, which are left null by default. If `auto_retraining_params` are specified, `AutoMLOps.monitor` will set up a Log Sink to connect the Vertex AI Model Monitoring Job to the Pub/Sub Queueing service, and filter on only ModelMonitoringJob anomalies.
 
+Before running `AutoMLOps.monitor()`, be sure to install the package dependencies using the following command: `pip3 install -r AutoMLOps/model_monitoring/requirements.txt --user`
+
 ### `AutoMLOps.monitor()` parameter list:
 
 Required parameters:
