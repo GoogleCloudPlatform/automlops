@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -44,6 +44,9 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_DEFAULTS_FILE,
     GENERATED_COMPONENT_BASE,
     GENERATED_LICENSE,
+    GENERATED_MODEL_MONITORING_SH_FILE,
+    GENERATED_MODEL_MONITORING_MONITOR_PY_FILE,
+    GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_FILE,
     GENERATED_PIPELINE_REQUIREMENTS_FILE,
@@ -66,6 +69,7 @@ def build(config: KfpConfig):
         config.custom_training_job_specs: Specifies the specs to run the training job with.
         config.pipeline_params: Dictionary containing runtime pipeline parameters.
         config.pubsub_topic_name: The name of the pubsub topic to publish to.
+        config.setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         config.use_ci: Flag that determines whether to use Cloud Run CI/CD.
     """
 
@@ -76,6 +80,10 @@ def build(config: KfpConfig):
     write_and_chmod(GENERATED_RUN_ALL_SH_FILE, run_all_jinja())
     if config.use_ci:
         write_and_chmod(GENERATED_PUBLISH_TO_TOPIC_FILE, publish_to_topic_jinja(pubsub_topic_name=config.pubsub_topic_name))
+    if config.setup_model_monitoring:
+        write_and_chmod(GENERATED_MODEL_MONITORING_SH_FILE, create_model_monitoring_job_jinja())
+        write_file(GENERATED_MODEL_MONITORING_MONITOR_PY_FILE, model_monitoring_monitor_jinja(), 'w')
+        write_file(GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE, model_monitoring_requirements_jinja(), 'w')
 
     # Create components and pipelines
     components_path_list = get_components_list(full_path=True)
@@ -87,7 +95,7 @@ def build(config: KfpConfig):
     write_file(f'{BASE_DIR}scripts/pipeline_spec/.gitkeep', '', 'w')
 
     # Write readme.md to description the contents of the directory
-    write_file(f'{BASE_DIR}README.md', readme_jinja(config.use_ci), 'w')
+    write_file(f'{BASE_DIR}README.md', readme_jinja(config.setup_model_monitoring, config.use_ci), 'w')
 
     # Write dockerfile to the component base directory
     write_file(f'{GENERATED_COMPONENT_BASE}/Dockerfile', component_base_dockerfile_jinja(config.base_image), 'w')
@@ -206,10 +214,12 @@ def build_services():
 
     # Write main code files for cloud run base and queueing svc
     write_file(f'{submission_service_base}/main.py', submission_service_main_jinja(
-                    pipeline_root=defaults['pipelines']['pipeline_storage_path'],
-                    pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
-                    pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
-                    project_id=defaults['gcp']['project_id']), 'w')
+        naming_prefix=defaults['gcp']['naming_prefix'],
+        pipeline_root=defaults['pipelines']['pipeline_storage_path'],
+        pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
+        pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
+        project_id=defaults['gcp']['project_id'],
+        setup_model_monitoring=defaults['gcp']['setup_model_monitoring']), 'w')
 
 
 def create_component_base_requirements():
@@ -339,6 +349,21 @@ def run_all_jinja() -> str:
             base_dir=BASE_DIR)
 
 
+def create_model_monitoring_job_jinja() -> str:
+    """Generates code for create_model_monitoring_job.sh which creates a Vertex AI
+       model monitoring job.
+
+    Returns:
+        str: create_model_monitoring_job.sh script.
+    """
+    template_file = import_files(KFP_TEMPLATES_PATH + '.scripts') / 'create_model_monitoring_job.sh.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(
+            generated_license=GENERATED_LICENSE,
+            base_dir=BASE_DIR)
+
+
 def publish_to_topic_jinja(pubsub_topic_name: str) -> str:
     """Generates code for publish_to_topic.sh which submits a message to the
        pipeline job submission service.
@@ -359,11 +384,12 @@ def publish_to_topic_jinja(pubsub_topic_name: str) -> str:
             pubsub_topic_name=pubsub_topic_name)
 
 
-def readme_jinja(use_ci: str) -> str:
+def readme_jinja(setup_model_monitoring: bool, use_ci: str) -> str:
     """Generates code for readme.md which is a readme markdown file to describe the contents of the
         generated AutoMLOps code repo.
 
     Args:
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         use_ci: Flag that determines whether to use Cloud CI/CD.
 
     Returns:
@@ -372,7 +398,7 @@ def readme_jinja(use_ci: str) -> str:
     template_file = import_files(KFP_TEMPLATES_PATH) / 'README.md.j2'
     with template_file.open('r', encoding='utf-8') as f:
         template = Template(f.read())
-        return template.render(use_ci=use_ci)
+        return template.render(setup_model_monitoring=setup_model_monitoring, use_ci=use_ci)
 
 
 def component_base_dockerfile_jinja(base_image: str) -> str:
@@ -495,18 +521,22 @@ def submission_service_requirements_jinja(pipeline_job_submission_service_type: 
 
 
 def submission_service_main_jinja(
+    naming_prefix: str,
     pipeline_root: str,
     pipeline_job_runner_service_account: str,
     pipeline_job_submission_service_type: str,
-    project_id: str) -> str:
+    project_id: str,
+    setup_model_monitoring: str) -> str:
     """Generates content for main.py to be written to the serivces/submission_service directory. 
        This file contains code for running a flask service that will act as a pipeline job submission service.
 
     Args:
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
         pipeline_root: GS location where to store metadata from pipeline runs.
         pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
         pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
         project_id: The project ID.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
 
     Returns:
         str: Content of serivces/submission_service main.py.
@@ -516,7 +546,36 @@ def submission_service_main_jinja(
         template = Template(f.read())
         return template.render(
             generated_license=GENERATED_LICENSE,
+            naming_prefix=naming_prefix,
             pipeline_root=pipeline_root,
             pipeline_job_runner_service_account=pipeline_job_runner_service_account,
             pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-            project_id=project_id)
+            project_id=project_id,
+            setup_model_monitoring=setup_model_monitoring)
+
+
+def model_monitoring_monitor_jinja() -> str:
+    """Generates content for monitor.py to be written to the model_monitoring directory. 
+       This file contains code for creating or updating a Model Monitoring Job in Vertex AI
+       for a deployed model endpoint.
+
+    Returns:
+        str: Content of model_monitoring/monitor.py.
+    """
+    template_file = import_files(KFP_TEMPLATES_PATH + '.model_monitoring') / 'monitor.py.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render(
+            generated_license=GENERATED_LICENSE)
+
+
+def model_monitoring_requirements_jinja() -> str:
+    """Generates code for a requirements.txt to be written to the model_monitoring directory.
+
+    Returns:
+        str: requirements.txt file for model_monitoring.
+    """
+    template_file = import_files(KFP_TEMPLATES_PATH + '.model_monitoring') / 'requirements.txt.j2'
+    with template_file.open('r', encoding='utf-8') as f:
+        template = Template(f.read())
+        return template.render()
