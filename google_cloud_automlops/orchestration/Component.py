@@ -18,22 +18,31 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
+from abc import ABC, abstractmethod
 import docstring_parser
 import inspect
-import itertools
-import textwrap
 from typing import Callable, List, Optional, TypeVar, Union
-from google_cloud_automlops.utils.utils import get_function_source_definition
+
+from google_cloud_automlops.utils.constants import GENERATED_DEFAULTS_FILE
+from google_cloud_automlops.utils.utils import (
+    get_function_source_definition,
+    read_yaml_file
+)
 
 T = TypeVar('T')
 
 
-class Component:
+class Component(ABC):
+    """The Component object represents a component defined by the user.
 
-    def __init__(self, 
-                 func: Optional[Callable] = None, 
+    Args:
+        ABC: Abstract class
+    """
+
+    def __init__(self,
+                 func: Optional[Callable] = None,
                  packages_to_install: Optional[List[str]] = None):
-        """Initiates a component object created out of a function holding
+        """Initiates a generic Component object created out of a function holding
         all necessary code.
 
         Args:
@@ -52,17 +61,30 @@ class Component:
         if not inspect.isfunction(func):
             raise ValueError(f"{func} must be of type function.")
 
-        # Set attributes of the component function
+        # Set simple attributes of the component function
         self.func = func
         self.name = func.__name__
+        self.packages_to_install = [] if not packages_to_install else packages_to_install
+
+        # Parse the docstring for description 
         self.parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
         self.description = self.parsed_docstring.short_description
-        self.packages_to_install = [] if not packages_to_install else packages_to_install
 
         # Process and extract details from passed function
         self.parameters = self._get_function_parameters()
         self.return_types = self._get_function_return_types()
         self.src_code = get_function_source_definition(self.func)
+
+    @abstractmethod
+    def build(self):
+        """Instantiates an abstract built method to create and write task files. Also
+        reads in defaults file to save default arguments to attributes.
+        """
+        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
+        self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
+        self.project_id = defaults['gcp']['project_id']
+        self.naming_prefix = defaults['gcp']['naming_prefix']
 
     def _get_function_return_types(self) -> list:
         """Returns a formatted list of function return types.

@@ -12,30 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Creates a KFP component object."""
+"""Creates a KFP component subclass."""
 
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
 from typing import Callable, List, Optional
-from google_cloud_automlops.orchestration.Component import Component
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
+
+from google_cloud_automlops.orchestration.Component import Component
 from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    GENERATED_LICENSE,
+    KFP_TEMPLATES_PATH,
     PLACEHOLDER_IMAGE,
-    CACHE_DIR
 )
 from google_cloud_automlops.utils.utils import (
     make_dirs,
+    render_jinja,
+    write_file,
     write_yaml_file
 )
 
 
 class KFPComponent(Component):
-    def __init__(self, 
+    """Creates a KFP specific Component object for #TODO: add more
+
+    Args:
+        Component (object): Generic Component object.
+    """
+
+    def __init__(self,
                  func: Optional[Callable] = None, 
                  packages_to_install: Optional[List[str]] = None):
-        """Initiates a KFP component object created out of a function holding
+        """Initiates a KFP Component object created out of a function holding
         all necessary code.
 
         Args:
@@ -47,18 +63,67 @@ class KFPComponent(Component):
                 executing func. These will always be installed at component runtime.
         """
         super().__init__(func, packages_to_install)
+
+        # Update parameters and return types to reflect KFP data types
         self.parameters = update_params(self.parameters)
         self.return_types = update_params(self.return_types)
+
+        # Set packages to install and component spec attributes
         self.packages_to_install_command = self._get_packages_to_install_command()
         self.component_spec = self._create_component_spec()
 
     def build(self):
         """Constructs files for running and managing Kubeflow pipelines.
         """
-        # Write component yaml
-        filename = CACHE_DIR + f'/{self.name}.yaml'
-        make_dirs([CACHE_DIR])
-        write_yaml_file(filename, self.component_spec, 'w')
+        super().build()
+
+        # TODO: can this be removed?
+        kfp_spec_bool = self.component_spec['implementation']['container']['image'] != PLACEHOLDER_IMAGE
+
+        # Read in component specs
+        custom_code_contents = self.component_spec['implementation']['container']['command'][-1]
+        compspec_image = (
+                f'''{self.artifact_repo_location}-docker.pkg.dev/'''
+                f'''{self.project_id}/'''
+                f'''{self.artifact_repo_name}/'''
+                f'''{self.naming_prefix}/'''
+                f'''components/component_base:latest''')
+
+        # If using kfp, remove spaces in name and convert to lowercase
+        if kfp_spec_bool:
+            self.component_spec['name'] = self.component_spec['name'].replace(' ', '_').lower()
+
+        # Set and create directory for components if it does not already exist
+        # TODO: make this only happen for the first component? or pull into automlops.py
+        component_dir = BASE_DIR + 'components/' + self.component_spec['name']
+        make_dirs([component_dir])
+
+        # Write task script to component base
+        write_file(
+            filepath=BASE_DIR + 'components/component_base/src/' + self.component_spec['name'] + '.py',
+            text=render_jinja(
+                template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
+                generated_license=GENERATED_LICENSE,
+                kfp_spec_bool=kfp_spec_bool,
+                custom_code_content=custom_code_contents),
+            mode='w')
+
+        # Update component_spec to include correct image and startup command
+        self.component_spec['implementation']['container']['image'] = compspec_image
+        self.component_spec['implementation']['container']['command'] = [
+            'python3',
+            f'''/pipelines/component/src/{self.component_spec['name']+'.py'}''']
+
+        # Write license and component spec to the appropriate component.yaml file
+        comp_yaml_path = component_dir + '/component.yaml'
+        write_file(
+            filepath=comp_yaml_path,
+            text=GENERATED_LICENSE,
+            mode='w')
+        write_yaml_file(
+            filepath=comp_yaml_path,
+            contents=self.component_spec,
+            mode='a')
 
     def _get_packages_to_install_command(self):
         """Returns a list of formatted list of commands, including code for tmp storage.
