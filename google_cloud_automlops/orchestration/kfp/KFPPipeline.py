@@ -33,6 +33,7 @@ from google_cloud_automlops.orchestration.Pipeline import Pipeline
 from google_cloud_automlops.utils.utils import (
     execute_process,
     get_components_list,
+    make_dirs,
     read_file,
     read_yaml_file,
     render_jinja,
@@ -124,6 +125,13 @@ class KFPPipeline(Pipeline):
                       pubsub_topic_name,
                       use_ci)
 
+        # Build necessary folders
+        make_dirs([
+            f'{BASE_DIR}scripts/pipeline_spec/',
+            f'{BASE_DIR}pipelines',
+            f'{BASE_DIR}pipelines/runtime_parameters/'
+        ])
+
         # README.md: Write description of the contents of the directory
         write_file(
             filepath=f'{BASE_DIR}README.md', 
@@ -152,7 +160,7 @@ class KFPPipeline(Pipeline):
 
         # scripts/pipeline_spec/.gitkeep: Write gitkeep to pipeline_spec directory
         write_file(
-            filepath=f'{BASE_DIR}scripts/pipeline_spec/.gitkeep', 
+            filepath=f'{BASE_DIR}scripts/pipeline_spec/.gitkeep',
             text='',
             mode='w')
 
@@ -201,8 +209,7 @@ class KFPPipeline(Pipeline):
 
         # pipelines/pipeline.py: Generates a Kubeflow pipeline spec from custom components.
         components_list = get_components_list(full_path=False)
-        pipeline_scaffold_contents = read_file(PIPELINE_CACHE_FILE)
-        pipeline_scaffold_contents = textwrap.indent(pipeline_scaffold_contents, 4 * ' ')
+        pipeline_scaffold_contents = textwrap.indent(self.pipeline_scaffold, 4 * ' ')
         write_file(
             filepath=GENERATED_PIPELINE_FILE,
             text=render_jinja(

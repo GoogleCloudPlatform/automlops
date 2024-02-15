@@ -65,8 +65,10 @@ class KFPComponent(Component):
         super().__init__(func, packages_to_install)
 
         # Update parameters and return types to reflect KFP data types
-        self.parameters = update_params(self.parameters)
-        self.return_types = update_params(self.return_types)
+        if self.parameters:
+            self.parameters = update_params(self.parameters)
+        if self.return_types:
+            self.return_types = update_params(self.return_types)
 
         # Set packages to install and component spec attributes
         self.packages_to_install_command = self._get_packages_to_install_command()
@@ -76,6 +78,15 @@ class KFPComponent(Component):
         """Constructs files for running and managing Kubeflow pipelines.
         """
         super().build()
+
+        # Set and create directory for components if it does not already exist
+        component_dir = BASE_DIR + 'components/' + self.component_spec['name']
+
+        # Build necessary folders
+        # TODO: make this only happen for the first component? or pull into automlops.py
+        make_dirs([
+            component_dir,
+            BASE_DIR + 'components/component_base/src/'])
 
         # TODO: can this be removed?
         kfp_spec_bool = self.component_spec['implementation']['container']['image'] != PLACEHOLDER_IMAGE
@@ -92,11 +103,6 @@ class KFPComponent(Component):
         # If using kfp, remove spaces in name and convert to lowercase
         if kfp_spec_bool:
             self.component_spec['name'] = self.component_spec['name'].replace(' ', '_').lower()
-
-        # Set and create directory for components if it does not already exist
-        # TODO: make this only happen for the first component? or pull into automlops.py
-        component_dir = BASE_DIR + 'components/' + self.component_spec['name']
-        make_dirs([component_dir])
 
         # Write task script to component base
         write_file(
