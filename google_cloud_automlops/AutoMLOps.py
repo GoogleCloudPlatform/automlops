@@ -67,6 +67,10 @@ from google_cloud_automlops.orchestration.enums import (
 from google_cloud_automlops.orchestration.configs import (
     KfpConfig
 )
+
+from google_cloud_automlops.orchestration import Component, Pipeline, Services
+from google_cloud_automlops.orchestration.kfp import KFPComponent, KFPPipeline, KFPServices
+
 # Provisioning imports
 from google_cloud_automlops.provisioning.pulumi import builder as PulumiBuilder
 from google_cloud_automlops.provisioning.terraform import builder as TerraformBuilder
@@ -91,12 +95,19 @@ from google_cloud_automlops.deployments.configs import (
 )
 from google_cloud_automlops.deployments.gitops.git_utils import git_workflow
 
+# Set up logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
                     format='%(message)s')
 logging.getLogger('googleapiclient').setLevel(logging.WARNING)
 logger = logging.getLogger()
 
+# Create output directory
 make_dirs([OUTPUT_DIR])
+
+# Set up global dictionaries to hold pipeline and components
+global components, pipeline
+components = {}
+pipeline = None
 
 def launchAll(
     project_id: str,
