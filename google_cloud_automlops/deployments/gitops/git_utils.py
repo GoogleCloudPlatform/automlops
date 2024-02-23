@@ -28,8 +28,6 @@ import logging
 import os
 import subprocess
 
-from jinja2 import Template
-
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     GENERATED_DEFAULTS_FILE,
@@ -39,6 +37,7 @@ from google_cloud_automlops.utils.constants import (
 from google_cloud_automlops.utils.utils import (
     execute_process,
     read_yaml_file,
+    render_jinja,
     write_file
 )
 from google_cloud_automlops.deployments.enums import (
@@ -76,7 +75,11 @@ def git_workflow():
         has_remote_branch = subprocess.check_output(
             [f'''git -C {BASE_DIR} ls-remote origin {defaults['gcp']['source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
 
-        write_file(f'{BASE_DIR}.gitignore', _create_gitignore_jinja(), 'w')
+        write_file(
+            f'{BASE_DIR}.gitignore',
+            render_jinja(template_path=import_files(GITOPS_TEMPLATES_PATH) / 'gitignore.j2'),
+            'w')
+
         # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
         if not has_remote_branch:
             execute_process(f'git -C {BASE_DIR} add .gitignore', to_null=False)
@@ -102,15 +105,3 @@ def git_workflow():
     if deployment_framework == Deployer.CLOUDBUILD.value:
         logging.info(
             f'''Cloud Build job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')
-
-
-def _create_gitignore_jinja() -> str:
-    """Generates code for .gitignore file.
-
-    Returns:
-        str: .gitignore file.
-    """
-    template_file = import_files(GITOPS_TEMPLATES_PATH) / 'gitignore.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render()

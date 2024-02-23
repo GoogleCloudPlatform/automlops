@@ -16,11 +16,23 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=missing-module-docstring
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
+
 from typing import List
 
 import pytest
 
-from google_cloud_automlops.deployments.github_actions.builder import create_github_actions_jinja
+from google_cloud_automlops.utils.constants import (
+    COMPONENT_BASE_RELATIVE_PATH,
+    GENERATED_LICENSE,
+    GENERATED_PARAMETER_VALUES_PATH,
+    GITHUB_ACTIONS_TEMPLATES_PATH
+)
+from google_cloud_automlops.utils.utils import render_jinja
 
 
 @pytest.mark.parametrize(
@@ -95,18 +107,24 @@ def test_create_github_actions_jinja(
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
 
-    github_actions_config = create_github_actions_jinja(
-        artifact_repo_location,
-        artifact_repo_name,
-        naming_prefix,
-        project_id,
-        project_number,
-        pubsub_topic_name,
-        source_repo_branch,
-        use_ci,
-        workload_identity_pool,
-        workload_identity_provider,
-        workload_identity_service_account)
+    template_file = import_files(GITHUB_ACTIONS_TEMPLATES_PATH) / 'github_actions.yaml.j2'
+    github_actions_config = render_jinja(
+        template_path=template_file,
+        artifact_repo_location=artifact_repo_location,
+        artifact_repo_name=artifact_repo_name,
+        component_base_relative_path=COMPONENT_BASE_RELATIVE_PATH,
+        generated_license=GENERATED_LICENSE,
+        generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
+        naming_prefix=naming_prefix,
+        project_id=project_id,
+        project_number=project_number,
+        pubsub_topic_name=pubsub_topic_name,
+        source_repo_branch=source_repo_branch,
+        use_ci=use_ci,
+        workload_identity_pool=workload_identity_pool,
+        workload_identity_provider=workload_identity_provider,
+        workload_identity_service_account=workload_identity_service_account
+    )
 
     for snippet in expected_output_snippets:
         if is_included:

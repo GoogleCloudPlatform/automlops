@@ -16,11 +16,25 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=missing-module-docstring
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
+
 from typing import List
 
 import pytest
 
-from google_cloud_automlops.provisioning.gcloud.builder import provision_resources_script_jinja
+from google_cloud_automlops.utils.utils import render_jinja
+
+from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    GCLOUD_TEMPLATES_PATH,
+    GENERATED_LICENSE,
+    GENERATED_PARAMETER_VALUES_PATH,
+    IAM_ROLES_RUNNER_SA,
+)
 
 @pytest.mark.parametrize(
     '''artifact_repo_location, artifact_repo_name, artifact_repo_type, build_trigger_location,'''
@@ -187,31 +201,36 @@ def test_provision_resources_script_jinja(
         use_ci: Flag that determines whether to use Cloud CI/CD.
         vpc_connector: The name of the vpc connector to use.
     """
-    provision_resources_script = provision_resources_script_jinja(
-        artifact_repo_location=artifact_repo_location,
-        artifact_repo_name=artifact_repo_name,
-        artifact_repo_type=artifact_repo_type,
-        build_trigger_location=build_trigger_location,
-        build_trigger_name=build_trigger_name,
-        deployment_framework=deployment_framework,
-        naming_prefix=naming_prefix,
-        pipeline_job_runner_service_account=pipeline_job_runner_service_account,
-        pipeline_job_submission_service_location=pipeline_job_submission_service_location,
-        pipeline_job_submission_service_name=pipeline_job_submission_service_name,
-        pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-        project_id=project_id,
-        pubsub_topic_name=pubsub_topic_name,
-        required_apis=required_apis,
-        schedule_location=schedule_location,
-        schedule_name=schedule_name,
-        schedule_pattern=schedule_pattern,
-        source_repo_branch=source_repo_branch,
-        source_repo_name=source_repo_name,
-        source_repo_type=source_repo_type,
-        storage_bucket_location=storage_bucket_location,
-        storage_bucket_name=storage_bucket_name,
-        use_ci=use_ci,
-        vpc_connector=vpc_connector)
+    provision_resources_script = render_jinja(
+            template_path=import_files(GCLOUD_TEMPLATES_PATH) / 'provision_resources.sh.j2',
+            artifact_repo_location=artifact_repo_location,
+            artifact_repo_name=artifact_repo_name,
+            artifact_repo_type=artifact_repo_type,
+            base_dir=BASE_DIR,
+            build_trigger_location=build_trigger_location,
+            build_trigger_name=build_trigger_name,
+            deployment_framework=deployment_framework,
+            generated_license=GENERATED_LICENSE,
+            generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
+            naming_prefix=naming_prefix,
+            pipeline_job_runner_service_account=pipeline_job_runner_service_account,
+            pipeline_job_submission_service_location=pipeline_job_submission_service_location,
+            pipeline_job_submission_service_name=pipeline_job_submission_service_name,
+            pipeline_job_submission_service_type=pipeline_job_submission_service_type,
+            project_id=project_id,
+            pubsub_topic_name=pubsub_topic_name,
+            required_apis=required_apis,
+            required_iam_roles=IAM_ROLES_RUNNER_SA,
+            schedule_location=schedule_location,
+            schedule_name=schedule_name,
+            schedule_pattern=schedule_pattern,
+            source_repo_branch=source_repo_branch,
+            source_repo_name=source_repo_name,
+            source_repo_type=source_repo_type,
+            storage_bucket_location=storage_bucket_location,
+            storage_bucket_name=storage_bucket_name,
+            use_ci=use_ci,
+            vpc_connector=vpc_connector)
 
     for snippet in expected_output_snippets:
         if is_included:

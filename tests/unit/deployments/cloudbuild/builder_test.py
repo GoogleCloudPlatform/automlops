@@ -15,11 +15,24 @@
 # pylint: disable=line-too-long
 # pylint: disable=missing-module-docstring
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
+
 from typing import List
 
 import pytest
 
-from google_cloud_automlops.deployments.cloudbuild.builder import create_cloudbuild_jinja
+from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    CLOUDBUILD_TEMPLATES_PATH,
+    COMPONENT_BASE_RELATIVE_PATH,
+    GENERATED_LICENSE,
+    GENERATED_PARAMETER_VALUES_PATH
+)
+from google_cloud_automlops.utils.utils import render_jinja
 
 @pytest.mark.parametrize(
     '''artifact_repo_location, artifact_repo_name, naming_prefix,'''
@@ -81,13 +94,21 @@ def test_create_cloudbuild_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    cloudbuild_config = create_cloudbuild_jinja(
-        artifact_repo_location,
-        artifact_repo_name,
-        naming_prefix,
-        project_id,
-        pubsub_topic_name,
-        use_ci)
+    component_base_relative_path = COMPONENT_BASE_RELATIVE_PATH if use_ci else f'{BASE_DIR}{COMPONENT_BASE_RELATIVE_PATH}'
+    template_file = import_files(CLOUDBUILD_TEMPLATES_PATH) / 'cloudbuild.yaml.j2'
+
+    cloudbuild_config = render_jinja(
+        template_path=template_file,
+        artifact_repo_location=artifact_repo_location,
+        artifact_repo_name=artifact_repo_name,
+        component_base_relative_path=component_base_relative_path,
+        generated_licensed=GENERATED_LICENSE,
+        generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
+        naming_prefix=naming_prefix,
+        project_id=project_id,
+        pubsub_topic_name=pubsub_topic_name,
+        use_ci=use_ci
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
