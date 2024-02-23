@@ -16,22 +16,23 @@
 # pylint: disable=missing-function-docstring
 # pylint: disable=missing-module-docstring
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
 from typing import List
 
 import pytest
 
-from google_cloud_automlops.utils.constants import GENERATED_LICENSE
-from google_cloud_automlops.provisioning.terraform.builder import (
-    create_environment_data_tf_jinja,
-    create_environment_iam_tf_jinja,
-    create_environment_main_tf_jinja,
-    create_environment_outputs_tf_jinja,
-    create_environment_provider_tf_jinja,
-    create_environment_variables_tf_jinja,
-    create_environment_versions_tf_jinja,
-    create_provision_resources_script_jinja,
-    create_state_bucket_variables_tf_jinja,
-    create_state_bucket_main_tf_jinja
+from google_cloud_automlops.utils.utils import render_jinja
+
+from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    GENERATED_LICENSE,
+    GENERATED_PARAMETER_VALUES_PATH,
+    IAM_ROLES_RUNNER_SA,
+    TERRAFORM_TEMPLATES_PATH
 )
 
 
@@ -70,7 +71,13 @@ def test_create_environment_data_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    data_tf_str = create_environment_data_tf_jinja(required_apis, use_ci)
+    data_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'data.tf.j2',
+        generated_license=GENERATED_LICENSE,
+        required_apis=required_apis,
+        required_iam_roles=IAM_ROLES_RUNNER_SA,
+        use_ci=use_ci
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -95,7 +102,10 @@ def test_create_environment_iam_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    iam_tf_str = create_environment_iam_tf_jinja()
+    iam_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'iam.tf.j2',
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -220,15 +230,20 @@ def test_create_environment_main_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    main_tf_str = create_environment_main_tf_jinja(
+    main_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'main.tf.j2',
         artifact_repo_type=artifact_repo_type,
+        base_dir=BASE_DIR,
         deployment_framework=deployment_framework,
+        generated_license=GENERATED_LICENSE,
+        generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
         naming_prefix=naming_prefix,
         pipeline_job_submission_service_type=pipeline_job_submission_service_type,
         schedule_pattern=schedule_pattern,
         source_repo_type=source_repo_type,
         use_ci=use_ci,
-        vpc_connector=vpc_connector)
+        vpc_connector=vpc_connector
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -355,13 +370,16 @@ def test_create_environment_outputs_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    main_tf_str = create_environment_outputs_tf_jinja(
+    main_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'outputs.tf.j2',
         artifact_repo_type=artifact_repo_type,
         deployment_framework=deployment_framework,
+        generated_license=GENERATED_LICENSE,
         pipeline_job_submission_service_type=pipeline_job_submission_service_type,
         schedule_pattern=schedule_pattern,
         source_repo_type=source_repo_type,
-        use_ci=use_ci)
+        use_ci=use_ci
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -386,7 +404,10 @@ def test_create_environment_provider_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    provider_tf_str = create_environment_provider_tf_jinja()
+    provider_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'provider.tf.j2',
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -411,7 +432,10 @@ def test_create_environment_variables_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    variables_tf_str = create_environment_variables_tf_jinja()
+    variables_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'variables.tf.j2',
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -438,7 +462,11 @@ def test_create_environment_versions_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    versions_tf_str = create_environment_versions_tf_jinja(storage_bucket_name=storage_bucket_name)
+    versions_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.environment') / 'versions.tf.j2',
+        generated_license=GENERATED_LICENSE,
+        storage_bucket_name=storage_bucket_name
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -463,7 +491,11 @@ def test_create_provision_resources_script_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    provision_resources_script = create_provision_resources_script_jinja()
+    provision_resources_script = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH) / 'provision_resources.sh.j2',
+        base_dir=BASE_DIR,
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -488,7 +520,10 @@ def test_create_state_bucket_variables_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    variables_tf_str = create_state_bucket_variables_tf_jinja()
+    variables_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'variables.tf.j2',
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -513,7 +548,10 @@ def test_create_state_bucket_main_tf_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    main_tf_str = create_state_bucket_main_tf_jinja()
+    main_tf_str = render_jinja(
+        template_path=import_files(TERRAFORM_TEMPLATES_PATH + '.state_bucket') / 'main.tf.j2',
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:

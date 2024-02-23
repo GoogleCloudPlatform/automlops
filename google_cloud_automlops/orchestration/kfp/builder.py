@@ -117,10 +117,32 @@ def build(config: KfpConfig):
                 generated_license=GENERATED_LICENSE,
                 generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
                 pubsub_topic_name=config.pubsub_topic_name))
+
+    # If using model monitoring, write correspointing scripts to model_monitoring directory
     if config.setup_model_monitoring:
-        write_and_chmod(GENERATED_MODEL_MONITORING_SH_FILE, create_model_monitoring_job_jinja())
-        write_file(GENERATED_MODEL_MONITORING_MONITOR_PY_FILE, model_monitoring_monitor_jinja(), 'w')
-        write_file(GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE, model_monitoring_requirements_jinja(), 'w')
+        # Writes script create_model_monitoring_job.sh which creates a Vertex AI model monitoring job
+        write_and_chmod(
+            filepath=GENERATED_MODEL_MONITORING_SH_FILE,
+            text=render_jinja(
+                template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'create_model_monitoring_job.sh.j2',
+                generated_license=GENERATED_LICENSE,
+                base_dir=BASE_DIR
+            ))
+
+        # Writes monitor.py to create or update a model monitoring job in Vertex AI for a deployed model endpoint
+        write_file(
+            filepath=GENERATED_MODEL_MONITORING_MONITOR_PY_FILE,
+            text=render_jinja(
+                template_path=import_files(KFP_TEMPLATES_PATH + '.model_monitoring') / 'monitor.py.j2',
+                generated_license=GENERATED_LICENSE
+            ),
+            mode='w')
+
+        # Writes a requirements.txt to the model_monitoring directory
+        write_file(
+            filepath=GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE,
+            text=render_jinja(template_path=import_files(KFP_TEMPLATES_PATH + '.model_monitoring') / 'requirements.txt.j2'),
+            mode='w')
 
     # Create components and pipelines
     components_path_list = get_components_list(full_path=True)
@@ -136,6 +158,7 @@ def build(config: KfpConfig):
         f'{BASE_DIR}README.md', 
         render_jinja(
             template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
+            setup_model_monitoring=config.setup_model_monitoring,
             use_ci=config.use_ci),
         'w')
 
@@ -302,13 +325,6 @@ def build_services():
         'w')
 
     # Write main code files for cloud run base and queueing svc
-        # write_file(f'{submission_service_base}/main.py', submission_service_main_jinja(
-        # naming_prefix=defaults['gcp']['naming_prefix'],
-        # pipeline_root=defaults['pipelines']['pipeline_storage_path'],
-        # pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
-        # pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
-        # project_id=defaults['gcp']['project_id'],
-        # setup_model_monitoring=defaults['gcp']['setup_model_monitoring']), 'w')
     write_file(
         f'{submission_service_base}/main.py', 
         render_jinja(
@@ -317,7 +333,8 @@ def build_services():
             pipeline_root=defaults['pipelines']['pipeline_storage_path'],
             pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
             pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
-            project_id=defaults['gcp']['project_id']),
+            project_id=defaults['gcp']['project_id'],
+            setup_model_monitoring=defaults['gcp']['setup_model_monitoring']),
         'w')
 
 
