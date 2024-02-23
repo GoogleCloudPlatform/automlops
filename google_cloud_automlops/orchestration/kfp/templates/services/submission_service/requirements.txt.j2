@@ -1,5 +1,6 @@
 {{pinned_kfp_version}}
 google-cloud-aiplatform
 google-cloud-logging
+google-cloud-storage
 Flask
 {% if pipeline_job_submission_service_type == 'cloud-functions' %}functions-framework==3.*{% elif pipeline_job_submission_service_type == 'cloud-run' %}gunicorn{% endif %}

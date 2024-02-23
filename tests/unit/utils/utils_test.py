@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ from google_cloud_automlops.utils.utils import (
     render_jinja,
     stringify_job_spec_list,
     update_params,
-    validate_schedule,
+    validate_use_ci,
     write_and_chmod,
     write_file,
     write_yaml_file
@@ -401,26 +401,35 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
 
 
 @pytest.mark.parametrize(
-    'sch_pattern, use_ci, expectation',
+    'sch_pattern, setup_model_monitoring, use_ci, expectation',
     [
-        ('No Schedule Specified', True, does_not_raise()),
-        ('No Schedule Specified', False, does_not_raise()),
-        ('Schedule', False, pytest.raises(ValueError)),
-        ('Schedule', True, does_not_raise())
+        ('No Schedule Specified', False, True, does_not_raise()),
+        ('No Schedule Specified', False, False, does_not_raise()),
+        ('Schedule', False, False, pytest.raises(ValueError)),
+        ('Schedule', True, True, does_not_raise()),
+        ('Schedule', True, False, pytest.raises(ValueError))
     ]
 )
-def test_validate_schedule(sch_pattern: str, use_ci: bool, expectation):
-    """Tests validate_schedule, which validates the inputted schedule
-    parameter. There are four test cases for this function, which tests each
-    combination of sch_pattern and run_loc for the expected results.
+def test_validate_use_ci(sch_pattern: str,
+                         setup_model_monitoring: bool,
+                         use_ci: bool,
+                         expectation):
+    """Tests validate_use_ci, which validates the inputted schedule
+    parameter and the setup_model_monitoring parameter. There are 
+    five test cases for this function, which tests each
+    combination of sch_pattern and setup_model_monitoring for the expected results.
 
     Args:
         sch_pattern (str): Cron formatted value used to create a Scheduled retrain job.
+        setup_model_monitoring (bool): Boolean parameter which specifies whether to set 
+            up a Vertex AI Model Monitoring Job.
         use_ci (bool): Flag that determines whether to use Cloud Run CI/CD.
         expectation: Any corresponding expected errors for each set of parameters.
     """
     with expectation:
-        validate_schedule(schedule_pattern=sch_pattern, use_ci=use_ci)
+        validate_use_ci(schedule_pattern=sch_pattern,
+                        setup_model_monitoring=setup_model_monitoring,
+                        use_ci=use_ci)
 
 
 @pytest.mark.parametrize(
@@ -429,7 +438,7 @@ def test_validate_schedule(sch_pattern: str, use_ci: bool, expectation):
         ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
         ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
         ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
-        ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Bool'}]),
+        ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Boolean'}]),
         ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'JsonArray'}]),
         ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'JsonObject'}]),
         ([{'name': 'param6', 'type': pd.DataFrame}], None)

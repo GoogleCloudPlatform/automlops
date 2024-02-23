@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +43,9 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_DEFAULTS_FILE,
     GENERATED_COMPONENT_BASE,
     GENERATED_LICENSE,
+    GENERATED_MODEL_MONITORING_SH_FILE,
+    GENERATED_MODEL_MONITORING_MONITOR_PY_FILE,
+    GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_FILE,
     GENERATED_PIPELINE_REQUIREMENTS_FILE,
@@ -65,6 +68,7 @@ def build(config: KfpConfig):
         config.custom_training_job_specs: Specifies the specs to run the training job with.
         config.pipeline_params: Dictionary containing runtime pipeline parameters.
         config.pubsub_topic_name: The name of the pubsub topic to publish to.
+        config.setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         config.use_ci: Flag that determines whether to use Cloud Run CI/CD.
     """
 
@@ -113,6 +117,10 @@ def build(config: KfpConfig):
                 generated_license=GENERATED_LICENSE,
                 generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
                 pubsub_topic_name=config.pubsub_topic_name))
+    if config.setup_model_monitoring:
+        write_and_chmod(GENERATED_MODEL_MONITORING_SH_FILE, create_model_monitoring_job_jinja())
+        write_file(GENERATED_MODEL_MONITORING_MONITOR_PY_FILE, model_monitoring_monitor_jinja(), 'w')
+        write_file(GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE, model_monitoring_requirements_jinja(), 'w')
 
     # Create components and pipelines
     components_path_list = get_components_list(full_path=True)
@@ -294,6 +302,13 @@ def build_services():
         'w')
 
     # Write main code files for cloud run base and queueing svc
+        # write_file(f'{submission_service_base}/main.py', submission_service_main_jinja(
+        # naming_prefix=defaults['gcp']['naming_prefix'],
+        # pipeline_root=defaults['pipelines']['pipeline_storage_path'],
+        # pipeline_job_runner_service_account=defaults['gcp']['pipeline_job_runner_service_account'],
+        # pipeline_job_submission_service_type=defaults['gcp']['pipeline_job_submission_service_type'],
+        # project_id=defaults['gcp']['project_id'],
+        # setup_model_monitoring=defaults['gcp']['setup_model_monitoring']), 'w')
     write_file(
         f'{submission_service_base}/main.py', 
         render_jinja(

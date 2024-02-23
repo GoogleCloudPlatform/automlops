@@ -1,6 +1,29 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.2.9] - 2024-1-18
+
+### Added
+
+- Added `setup_model_monitoring` parameter to `AutoMLOps.generate` and orchestration/configs.py
+- Added the creation of a model_monitoring/ directory and `create_model_monitoring_job.sh` script to generate
+- Added a new `AutoMLOps.monitor` function, along with relevant templates and tests
+- Added in a monitoring section into the generated `config/defaults.yaml` file
+- Added `logging.googleapis.com` to the list of potentially required apis.
+- Created 2 new functions for giving warnings when running `AutoMLOps.monitor`: `get_model_monitoring_min_permissions` and `get_model_monitoring_recommended_roles` in utils.py
+
+### Changed
+
+- Updated the `services/submission_service/main.py.j2` to include elements for automatic retraining based on monitoring anomaly logs, and adding in labels to the submit.
+- Updated `services/submission_service/requirements.txt` to include google-cloud-storage.
+- Updated the `README.md.j2` to reflect the optional creation of the new model_monitoring/ directory.
+- Changed the format for how `config/defaults.yaml` file gets written; this file is now written using the `write_yaml_file` function (yaml.safe_dump) in utils.py.
+- Updated the `account_permissions_warning` function in utils.py to include a new operation: `operation='model_monitoring'`
+- Updated the introductory example, readme, and user guide to reflect the new monitoring capabilities.
+- Renamed `validate_schedule` in utils.py to `validate_use_ci` to reflect new requirements for model monitoring.
+
+### Fixed
+
 ## [1.2.8] - 2024-1-09
 
 ### Added

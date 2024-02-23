@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@
 # pylint: disable=unused-import
 
 import functools
+import json
 import logging
 import os
 import sys
@@ -34,11 +35,13 @@ from google_cloud_automlops.utils.constants import (
     DEFAULT_SCHEDULE_PATTERN,
     DEFAULT_SOURCE_REPO_BRANCH,
     DEFAULT_VPC_CONNECTOR,
+    DEFAULTS_HEADER,
     GENERATED_CLOUDBUILD_FILE,
     GENERATED_GITHUB_ACTIONS_FILE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_DIRS,
     GENERATED_GITHUB_DIRS,
+    GENERATED_MODEL_MONITORING_DIRS,
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
@@ -54,8 +57,9 @@ from google_cloud_automlops.utils.utils import (
     read_yaml_file,
     resources_generation_manifest,
     stringify_job_spec_list,
-    validate_schedule,
-    write_file
+    validate_use_ci,
+    write_file,
+    write_yaml_file
 )
 # Orchestration imports
 from google_cloud_automlops.orchestration.kfp import builder as KfpBuilder
@@ -123,6 +127,7 @@ def launchAll(
     schedule_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     schedule_name: Optional[str] = None,
     schedule_pattern: Optional[str] = DEFAULT_SCHEDULE_PATTERN,
+    setup_model_monitoring: Optional[bool] = False,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
     source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
@@ -163,6 +168,7 @@ def launchAll(
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         source_repo_branch: The branch to use in the source repository.
         source_repo_name: The name of the source repository to use.
         source_repo_type: The type of source repository to use (e.g. gitlab, github, etc.)
@@ -199,6 +205,7 @@ def launchAll(
         schedule_location=schedule_location,
         schedule_name=schedule_name,
         schedule_pattern=schedule_pattern,
+        setup_model_monitoring=setup_model_monitoring,
         source_repo_branch=source_repo_branch,
         source_repo_name=source_repo_name,
         source_repo_type=source_repo_type,
@@ -237,6 +244,7 @@ def generate(
     schedule_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     schedule_name: Optional[str] = None,
     schedule_pattern: Optional[str] = DEFAULT_SCHEDULE_PATTERN,
+    setup_model_monitoring: Optional[bool] = False,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
     source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
@@ -252,8 +260,8 @@ def generate(
 
     Args: See launchAll() function.
     """
-    # Validate that use_ci=True if schedule_pattern parameter is set
-    validate_schedule(schedule_pattern, use_ci)
+    # Validate that use_ci=True if schedule_pattern parameter is set or setup_model_monitoring is True
+    validate_use_ci(setup_model_monitoring, schedule_pattern, use_ci)
 
     # Validate currently supported tools
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:
@@ -279,6 +287,8 @@ def generate(
         make_dirs(GENERATED_TERRAFORM_DIRS)
     if deployment_framework == Deployer.GITHUB_ACTIONS.value:
         make_dirs(GENERATED_GITHUB_DIRS)
+    if setup_model_monitoring:
+        make_dirs(GENERATED_MODEL_MONITORING_DIRS)
 
     # Set derived vars if none were given for certain variables
     derived_artifact_repo_name = f'{naming_prefix}-artifact-registry' if artifact_repo_name is None else artifact_repo_name
@@ -312,6 +322,7 @@ def generate(
         schedule_location=schedule_location,
         schedule_name=derived_schedule_name,
         schedule_pattern=schedule_pattern,
+        setup_model_monitoring=setup_model_monitoring,
         source_repo_branch=source_repo_branch,
         source_repo_name=derived_source_repo_name,
         source_repo_type=source_repo_type,
@@ -320,7 +331,9 @@ def generate(
         use_ci=use_ci,
         vpc_connector=vpc_connector)
     logging.info(f'Writing configurations to {GENERATED_DEFAULTS_FILE}')
-    write_file(GENERATED_DEFAULTS_FILE, defaults, 'w')
+    # Write header and then yaml contents
+    write_file(GENERATED_DEFAULTS_FILE, DEFAULTS_HEADER, 'w')
+    write_yaml_file(GENERATED_DEFAULTS_FILE, defaults, 'a')
 
     # Generate files required to run a Kubeflow pipeline
     if orchestration_framework == Orchestrator.KFP.value:
@@ -329,9 +342,12 @@ def generate(
         logging.info(f'Writing scripts to {BASE_DIR}scripts')
         if use_ci:
             logging.info(f'Writing submission service code to {BASE_DIR}services')
+        if setup_model_monitoring:
+            logging.info(f'Writing model monitoring code to {BASE_DIR}model_monitoring')
         KfpBuilder.build(KfpConfig(
             base_image=base_image,
             custom_training_job_specs=derived_custom_training_job_specs,
+            setup_model_monitoring=setup_model_monitoring,
             pipeline_params=pipeline_params,
             pubsub_topic_name=derived_pubsub_topic_name,
             use_ci=use_ci))
@@ -507,6 +523,90 @@ def deploy(
 
     # Log generated resources
     resources_generation_manifest(defaults)
+
+def monitor(
+    target_field: str,
+    model_endpoint: str,
+    alert_emails: Optional[list] = None,
+    auto_retraining_params: Optional[dict] = None,
+    drift_thresholds: Optional[dict] = None,
+    hide_warnings: Optional[bool] = True,
+    job_display_name: Optional[str] = None,
+    monitoring_interval: Optional[int] = 1,
+    monitoring_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
+    sample_rate: Optional[float] = 0.8,
+    skew_thresholds: Optional[dict] = None,
+    training_dataset: Optional[str] = None):
+    """Creates or updates a Vertex AI Model Monitoring Job for a deployed model endpoint.
+       - The predicted target field and model endpoint are required.
+       - alert_emails, if specified, will send monitoring updates to the specified email(s)
+       - auto_retraining_params will set up automatic retraining by creating a Log Sink and
+            forwarding anomaly logs to the Pub/Sub Topic for retraining the model with the
+            params specified here. If this field is left Null, the model will not be
+            automatically retrained when an anomaly is detected.
+       - drift_thresholds and skew_thresholds are optional, but at least 1 of them 
+            must be specified.
+       - training_dataset must be specified if skew_thresholds are provided.
+       Defaults are stored in config/defaults.yaml.
+
+    Args:
+        target_field: Prediction target column name in training dataset.
+        model_endpoint: Endpoint resource name of the deployed model to monitoring.
+            Format: projects/{project}/locations/{location}/endpoints/{endpoint}
+        alert_emails: Optional list of emails to send monitoring alerts.
+            Email alerts not used if this value is set to None.
+        auto_retraining_params: Pipeline parameter values to use when retraining the model.
+            Defaults to None; if left None, the model will not be retrained if an alert is generated.
+        drift_thresholds: Compares incoming data to data previously seen to check for drift.
+        hide_warnings: Boolean that specifies whether to show permissions warnings before monitoring.
+        job_display_name: Display name of the ModelDeploymentMonitoringJob. The name can be up to 128 characters 
+            long and can be consist of any UTF-8 characters.
+        monitoring_interval: Configures model monitoring job scheduling interval in hours.
+            This defines how often the monitoring jobs are triggered.
+        monitoring_location: Location to retrieve ModelDeploymentMonitoringJob from.
+        sample_rate: Used for drift detection, specifies what percent of requests to the endpoint are randomly sampled
+            for drift detection analysis. This value most range between (0, 1].
+        skew_thresholds: Compares incoming data to the training dataset to check for skew.
+        training_dataset: Training dataset used to train the deployed model. This field is required if
+            using skew detection.
+    """
+    if not skew_thresholds and not drift_thresholds:
+        raise ValueError('skew_thresolds and drift_thresholds cannot both be None.')
+    elif skew_thresholds and not training_dataset:
+        raise ValueError('training_dataset must be set to use skew_thresolds.')
+
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    if not defaults['gcp']['setup_model_monitoring']:
+        raise ValueError('Parameter setup_model_monitoring in .generate() must be set to True to use .monitor()')
+    if not hide_warnings:
+        account_permissions_warning(operation='model_monitoring', defaults=defaults)
+
+    derived_job_display_name = f'''{defaults['gcp']['naming_prefix']}-model-monitoring-job''' if job_display_name is None else job_display_name
+    derived_log_sink_name = f'''{defaults['gcp']['naming_prefix']}-model-monitoring-log-sink'''
+    defaults['monitoring']['target_field'] = target_field
+    defaults['monitoring']['model_endpoint'] = model_endpoint
+    defaults['monitoring']['alert_emails'] = alert_emails
+    defaults['monitoring']['auto_retraining_params'] = auto_retraining_params
+    defaults['monitoring']['drift_thresholds'] = drift_thresholds
+    defaults['monitoring']['gs_auto_retraining_params_path'] = f'''gs://{defaults['gcp']['storage_bucket_name']}/pipeline_root/{defaults['gcp']['naming_prefix']}/automatic_retraining_parameters.json'''
+    defaults['monitoring']['job_display_name'] = derived_job_display_name
+    defaults['monitoring']['log_sink_name'] = derived_log_sink_name
+    defaults['monitoring']['monitoring_interval'] = monitoring_interval
+    defaults['monitoring']['monitoring_location'] = monitoring_location
+    defaults['monitoring']['sample_rate'] = sample_rate
+    defaults['monitoring']['skew_thresholds'] = skew_thresholds
+    defaults['monitoring']['training_dataset'] = training_dataset
+
+    write_file(GENERATED_DEFAULTS_FILE, DEFAULTS_HEADER, 'w')
+    write_yaml_file(GENERATED_DEFAULTS_FILE, defaults, 'a')
+
+    os.chdir(BASE_DIR)
+    try:
+        subprocess.run(['./scripts/create_model_monitoring_job.sh'], shell=True,
+                        check=True, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        logging.info(e) # graceful error exit to allow for cd-ing back
+    os.chdir('../')
 
 
 def component(func: Optional[Callable] = None,
