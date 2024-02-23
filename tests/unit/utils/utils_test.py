@@ -532,6 +532,7 @@ def test_stringify_job_spec_list(job_spec_list: List[dict], expected_output: Lis
     formatted_spec = stringify_job_spec_list(job_spec_list=job_spec_list)
     assert formatted_spec == expected_output
 
+
 @pytest.mark.parametrize(
     'template_string, template_vars, expected_output',
     [

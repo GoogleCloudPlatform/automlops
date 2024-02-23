@@ -17,42 +17,38 @@
 # pylint: disable=missing-module-docstring
 
 import json
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
 import os
 from typing import List
 
 import pytest
 import pytest_mock
 
+from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    GENERATED_LICENSE,
+    GENERATED_PARAMETER_VALUES_PATH,
+    KFP_TEMPLATES_PATH,
+    PINNED_KFP_VERSION,
+)
 import google_cloud_automlops.orchestration.kfp.builder
 from google_cloud_automlops.orchestration.kfp.builder import (
     build_component,
     build_pipeline,
     build_services,
-<<<<<<< HEAD
-=======
-    build_pipeline_spec_jinja,
-    build_components_jinja,
-    create_model_monitoring_job_jinja,
-    run_pipeline_jinja,
-    run_all_jinja,
-    publish_to_topic_jinja,
-    readme_jinja,
-    component_base_dockerfile_jinja,
-    component_base_task_file_jinja,
-    pipeline_runner_jinja,
-    pipeline_jinja,
-    pipeline_requirements_jinja,
-    submission_service_dockerfile_jinja,
-    submission_service_requirements_jinja,
-    submission_service_main_jinja
->>>>>>> origin/main
 )
 import google_cloud_automlops.utils.utils
 from google_cloud_automlops.utils.utils import (
     make_dirs,
     read_yaml_file,
+    render_jinja,
     write_yaml_file
 )
+
 
 DEFAULTS = {
     'gcp': {
@@ -346,8 +342,6 @@ def test_build_services(mocker: pytest_mock.MockerFixture,
     assert os.path.exists(f'{tmpdir}/services/submission_service/Dockerfile')
     assert os.path.exists(f'{tmpdir}/services/submission_service/requirements.txt')
     assert os.path.exists(f'{tmpdir}/services/submission_service/main.py')
-<<<<<<< HEAD
-=======
 
 
 @pytest.mark.parametrize(
@@ -365,7 +359,11 @@ def test_build_pipeline_spec_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    build_pipeline_spec_script = build_pipeline_spec_jinja()
+    build_pipeline_spec_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'build_pipeline_spec.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -389,7 +387,11 @@ def test_build_components_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    build_components_script = build_components_jinja()
+    build_components_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'build_components.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -413,7 +415,11 @@ def test_run_pipeline_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    run_pipeline_script = run_pipeline_jinja()
+    run_pipeline_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_pipeline.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -438,7 +444,11 @@ def test_run_all_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    run_all_script = run_all_jinja()
+    run_all_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_all.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -464,7 +474,13 @@ def test_publish_to_topic_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    publish_to_topic_script = publish_to_topic_jinja(pubsub_topic_name=pubsub_topic_name)
+    publish_to_topic_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'publish_to_topic.sh.j2',
+        base_dir=BASE_DIR,
+        generated_license=GENERATED_LICENSE,
+        generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
+        pubsub_topic_name=pubsub_topic_name
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -489,7 +505,11 @@ def test_create_model_monitoring_job_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    create_model_monitoring_job_script = create_model_monitoring_job_jinja()
+    create_model_monitoring_job_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'create_model_monitoring_job.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -553,7 +573,11 @@ def test_readme_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    readme_str = readme_jinja(setup_model_monitoring=setup_model_monitoring, use_ci=use_ci)
+    readme_str = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
+        setup_model_monitoring=setup_model_monitoring,
+        use_ci=use_ci
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -580,7 +604,11 @@ def test_component_base_dockerfile_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    component_base_dockerfile = component_base_dockerfile_jinja(base_image)
+    component_base_dockerfile = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base') / 'Dockerfile.j2',
+        base_image=base_image,
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -631,7 +659,11 @@ def test_component_base_task_file_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    component_base_task_file = component_base_task_file_jinja(custom_code_contents, kfp_spec_bool)
+    component_base_task_file = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
+        custom_code_contents=custom_code_contents,
+        generated_license=GENERATED_LICENSE,
+        kfp_spec_bool=kfp_spec_bool)
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -655,7 +687,10 @@ def test_pipeline_runner_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    pipeline_runner_py = pipeline_runner_jinja()
+    pipeline_runner_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline_runner.py.j2',
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -730,11 +765,13 @@ def test_pipeline_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    pipeline_py = pipeline_jinja(
-        components_list,
-        custom_training_job_specs,
-        pipeline_scaffold_contents,
-        project_id)
+    pipeline_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline.py.j2',
+        components_list=components_list,
+        custom_training_job_specs=custom_training_job_specs,
+        generated_license=GENERATED_LICENSE,
+        pipeline_scaffold_contents=pipeline_scaffold_contents,
+        project_id=project_id)
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -758,7 +795,10 @@ def test_pipeline_requirements_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    pipeline_requirements_py = pipeline_requirements_jinja()
+    pipeline_requirements_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'requirements.txt.j2',
+        pinned_kfp_version=PINNED_KFP_VERSION
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -783,7 +823,11 @@ def test_submission_service_dockerfile_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    submission_service_dockerfile = submission_service_dockerfile_jinja()
+    submission_service_dockerfile = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2',
+        base_dir=BASE_DIR,
+        generated_license=GENERATED_LICENSE
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -816,7 +860,11 @@ def test_submission_service_requirements_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    submission_service_requirements = submission_service_requirements_jinja(pipeline_job_submission_service_type=pipeline_job_submission_service_type)
+    submission_service_requirements = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'requirements.txt.j2',
+        pinned_kfp_version=PINNED_KFP_VERSION,
+        pipeline_job_submission_service_type=pipeline_job_submission_service_type
+    )
 
     for snippet in expected_output_snippets:
         if is_included:
@@ -913,7 +961,9 @@ def test_submission_service_main_jinja(
         is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
         expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
     """
-    submission_service_main_py = submission_service_main_jinja(
+    submission_service_main_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
+        generated_license=GENERATED_LICENSE,
         naming_prefix=naming_prefix,
         pipeline_root=pipeline_root,
         pipeline_job_runner_service_account=pipeline_job_runner_service_account,
@@ -926,4 +976,3 @@ def test_submission_service_main_jinja(
             assert snippet in submission_service_main_py
         elif not is_included:
             assert snippet not in submission_service_main_py
->>>>>>> origin/main
