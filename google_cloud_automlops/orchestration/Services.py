@@ -18,8 +18,6 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-from abc import ABC, abstractmethod
-
 from google_cloud_automlops.utils.utils import read_yaml_file
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
@@ -27,7 +25,7 @@ from google_cloud_automlops.utils.constants import (
 )
 
 
-class Services(ABC):
+class Services():
     """The Services object will contain TODO: fill out what this does
 
     Args:
@@ -37,6 +35,15 @@ class Services(ABC):
     def __init__(self) -> None:
         """Instantiates a generic Services object.
         """
+        self.pipeline_storage_path = None
+        self.pipeline_job_runner_service_account = None
+        self.pipeline_job_submission_service_type = None
+        self.project_id = None
+        self.pipeline_job_submission_service_type = None
+
+        # Set directory for files to be written to
+        self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
+
 
     def build(self):
         """Constructs and writes a Dockerfile, requirements.txt, and
@@ -58,17 +65,17 @@ class Services(ABC):
         self._build_dockerfile()
         self._build_requirements()
 
-    @abstractmethod
     def _build_dockerfile(self):
         """Abstract method to create the Dockerfile file of the services/submission_service directory.
         """
+        raise NotImplementedError("Subclass needs to define this.")
 
-    @abstractmethod
     def _build_requirements(self):
         """Abstract method to create the requirements.txt file of the services/submission_service directory.
         """
+        raise NotImplementedError("Subclass needs to define this.")
 
-    @abstractmethod
     def _build_main(self):
         """Abstract method to create the main.py file of the services/submission_service directory.
         """
+        raise NotImplementedError("Subclass needs to define this.")

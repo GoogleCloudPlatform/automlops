@@ -26,11 +26,13 @@ except ImportError:
 
 from google_cloud_automlops.orchestration.Services import Services
 from google_cloud_automlops.utils.utils import (
+    read_yaml_file,
     render_jinja,
     write_file
 )
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
+    GENERATED_DEFAULTS_FILE,
     GENERATED_LICENSE,
     KFP_TEMPLATES_PATH,
     PINNED_KFP_VERSION
@@ -51,6 +53,17 @@ class KFPServices(Services):
     def _build_dockerfile(self):
         """Writes the services/submission_service/Dockerfile #TODO add more
         """
+        # Read in defaults params
+        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.pipeline_storage_path = defaults['pipelines']['pipeline_storage_path']
+        self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
+        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+        self.project_id = defaults['gcp']['project_id']
+        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+
+        # Set directory for files to be written to
+        self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
+
         write_file(
             f'{self.submission_service_base_dir}/Dockerfile', 
             render_jinja(

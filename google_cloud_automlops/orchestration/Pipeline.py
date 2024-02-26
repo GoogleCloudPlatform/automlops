@@ -18,7 +18,8 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-from abc import ABC, abstractmethod
+import ast
+import inspect
 from typing import Callable, Optional
 
 from google_cloud_automlops.utils.constants import (
@@ -31,7 +32,7 @@ from google_cloud_automlops.utils.utils import (
 )
 
 
-class Pipeline(ABC):
+class Pipeline():
     """The Pipeline object represents a component defined by the user.
 
     Args:
@@ -42,7 +43,8 @@ class Pipeline(ABC):
                  func: Optional[Callable] = None,
                  *,
                  name: Optional[str] = None,
-                 description: Optional[str] = None):
+                 description: Optional[str] = None,
+                 comps_dict: dict):
         """Initiates a pipeline object created out of a function holding
         all necessary code.
 
@@ -53,14 +55,26 @@ class Pipeline(ABC):
                 a plain parameter, or a path to a file).
             name: The name of the pipeline.
             description: Short description of what the pipeline does.
+            comps_list: Dictionary of potential components for pipeline to utilize imported
+                as the global held in AutoMLOps.py.
         """
+        # Instantiate and set key pipeline attributes
         self.func = func
         self.func_name = func.__name__
         self.name = DEFAULT_PIPELINE_NAME if not name else name
         self.description = description
         self.src_code = get_function_source_definition(self.func)
+        self.comps = self.get_pipeline_components(func, comps_dict)
 
-    @abstractmethod
+        # Instantiate attributes to be set at build process
+        self.base_image = None
+        self.custom_training_job_specs = None
+        self.pipeline_params = None
+        self.pubsub_topic_name = None
+        self.use_ci = None
+        self.project_id = None
+        self.gs_pipeline_job_spec_path = None
+
     def build(self,
               base_image,
               custom_training_job_specs,
@@ -93,6 +107,31 @@ class Pipeline(ABC):
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
         self.project_id = defaults['gcp']['project_id']
         self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
+
+        raise NotImplementedError("Subclass needs to define this.")
+
+    def get_pipeline_components(self, pipeline_func: Callable, comps_dict: dict):
+        """Returns a list of components used within a given pipeline.
+
+        Args:
+            pipeline_func (Callable): Pipeline function.
+            comps_dict (dict): List of potential components to use within pipeline.
+
+        Returns:
+            List: Components from comps_dict used within the pipeline_func.
+        """
+        #Returns a list of components used within a given pipeline.
+        code = inspect.getsource(pipeline_func)
+        ast_tree = ast.parse(code)
+        comps_list = []
+        for node in ast.walk(ast_tree):
+            try:
+                if isinstance(node, ast.Call) and node.func.id in comps_dict.keys():
+                    comps_list.append(comps_dict[node.func.id])
+            except Exception:
+                pass
+        return comps_list
+
 
 class FuturePipeline():
     """Placeholder for future pipeline object that will be created out of a list of components.

@@ -29,12 +29,14 @@ except ImportError:
 from google_cloud_automlops.orchestration.Component import Component
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
+    GENERATED_DEFAULTS_FILE,
     GENERATED_LICENSE,
     KFP_TEMPLATES_PATH,
     PLACEHOLDER_IMAGE,
 )
 from google_cloud_automlops.utils.utils import (
     make_dirs,
+    read_yaml_file,
     render_jinja,
     write_file,
     write_yaml_file
@@ -77,7 +79,11 @@ class KFPComponent(Component):
     def build(self):
         """Constructs files for running and managing Kubeflow pipelines.
         """
-        super().build()
+        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
+        self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
+        self.project_id = defaults['gcp']['project_id']
+        self.naming_prefix = defaults['gcp']['naming_prefix']
 
         # Set and create directory for components if it does not already exist
         component_dir = BASE_DIR + 'components/' + self.component_spec['name']
@@ -111,7 +117,7 @@ class KFPComponent(Component):
                 template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
                 generated_license=GENERATED_LICENSE,
                 kfp_spec_bool=kfp_spec_bool,
-                custom_code_content=custom_code_contents),
+                custom_code_contents=custom_code_contents),
             mode='w')
 
         # Update component_spec to include correct image and startup command

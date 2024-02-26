@@ -18,7 +18,6 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-from abc import ABC, abstractmethod
 import docstring_parser
 import inspect
 from typing import Callable, List, Optional, TypeVar, Union
@@ -32,7 +31,7 @@ from google_cloud_automlops.utils.utils import (
 T = TypeVar('T')
 
 
-class Component(ABC):
+class Component():
     """The Component object represents a component defined by the user.
 
     Args:
@@ -75,7 +74,12 @@ class Component(ABC):
         self.return_types = self._get_function_return_types()
         self.src_code = get_function_source_definition(self.func)
 
-    @abstractmethod
+        # Instantiate attributes to be set during build
+        self.artifact_repo_location = None
+        self.artifact_repo_name = None
+        self.project_id = None
+        self.naming_prefix = None
+
     def build(self):
         """Instantiates an abstract built method to create and write task files. Also
         reads in defaults file to save default arguments to attributes.
@@ -85,6 +89,7 @@ class Component(ABC):
         self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
         self.project_id = defaults['gcp']['project_id']
         self.naming_prefix = defaults['gcp']['naming_prefix']
+        raise NotImplementedError("Subclass needs to define this.")
 
     def _get_function_return_types(self) -> list:
         """Returns a formatted list of function return types.

@@ -44,6 +44,7 @@ from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     GENERATED_BUILD_COMPONENTS_SH_FILE,
     GENERATED_COMPONENT_BASE,
+    GENERATED_DEFAULTS_FILE,
     GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_FILE,
@@ -70,7 +71,8 @@ class KFPPipeline(Pipeline):
                  func: Optional[Callable] = None,
                  *,
                  name: Optional[str] = None,
-                 description: Optional[str] = None) -> None:
+                 description: Optional[str] = None,
+                 comps_dict: dict) -> None:
         """Initiates a KFP pipeline object created out of a function holding
         all necessary code.
 
@@ -81,11 +83,14 @@ class KFPPipeline(Pipeline):
                 a plain parameter, or a path to a file).
             name: The name of the pipeline.
             description: Short description of what the pipeline does.
+            comps_list: Dictionary of potential components for pipeline to utilize imported
+                as the global held in AutoMLOps.py.
         """
         super().__init__(
             func=func,
             name=name,
-            description=description)
+            description=description,
+            comps_dict=comps_dict)
 
         # Create pipeline scaffold attribute # TODO: more descriptive
         self.pipeline_scaffold = (
@@ -119,11 +124,18 @@ class KFPPipeline(Pipeline):
                     requirements.txt
                     runtime_parameters/pipeline_parameter_values.json
         """
-        super().build(base_image,
-                      custom_training_job_specs,
-                      pipeline_params,
-                      pubsub_topic_name,
-                      use_ci)
+        # Save parameters as attributes
+        self.base_image = base_image
+        self.custom_training_job_specs = custom_training_job_specs
+        self.pipeline_params = pipeline_params
+        self.pubsub_topic_name = pubsub_topic_name
+        self.use_ci = use_ci
+
+        # Extract additional attributes from defaults file
+        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.project_id = defaults['gcp']['project_id']
+        self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
+
 
         # Build necessary folders
         make_dirs([

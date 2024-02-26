@@ -68,8 +68,12 @@ from google_cloud_automlops.orchestration.configs import (
     KfpConfig
 )
 
-from google_cloud_automlops.orchestration import Component, Pipeline, Services
-from google_cloud_automlops.orchestration.kfp import KFPComponent, KFPPipeline, KFPServices
+from google_cloud_automlops.orchestration.Component import Component
+from google_cloud_automlops.orchestration.Pipeline import Pipeline
+from google_cloud_automlops.orchestration.Services import Services
+from google_cloud_automlops.orchestration.kfp.KFPComponent import KFPComponent
+from google_cloud_automlops.orchestration.kfp.KFPPipeline import KFPPipeline
+from google_cloud_automlops.orchestration.kfp.KFPServices import KFPServices
 
 # Provisioning imports
 from google_cloud_automlops.provisioning.pulumi import builder as PulumiBuilder
@@ -105,9 +109,8 @@ logger = logging.getLogger()
 make_dirs([OUTPUT_DIR])
 
 # Set up global dictionaries to hold pipeline and components
-global components, pipeline
-components = {}
-pipeline = None
+global components_dict
+components_dict = {}
 
 def launchAll(
     project_id: str,
@@ -340,12 +343,19 @@ def generate(
         logging.info(f'Writing scripts to {BASE_DIR}scripts')
         if use_ci:
             logging.info(f'Writing submission service code to {BASE_DIR}services')
-        KfpBuilder.build(KfpConfig(
-            base_image=base_image,
-            custom_training_job_specs=derived_custom_training_job_specs,
-            pipeline_params=pipeline_params,
-            pubsub_topic_name=derived_pubsub_topic_name,
-            use_ci=use_ci))
+        logging.info("Writing pipleine code.")
+        kfppipe = KFPPipeline(func=pipeline_glob.func,
+                              name=pipeline_glob.name,
+                              description=pipeline_glob.description,
+                              comps_dict=components_dict)
+        kfppipe.build(base_image,
+                      custom_training_job_specs,
+                      pipeline_params,
+                      pubsub_topic_name,
+                      use_ci)
+        for comp in kfppipe.comps:
+            logging.info(f"Writing code for component {comp.name}")
+            KFPComponent(func=comp.func, packages_to_install=comp.packages_to_install).build()
 
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:
@@ -519,7 +529,7 @@ def deploy(
     # Log generated resources
     resources_generation_manifest(defaults)
 
-
+# TODO: Replace with component object creation
 def component(func: Optional[Callable] = None,
               *,
               packages_to_install: Optional[List[str]] = None):
@@ -543,11 +553,13 @@ def component(func: Optional[Callable] = None,
             component,
             packages_to_install=packages_to_install)
     else:
-        return KfpScaffold.create_component_scaffold(
+        components_dict[func.__name__] = Component(
             func=func,
-            packages_to_install=packages_to_install)
+            packages_to_install=packages_to_install
+        )
+        return
 
-
+# TODO: Replace with pipeline object creation
 def pipeline(func: Optional[Callable] = None,
              *,
              name: Optional[str] = None,
@@ -581,10 +593,12 @@ def pipeline(func: Optional[Callable] = None,
             name=name,
             description=description)
     else:
-        return KfpScaffold.create_pipeline_scaffold(
-            func=func,
-            name=name,
-            description=description)
+        global pipeline_glob
+        pipeline_glob = Pipeline(func=func,
+                                 name=name,
+                                 description=description,
+                                 comps_dict=components_dict)
+        return
 
 
 def clear_cache():
