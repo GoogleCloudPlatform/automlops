@@ -58,14 +58,9 @@ from google_cloud_automlops.utils.utils import (
     write_file
 )
 # Orchestration imports
-from google_cloud_automlops.orchestration.kfp import builder as KfpBuilder
-from google_cloud_automlops.orchestration.kfp import scaffold as KfpScaffold
 from google_cloud_automlops.orchestration.enums import (
     Orchestrator,
     PipelineJobSubmitter
-)
-from google_cloud_automlops.orchestration.configs import (
-    KfpConfig
 )
 
 from google_cloud_automlops.orchestration.Component import Component
