@@ -19,7 +19,6 @@
 
 from enum import Enum
 
-
 class Orchestrator(Enum):
     """Enum representing the available options for orchestration management."""
 

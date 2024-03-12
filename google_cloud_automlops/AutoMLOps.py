@@ -18,6 +18,8 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 # pylint: disable=unused-import
+# pylint: disable=logging-fstring-interpolation
+# pylint: disable=global-at-module-level
 
 import functools
 import logging
@@ -47,6 +49,7 @@ from google_cloud_automlops.utils.constants import (
 from google_cloud_automlops.utils.utils import (
     account_permissions_warning,
     check_installation_versions,
+    coalesce,
     create_default_config,
     execute_process,
     make_dirs,
@@ -279,8 +282,10 @@ def generate(
         raise ValueError(f'Unsupported deployment framework: {deployment_framework}')
 
     logging.info(f'Writing directories under {BASE_DIR}')
+
     # Make standard directories
     make_dirs(GENERATED_DIRS)
+
     # Make optional directories
     if use_ci:
         make_dirs(GENERATED_SERVICES_DIRS)
@@ -290,15 +295,15 @@ def generate(
         make_dirs(GENERATED_GITHUB_DIRS)
 
     # Set derived vars if none were given for certain variables
-    derived_artifact_repo_name = f'{naming_prefix}-artifact-registry' if artifact_repo_name is None else artifact_repo_name
-    derived_build_trigger_name = f'{naming_prefix}-build-trigger' if build_trigger_name is None else build_trigger_name
-    derived_custom_training_job_specs = stringify_job_spec_list(custom_training_job_specs) if custom_training_job_specs is not None else custom_training_job_specs
-    derived_pipeline_job_runner_service_account = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com' if pipeline_job_runner_service_account is None else pipeline_job_runner_service_account
-    derived_pipeline_job_submission_service_name = f'{naming_prefix}-job-submission-svc' if pipeline_job_submission_service_name is None else pipeline_job_submission_service_name
-    derived_pubsub_topic_name = f'{naming_prefix}-queueing-svc' if pubsub_topic_name is None else pubsub_topic_name
-    derived_schedule_name = f'{naming_prefix}-schedule' if schedule_name is None else schedule_name
-    derived_source_repo_name = f'{naming_prefix}-repository' if source_repo_name is None else source_repo_name
-    derived_storage_bucket_name = f'{project_id}-{naming_prefix}-bucket' if storage_bucket_name is None else storage_bucket_name
+    derived_artifact_repo_name = coalesce(artifact_repo_name, f'{naming_prefix}-artifact-registry')
+    derived_build_trigger_name = coalesce(build_trigger_name, f'{naming_prefix}-build-trigger')
+    derived_custom_training_job_specs = stringify_job_spec_list(custom_training_job_specs)
+    derived_pipeline_job_runner_service_account = coalesce(pipeline_job_runner_service_account, f'vertex-pipelines@{project_id}.iam.gserviceaccount.com')
+    derived_pipeline_job_submission_service_name = coalesce(pipeline_job_submission_service_name, f'{naming_prefix}-job-submission-svc')
+    derived_pubsub_topic_name = coalesce(pubsub_topic_name, f'{naming_prefix}-queueing-svc')
+    derived_schedule_name = coalesce(schedule_name, f'{naming_prefix}-schedule')
+    derived_source_repo_name = coalesce(source_repo_name, f'{naming_prefix}-repository')
+    derived_storage_bucket_name = coalesce(storage_bucket_name, f'{project_id}-{naming_prefix}-bucket')
 
     # Write defaults.yaml
     defaults = create_default_config(
@@ -333,12 +338,13 @@ def generate(
 
     # Generate files required to run a Kubeflow pipeline
     if orchestration_framework == Orchestrator.KFP.value:
+
+        # Log what files will be created
         logging.info(f'Writing README.md to {BASE_DIR}README.md')
-        logging.info(f'Writing kubeflow pipelines code to {BASE_DIR}pipelines, {BASE_DIR}components')
         logging.info(f'Writing scripts to {BASE_DIR}scripts')
-        if use_ci:
-            logging.info(f'Writing submission service code to {BASE_DIR}services')
-        logging.info("Writing pipleine code.")
+
+        # Write kubeflow pipeline code
+        logging.info(f'Writing kubeflow pipelines code to {BASE_DIR}pipelines')
         kfppipe = KFPPipeline(func=pipeline_glob.func,
                               name=pipeline_glob.name,
                               description=pipeline_glob.description,
@@ -348,9 +354,17 @@ def generate(
                       pipeline_params,
                       pubsub_topic_name,
                       use_ci)
+
+        # Write kubeflow components code
+        logging.info(f'Writing kubeflow components code to {BASE_DIR}components')
         for comp in kfppipe.comps:
-            logging.info(f"Writing code for component {comp.name}")
+            logging.info(f'     -- Writing {comp.name}')
             KFPComponent(func=comp.func, packages_to_install=comp.packages_to_install).build()
+
+        # If user specified services, write services scripts
+        if use_ci:
+            logging.info(f'Writing submission service code to {BASE_DIR}services')
+            KFPServices().build()
 
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:
@@ -524,7 +538,7 @@ def deploy(
     # Log generated resources
     resources_generation_manifest(defaults)
 
-# TODO: Replace with component object creation
+
 def component(func: Optional[Callable] = None,
               *,
               packages_to_install: Optional[List[str]] = None):
@@ -554,7 +568,7 @@ def component(func: Optional[Callable] = None,
         )
         return
 
-# TODO: Replace with pipeline object creation
+
 def pipeline(func: Optional[Callable] = None,
              *,
              name: Optional[str] = None,

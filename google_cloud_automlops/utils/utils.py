@@ -323,6 +323,8 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
     Returns:
         list[str]: Python formatted dictionary code.
     """
+    if not job_spec_list:
+        return None
     output = []
     for spec in job_spec_list:
         mapping = {}
@@ -956,3 +958,14 @@ def render_jinja(template_path, **template_vars):
     with open(template_path, 'r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(**template_vars)
+
+def coalesce(*arg):
+    """Returns the first non-None value from a sequence of arguments.
+
+    Returns:
+        The first non-None argument, or None if all arguments are None.
+    """
+    for el in arg:
+        if el is not None:
+            return el
+    return None
