@@ -61,17 +61,12 @@ from google_cloud_automlops.utils.utils import (
     write_file
 )
 # Orchestration imports
-from google_cloud_automlops.orchestration.enums import (
+from google_cloud_automlops.orchestration.base import (
     Orchestrator,
     PipelineJobSubmitter
 )
-
-from google_cloud_automlops.orchestration.Component import Component
-from google_cloud_automlops.orchestration.Pipeline import Pipeline
-from google_cloud_automlops.orchestration.Services import Services
-from google_cloud_automlops.orchestration.kfp.KFPComponent import KFPComponent
-from google_cloud_automlops.orchestration.kfp.KFPPipeline import KFPPipeline
-from google_cloud_automlops.orchestration.kfp.KFPServices import KFPServices
+from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices
+from google_cloud_automlops.orchestration.kfp import KFPComponent, KFPPipeline, KFPServices
 
 # Provisioning imports
 from google_cloud_automlops.provisioning.pulumi import builder as PulumiBuilder
@@ -562,7 +557,7 @@ def component(func: Optional[Callable] = None,
             component,
             packages_to_install=packages_to_install)
     else:
-        components_dict[func.__name__] = Component(
+        components_dict[func.__name__] = BaseComponent(
             func=func,
             packages_to_install=packages_to_install
         )
@@ -603,7 +598,7 @@ def pipeline(func: Optional[Callable] = None,
             description=description)
     else:
         global pipeline_glob
-        pipeline_glob = Pipeline(func=func,
+        pipeline_glob = BasePipeline(func=func,
                                  name=name,
                                  description=description,
                                  comps_dict=components_dict)
