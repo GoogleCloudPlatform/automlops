@@ -22,9 +22,11 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from jinja2 import Template
+from google_cloud_automlops.utils.utils import (
+    render_jinja,
+    write_file
+)
 
-from google_cloud_automlops.utils.utils import write_file
 from google_cloud_automlops.utils.constants import (
     GENERATED_GITHUB_ACTIONS_FILE,
     COMPONENT_BASE_RELATIVE_PATH,
@@ -52,65 +54,23 @@ def build(config: GitHubActionsConfig):
         config.workload_identity_service_account: Service account for workload identity federation. 
     """
     # Write github actions config
-    write_file(GENERATED_GITHUB_ACTIONS_FILE, create_github_actions_jinja(
-        config.artifact_repo_location,
-        config.artifact_repo_name,
-        config.naming_prefix,
-        config.project_id,
-        config.project_number,
-        config.pubsub_topic_name,
-        config.source_repo_branch,
-        config.use_ci,
-        config.workload_identity_pool,
-        config.workload_identity_provider,
-        config.workload_identity_service_account), 'w')
-
-def create_github_actions_jinja(
-        artifact_repo_location: str,
-        artifact_repo_name: str,
-        naming_prefix: str,
-        project_id: str,
-        project_number: str,
-        pubsub_topic_name: str,
-        source_repo_branch: str,
-        use_ci: bool,
-        workload_identity_pool: str,
-        workload_identity_provider: str,
-        workload_identity_service_account: str) -> str:
-    """Generates content for the github_actions.yaml, to be written to the .github/workflows directory.
-        This file contains the ci/cd manifest for AutoMLOps.
-
-    Args:
-        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
-        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
-        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        project_id: The project ID.
-        project_number: The project number.
-        pubsub_topic_name: The name of the pubsub topic to publish to.
-        source_repo_branch: The branch to use in the source repository.
-        use_ci: Flag that determines whether to use Cloud CI/CD.
-        workload_identity_pool: Pool for workload identity federation. 
-        workload_identity_provider: Provider for workload identity federation.
-        workload_identity_service_account: Service account for workload identity federation. 
-
-    Returns:
-        str: Contents of github_actions.yaml.
-    """
-    template_file = import_files(GITHUB_ACTIONS_TEMPLATES_PATH) / 'github_actions.yaml.j2'
-    with template_file.open('r', encoding='utf-8') as f:
-        template = Template(f.read())
-        return template.render(
-            artifact_repo_location=artifact_repo_location,
-            artifact_repo_name=artifact_repo_name,
+    write_file(
+        filepath=GENERATED_GITHUB_ACTIONS_FILE,
+        text=render_jinja(
+            template_path=import_files(GITHUB_ACTIONS_TEMPLATES_PATH) / 'github_actions.yaml.j2',
+            artifact_repo_location=config.artifact_repo_location,
+            artifact_repo_name=config.artifact_repo_name,
             component_base_relative_path=COMPONENT_BASE_RELATIVE_PATH,
             generated_license=GENERATED_LICENSE,
             generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
-            naming_prefix=naming_prefix,
-            project_id=project_id,
-            project_number=project_number,
-            pubsub_topic_name=pubsub_topic_name,
-            source_repo_branch=source_repo_branch,
-            use_ci=use_ci,
-            workload_identity_pool=workload_identity_pool,
-            workload_identity_provider=workload_identity_provider,
-            workload_identity_service_account=workload_identity_service_account)
+            naming_prefix=config.naming_prefix,
+            project_id=config.project_id,
+            project_number=config.project_number,
+            pubsub_topic_name=config.pubsub_topic_name,
+            source_repo_branch=config.source_repo_branch,
+            use_ci=config.use_ci,
+            workload_identity_pool=config.workload_identity_pool,
+            workload_identity_provider=config.workload_identity_provider,
+            workload_identity_service_account=config.workload_identity_service_account
+        ),
+        mode='w')
