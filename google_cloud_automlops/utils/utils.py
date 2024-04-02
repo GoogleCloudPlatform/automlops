@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,6 @@ import google.auth
 from google_cloud_automlops.utils.constants import (
     CACHE_DIR,
     DEFAULT_SCHEDULE_PATTERN,
-    GENERATED_LICENSE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_JOB_SPEC_PATH,
     IAM_ROLES_RUNNER_SA,
@@ -272,7 +271,7 @@ def update_params(params: list) -> list:
         int: 'Integer',
         str: 'String',
         float: 'Float',
-        bool: 'Bool',
+        bool: 'Boolean',
         list: 'JsonArray',
         dict: 'JsonObject'
     }
@@ -342,7 +341,7 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
         output.append(mapping)
     return output
 
-def is_using_kfp_spec(image: str):
+def is_using_kfp_spec(image: str) -> bool:
     """Takes in an image string from a component yaml and determines if it came from kfp or not.
 
     Args:
@@ -505,14 +504,17 @@ def get_required_apis(defaults: dict) -> list:
         required_apis.append('artifactregistry.googleapis.com')
     # if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
     #     required_apis.add('cloudbuild.googleapis.com')
-    if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
-        required_apis.append('cloudscheduler.googleapis.com')
-    if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
-        required_apis.append('run.googleapis.com')
-    if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
-        required_apis.append('cloudfunctions.googleapis.com')
-    if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-        required_apis.append('sourcerepo.googleapis.com')
+    if defaults['tooling']['use_ci']:
+        if defaults['gcp']['schedule_pattern'] != DEFAULT_SCHEDULE_PATTERN:
+            required_apis.append('cloudscheduler.googleapis.com')
+        if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
+            required_apis.append('run.googleapis.com')
+        if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
+            required_apis.append('cloudfunctions.googleapis.com')
+        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+            required_apis.append('sourcerepo.googleapis.com')
+        if defaults['gcp']['setup_model_monitoring']:
+            required_apis.append('logging.googleapis.com')
     return required_apis
 
 
@@ -701,11 +703,50 @@ def get_deploy_without_precheck_recommended_roles(defaults: dict) -> list:
     return recommended_roles
 
 
+def get_model_monitoring_min_permissions(defaults: dict) -> list:
+    """Returns the list of minimum required permissions to run
+       the monitor() step based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        list: The list of minimum permissions to create a monitoring job.
+    """
+    recommended_permissions = [
+        'aiplatform.endpoints.list',
+        'aiplatform.modelDeploymentMonitoringJobs.list',
+        'aiplatform.modelDeploymentMonitoringJobs.create',
+        'aiplatform.modelDeploymentMonitoringJobs.update']
+    if defaults['monitoring']['auto_retraining_params']:
+        recommended_permissions.extend(['storage.buckets.update', 'logging.sinks.get', 'logging.sinks.create',
+                                        'logging.sinks.update', 'iam.serviceAccounts.setIamPolicy'])
+    return recommended_permissions
+
+
+def get_model_monitoring_recommended_roles(defaults: dict) -> list:
+    """Returns the list of recommended roles to run
+       the monitor() step based on the user tooling selection
+       determined during the generate() step.
+
+    Args:
+        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+
+    Returns:
+        list: The list of recommended roles to create a monitoring job.
+    """
+    recommended_roles = ['roles/aiplatform.user']
+    if defaults['monitoring']['auto_retraining_params']:
+        recommended_roles.extend(['roles/storage.admin', 'roles/logging.configWriter', 'roles/iam.serviceAccountAdmin'])
+    return recommended_roles
+
+
 def account_permissions_warning(operation: str, defaults: dict):
     """Logs the current gcloud account and generates warnings based on the operation being performed.
 
     Args:
-        operation: Specifies which operation is being performed. Available options {provision, deploy_with_precheck, deploy_without_precheck}
+        operation: Specifies which operation is being performed. Available options {provision, deploy_with_precheck, deploy_without_precheck, model_monitoring}
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
     """
     bullet_nl = '\n-'
@@ -725,6 +766,11 @@ def account_permissions_warning(operation: str, defaults: dict):
         logging.warning(f'WARNING: Deploying requires these permissions:\n-{bullet_nl.join(i for i in get_deploy_without_precheck_min_permissions(defaults))}\n\n'
                         f'You are currently using: {gcp_account}. Please check your account permissions.\n'
                         f'The following are the recommended roles for deploying:\n-{bullet_nl.join(i for i in get_deploy_without_precheck_recommended_roles(defaults))}\n')
+
+    elif operation == 'model_monitoring':
+        logging.warning(f'WARNING: Creating monitoring jobs requires these permissions:\n-{bullet_nl.join(i for i in get_model_monitoring_min_permissions(defaults))}\n\n'
+                        f'You are currently using: {gcp_account}. Please check your account permissions.\n'
+                        f'The following are the recommended roles for creating monitoring jobs:\n-{bullet_nl.join(i for i in get_model_monitoring_recommended_roles(defaults))}\n')
 
 
 def check_installation_versions(provisioning_framework: str):
@@ -775,23 +821,24 @@ def precheck_deployment_requirements(defaults: dict):
     Args:
         defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
     """
+    use_ci = defaults['tooling']['use_ci']
     artifact_repo_location = defaults['gcp']['artifact_repo_location']
     artifact_repo_name = defaults['gcp']['artifact_repo_name']
     artifact_repo_type = defaults['gcp']['artifact_repo_type']
     storage_bucket_name = defaults['gcp']['storage_bucket_name']
     pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
-    pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
-    pipeline_job_submission_service_name = defaults['gcp']['pipeline_job_submission_service_name']
-    pipeline_job_submission_service_location = defaults['gcp']['pipeline_job_submission_service_location']
-    pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
-    submission_svc_prefix = 'gcr' if pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_RUN.value else 'gcf'
-    pubsub_subscription_name = f'''{submission_svc_prefix}-{pipeline_job_submission_service_name}-{pipeline_job_submission_service_location}-{pubsub_topic_name}'''
-    source_repository_name = defaults['gcp']['source_repository_name']
-    source_repository_type = defaults['gcp']['source_repository_type']
-    build_trigger_name = defaults['gcp']['build_trigger_name']
-    build_trigger_location = defaults['gcp']['build_trigger_location']
-    deployment_framework = defaults['tooling']['deployment_framework']
-    use_ci = defaults['tooling']['use_ci']
+    if use_ci:
+        pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
+        pipeline_job_submission_service_name = defaults['gcp']['pipeline_job_submission_service_name']
+        pipeline_job_submission_service_location = defaults['gcp']['pipeline_job_submission_service_location']
+        pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+        submission_svc_prefix = 'gcr' if pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_RUN.value else 'gcf'
+        pubsub_subscription_name = f'''{submission_svc_prefix}-{pipeline_job_submission_service_name}-{pipeline_job_submission_service_location}-{pubsub_topic_name}'''
+        source_repository_name = defaults['gcp']['source_repository_name']
+        source_repository_type = defaults['gcp']['source_repository_type']
+        build_trigger_name = defaults['gcp']['build_trigger_name']
+        build_trigger_location = defaults['gcp']['build_trigger_location']
+        deployment_framework = defaults['tooling']['deployment_framework']
 
     credentials, project = google.auth.default()
     logging.info(f'Checking for required API services in project {project}...')
@@ -945,9 +992,6 @@ def resources_generation_manifest(defaults: dict):
     logging.info(
         f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
     logging.info('APIs: https://console.cloud.google.com/apis')
-    if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-        logging.info(
-            f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['source_repository_name']}/+/{defaults['gcp']['source_repository_branch']}:''')
     if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
         logging.info(
             f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')
@@ -955,6 +999,9 @@ def resources_generation_manifest(defaults: dict):
         logging.info(
             'Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
     if defaults['tooling']['use_ci']:
+        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+            logging.info(
+                f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['source_repository_name']}/+/{defaults['gcp']['source_repository_branch']}:''')
         if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
             logging.info(
                 f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['build_trigger_location']}''')

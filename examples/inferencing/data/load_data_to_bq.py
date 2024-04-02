@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,11 +22,11 @@ def load_data(filename: str, project_id: str):
     client = bigquery.Client(project=project_id)
 
     dataset_id = f'{project_id}.test_dataset'
-    table_id = 'test_dataset.dry-beans-inferencing'
+    table_id = 'test_dataset.dry_beans_inferencing'
 
     # Construct a full Dataset object to send to the API.
     dataset = bigquery.Dataset(dataset_id)
-    dataset.location = "US"
+    dataset.location = 'US'
 
     try:
         client.get_dataset(dataset_id)

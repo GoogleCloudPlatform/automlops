@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Copyright 2023 Google LLC
+# Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -50,13 +50,14 @@ MODEL_ID = 'dry-beans-dt'
 # - `AutoMLOps.component(...)`: Defines a component, which is a containerized python function.
 # - `AutoMLOps.pipeline(...)`: Defines a pipeline, which is a series of components.
 
-# AutoMLOps provides 5 functions for building and maintaining MLOps pipelines:
+# AutoMLOps provides 6 functions for building and maintaining MLOps pipelines:
 
 # - `AutoMLOps.generate(...)`: Generates the MLOps codebase. Users can specify the tooling and technologies they would like to use in their MLOps pipeline.
 # - `AutoMLOps.provision(...)`: Runs provisioning scripts to create and maintain necessary infra for MLOps.
 # - `AutoMLOps.deprovision(...)`: Runs deprovisioning scripts to tear down MLOps infra created using AutoMLOps.
 # - `AutoMLOps.deploy(...)`: Builds and pushes component container, then triggers the pipeline job.
 # - `AutoMLOps.launchAll(...)`: Runs `generate()`, `provision()`, and `deploy()` all in succession.
+# - `AutoMLOps.monitor(...)`: Creates model monitoring jobs on deployed endpoints.
 
 # Please see the [readme](https://github.com/GoogleCloudPlatform/automlops/blob/main/README.md) for more information.
 

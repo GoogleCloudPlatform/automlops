@@ -1,4 +1,4 @@
-# Copyright 2023 Google LLC. All Rights Reserved.
+# Copyright 2024 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,12 +17,24 @@
 # pylint: disable=missing-module-docstring
 
 import json
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
 import os
 from typing import List
 
 import pytest
 import pytest_mock
 
+from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
+    GENERATED_LICENSE,
+    GENERATED_PARAMETER_VALUES_PATH,
+    KFP_TEMPLATES_PATH,
+    PINNED_KFP_VERSION,
+)
 import google_cloud_automlops.orchestration.kfp.builder
 from google_cloud_automlops.orchestration.kfp.builder import (
     build_component,
@@ -33,8 +45,10 @@ import google_cloud_automlops.utils.utils
 from google_cloud_automlops.utils.utils import (
     make_dirs,
     read_yaml_file,
+    render_jinja,
     write_yaml_file
 )
+
 
 DEFAULTS = {
     'gcp': {
@@ -43,7 +57,8 @@ DEFAULTS = {
         'artifact_repo_name': 'my_af_registry',
         'naming_prefix': 'my-prefix',
         'pipeline_job_runner_service_account': 'my-service-account@service.com',
-        'pipeline_job_submission_service_type': 'cloud-functions'
+        'pipeline_job_submission_service_type': 'cloud-functions',
+        'setup_model_monitoring': True
     },
     'pipelines': {
         'gs_pipeline_job_spec_path': 'gs://my-bucket/pipeline_root/my-prefix/pipeline_job.json',
@@ -327,3 +342,637 @@ def test_build_services(mocker: pytest_mock.MockerFixture,
     assert os.path.exists(f'{tmpdir}/services/submission_service/Dockerfile')
     assert os.path.exists(f'{tmpdir}/services/submission_service/requirements.txt')
     assert os.path.exists(f'{tmpdir}/services/submission_service/main.py')
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'python3 -m pipelines.pipeline --config $CONFIG_FILE'])]
+)
+def test_build_pipeline_spec_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests build_pipeline_spec_jinja, which generates code for build_pipeline_spec.sh 
+       which builds the pipeline specs. There is one test case for this function:
+        1. Checks for the apache license and the pipeline compile command.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    build_pipeline_spec_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'build_pipeline_spec.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in build_pipeline_spec_script
+        elif not is_included:
+            assert snippet not in build_pipeline_spec_script
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600'])]
+)
+def test_build_components_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests build_components_jinja, which generates code for build_components.sh
+       which builds the components. There is one test case for this function:
+        1. Checks for the apache license and the builds submit command.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    build_components_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'build_components.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in build_components_script
+        elif not is_included:
+            assert snippet not in build_components_script
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'python3 -m pipelines.pipeline_runner --config $CONFIG_FILE'])]
+)
+def test_run_pipeline_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests run_pipeline_jinja, which generates code for run_pipeline.sh
+       which runs the pipeline locally. There is one test case for this function:
+        1. Checks for the apache license and the pipeline runner command.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    run_pipeline_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_pipeline.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in run_pipeline_script
+        elif not is_included:
+            assert snippet not in run_pipeline_script
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'gcloud builds submit .. --config cloudbuild.yaml --timeout=3600',
+             './scripts/build_pipeline_spec.sh', './scripts/run_pipeline.sh'])]
+)
+def test_run_all_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests run_all_jinja, which generates code for run_all.sh
+       which builds runs all other shell scripts. There is one test case for this function:
+        1. Checks for the apache license and the builds submit, the pipeline compile, and the pipeline runner commands.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    run_all_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'run_all.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in run_all_script
+        elif not is_included:
+            assert snippet not in run_all_script
+
+
+@pytest.mark.parametrize(
+    'pubsub_topic_name, is_included, expected_output_snippets',
+    [('my-topic', True, [GENERATED_LICENSE, 'gcloud pubsub topics publish my-topic'])]
+)
+def test_publish_to_topic_jinja(
+    pubsub_topic_name: str,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests publish_to_topic_jinja, which generates code for publish_to_topic.sh 
+       which submits a message to the pipeline job submission service.
+       There is one test case for this function:
+        1. Checks for the apache license and the pubsub publish command.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    publish_to_topic_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'publish_to_topic.sh.j2',
+        base_dir=BASE_DIR,
+        generated_license=GENERATED_LICENSE,
+        generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
+        pubsub_topic_name=pubsub_topic_name
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in publish_to_topic_script
+        elif not is_included:
+            assert snippet not in publish_to_topic_script
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'python3 -m model_monitoring.monitor --config $CONFIG_FILE'])]
+)
+def test_create_model_monitoring_job_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests create_model_monitoring_job_jinja, which generates code for create_model_monitoring_job.sh 
+       which creates a Model Monitoring Job in Vertex AI for a deployed model endpoint.
+       There is one test case for this function:
+        1. Checks for the apache license and the monitor command.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    create_model_monitoring_job_script = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'create_model_monitoring_job.sh.j2',
+        generated_license=GENERATED_LICENSE,
+        base_dir=BASE_DIR
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in create_model_monitoring_job_script
+        elif not is_included:
+            assert snippet not in create_model_monitoring_job_script
+
+
+@pytest.mark.parametrize(
+    'setup_model_monitoring, use_ci, is_included, expected_output_snippets',
+    [
+        (
+            False, True, True,
+            ['AutoMLOps - Generated Code Directory',
+             '├── components',
+             '├── configs',
+             '├── images',
+             '├── provision',
+             '├── scripts',
+             '├── services',
+             '├── README.md',
+             '└── cloudbuild.yaml']
+        ),
+        (
+            True, True, True,
+            ['AutoMLOps - Generated Code Directory',
+             '├── components',
+             '├── configs',
+             '├── images',
+             '├── model_monitoring',
+             '├── provision',
+             '├── scripts',
+             '├── services',
+             '├── README.md',
+             '└── cloudbuild.yaml']
+        ),
+        (
+            False, False, False,
+            ['├── publish_to_topic.sh'
+             '├── services',
+             '├── create_model_monitoring_job.sh',
+             '├── model_monitoring']
+        ),
+    ]
+)
+def test_readme_jinja(
+    setup_model_monitoring: bool,
+    use_ci: bool,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests readme_jinja, which generates code for readme.md which
+       is a readme markdown file to describe the contents of the
+       generated AutoMLOps code repo. There are three test cases for this function:
+        1. Checks that certain directories and files exist when use_ci=True and setup_model_monitoring=False.
+        2. Checks that certain directories and files exist when use_ci=True and setup_model_monitoring=True.
+        3. Checks that certain directories and files do not exist when use_ci=False.
+
+    Args:
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
+        use_ci: Flag that determines whether to use Cloud CI/CD.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    readme_str = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
+        setup_model_monitoring=setup_model_monitoring,
+        use_ci=use_ci
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in readme_str
+        elif not is_included:
+            assert snippet not in readme_str
+
+
+@pytest.mark.parametrize(
+    'base_image, is_included, expected_output_snippets',
+    [('my-base-image', True, [GENERATED_LICENSE, 'FROM my-base-image'])]
+)
+def test_component_base_dockerfile_jinja(
+    base_image: str,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests readme_jinja, which generates code for a Dockerfile 
+       to be written to the component_base directory. There is one 
+       test case for this function:
+        1. Checks for the apache license and the FROM image line.
+
+    Args:
+        base_image: The image to use in the component base dockerfile.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    component_base_dockerfile = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base') / 'Dockerfile.j2',
+        base_image=base_image,
+        generated_license=GENERATED_LICENSE
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in component_base_dockerfile
+        elif not is_included:
+            assert snippet not in component_base_dockerfile
+
+
+@pytest.mark.parametrize(
+    'custom_code_contents, kfp_spec_bool, is_included, expected_output_snippets',
+    [
+        (
+            'this is some custom code', True, True,
+            [GENERATED_LICENSE,
+             'this is some custom code',
+             'def main():']
+        ),
+        (
+            'this is some custom code', False, True,
+            [GENERATED_LICENSE,
+             'this is some custom code',
+             'def main():',
+             'import kfp',
+             'from kfp.v2.dsl import *']
+        ),
+        (
+            'this is some custom code', True, False,
+            ['import kfp',
+             'from kfp.v2.dsl import *']
+        )
+    ]
+)
+def test_component_base_task_file_jinja(
+    custom_code_contents: str,
+    kfp_spec_bool: str,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests component_base_task_file_jinja, which generates code 
+       for the task.py file to be written to the component_base/src directory.
+       There are three test cases for this function:
+        1. Checks for the apache license, the custom_code_contents, and a main function when using kfp spec (kfp spec comes with kfp imports by default).
+        2. Checks for the apache license, the custom_code_contents, a main function, and kfp imports when not using kfp spec.
+        3. Checks that the kfp imports are not included in the string when using kfp spec (kfp spec comes with kfp imports by default).
+
+    Args:
+        custom_code_contents: Code inside of the component, specified by the user.
+        kfp_spec_bool: Boolean that specifies whether components are defined using kfp.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    component_base_task_file = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
+        custom_code_contents=custom_code_contents,
+        generated_license=GENERATED_LICENSE,
+        kfp_spec_bool=kfp_spec_bool)
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in component_base_task_file
+        elif not is_included:
+            assert snippet not in component_base_task_file
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE])]
+)
+def test_pipeline_runner_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests pipeline_runner_jinja, which generates code for the pipeline_runner.py 
+       file to be written to the pipelines directory. There is one test case for this function:
+        1. Checks for the apache license.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    pipeline_runner_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline_runner.py.j2',
+        generated_license=GENERATED_LICENSE
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in pipeline_runner_py
+        elif not is_included:
+            assert snippet not in pipeline_runner_py
+
+
+@pytest.mark.parametrize(
+    '''components_list, custom_training_job_specs, pipeline_scaffold_contents, project_id,'''
+    '''is_included, expected_output_snippets''',
+    [
+        (
+            ['componentA','componentB','componentC'],
+            [
+                {
+                    'component_spec': 'componentB',
+                    'display_name': 'train-model-accelerated',
+                    'machine_type': 'a2-highgpu-1g',
+                    'accelerator_type': 'NVIDIA_TESLA_A100',
+                    'accelerator_count': '1',
+                }
+            ],
+           'Pipeline definition goes here', 'my-project', True,
+            [GENERATED_LICENSE,
+             'from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component',
+             'def upload_pipeline_spec',
+             'componentA = load_custom_component',
+             'componentB = load_custom_component',
+             'componentC = load_custom_component',
+             'componentB_custom_training_job_specs',
+             'Pipeline definition goes here']
+        ),
+        (
+            ['componentA','componentB','componentC'],
+            None, 'Pipeline definition goes here', 'my-project',  True,
+            [GENERATED_LICENSE,
+             'def upload_pipeline_spec',
+             'componentA = load_custom_component',
+             'componentB = load_custom_component',
+             'componentC = load_custom_component',
+             'Pipeline definition goes here']
+        ),
+        (
+            ['componentA','componentB','componentC'],
+            None, 'Pipeline definition goes here', 'my-project',  False,
+            ['from google_cloud_pipeline_components.v1.custom_job import create_custom_training_job_op_from_component',
+             'componentB_custom_training_job_specs']
+        ),
+    ]
+)
+def test_pipeline_jinja(
+    components_list: list,
+    custom_training_job_specs: list,
+    pipeline_scaffold_contents: str,
+    project_id: str,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests pipeline_jinja, which generates code for the pipeline.py 
+       file to be written to the pipelines directory.
+       There are three test cases for this function:
+        1. Checks for the apache license and relevant code elements when custom_training_job_specs is not None.
+        2. Checks for the apache license and relevant code elements when custom_training_job_specs is None.
+        3. Checks that the output does not contain custom_training_job_specs code elements when custom_training_job_specs is None.
+
+    Args:
+        components_list: Contains the names or paths of all component yamls in the dir.
+        custom_training_job_specs: Specifies the specs to run the training job with.
+        pipeline_scaffold_contents: The contents of the pipeline scaffold file,
+            which can be found at PIPELINE_CACHE_FILE.
+        project_id: The project ID.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    pipeline_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'pipeline.py.j2',
+        components_list=components_list,
+        custom_training_job_specs=custom_training_job_specs,
+        generated_license=GENERATED_LICENSE,
+        pipeline_scaffold_contents=pipeline_scaffold_contents,
+        project_id=project_id)
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in pipeline_py
+        elif not is_included:
+            assert snippet not in pipeline_py
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform'])]
+)
+def test_pipeline_requirements_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests pipeline_requirements_jinja, which generates code for a requirements.txt
+       to be written to the pipelines directory. There is one test case for this function:
+        1. Checks for the pinned kfp version, and the google-cloud-aiplatform dep.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    pipeline_requirements_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.pipelines') / 'requirements.txt.j2',
+        pinned_kfp_version=PINNED_KFP_VERSION
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in pipeline_requirements_py
+        elif not is_included:
+            assert snippet not in pipeline_requirements_py
+
+
+@pytest.mark.parametrize(
+    'is_included, expected_output_snippets',
+    [(True, [GENERATED_LICENSE, 'python:3.9-slim',
+             'CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 main:app'])]
+)
+def test_submission_service_dockerfile_jinja(
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests pipeline_requirements_jinja, which generates code for a Dockerfile to be
+       written to the serivces/submission_service directory. There is one test case for this function:
+        1. Checks for the apache license and relevant dockerfile elements.
+
+    Args:
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    submission_service_dockerfile = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2',
+        base_dir=BASE_DIR,
+        generated_license=GENERATED_LICENSE
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in submission_service_dockerfile
+        elif not is_included:
+            assert snippet not in submission_service_dockerfile
+
+
+@pytest.mark.parametrize(
+    'pipeline_job_submission_service_type, is_included, expected_output_snippets',
+    [('cloud-functions', True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform', 'google-cloud-storage', 'functions-framework==3.*']),
+     ('cloud-functions', False, ['gunicorn']),
+     ('cloud-run', True, [PINNED_KFP_VERSION, 'google-cloud-aiplatform', 'google-cloud-storage', 'gunicorn']),
+     ('cloud-run', False, ['functions-framework==3.*']),]
+)
+def test_submission_service_requirements_jinja(
+    pipeline_job_submission_service_type: str,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests submission_service_requirements_jinja, which generates code 
+       for a requirements.txt to be written to the serivces/submission_service directory.
+       There are four test cases for this function:
+        1. Checks for the pinned kfp version, the google-cloud-aiplatform, google-cloud-storage and function-framework deps when set to cloud-functions.
+        2. Checks that gunicorn dep is not included when set to cloud-functions.
+        3. Checks for the pinned kfp version, the google-cloud-aiplatform, google-cloud-storage and gunicorn deps when set to cloud-run.
+        4. Checks that functions-framework dep is not included when set to cloud-run.
+
+    Args:
+        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    submission_service_requirements = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'requirements.txt.j2',
+        pinned_kfp_version=PINNED_KFP_VERSION,
+        pipeline_job_submission_service_type=pipeline_job_submission_service_type
+    )
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in submission_service_requirements
+        elif not is_included:
+            assert snippet not in submission_service_requirements
+
+
+@pytest.mark.parametrize(
+    '''naming_prefix, pipeline_root, pipeline_job_runner_service_account, pipeline_job_submission_service_type,'''
+    '''project_id, setup_model_monitoring, is_included, expected_output_snippets''',
+    [
+        (
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-functions',
+            'my-project', False, True,
+            [GENERATED_LICENSE,
+             'from google.cloud import aiplatform',
+             'import functions_framework',
+             '@functions_framework.http',
+             'def process_request(request: flask.Request)',
+             '''base64_message = request_json['data']['data']''']
+        ),
+        (
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-functions',
+            'my-project', False, False,
+            ['app = flask.Flask',
+             '''@app.route('/', methods=['POST'])''',
+             'request = flask.request',
+             '''base64_message = request_json['message']['data']''',
+             '''if __name__ == '__main__':''',
+             '''app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))''',
+             'from google.cloud import storage',
+             'NAMING_PREFIX',
+             'def read_gs_auto_retraining_params_file()']
+        ),
+        (
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
+            'my-project', False, True,
+            [GENERATED_LICENSE,
+             'from google.cloud import aiplatform',
+             'app = flask.Flask',
+             '''@app.route('/', methods=['POST'])''',
+             'request = flask.request',
+             '''base64_message = request_json['message']['data']''',
+             '''if __name__ == '__main__':''',
+             '''app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))''']
+        ),
+        (
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
+            'my-project', False, False,
+            ['import functions_framework',
+             '@functions_framework.http',
+             'def process_request(request: flask.Request)',
+             '''base64_message = request_json['data']['data']''',
+             'from google.cloud import storage',
+             'NAMING_PREFIX',
+             'def read_gs_auto_retraining_params_file()']
+        ),
+        (
+            'my-prefix', 'gs://my-bucket/pipeline-root', 'my-service-account@service.com', 'cloud-run',
+            'my-project', True, True,
+            ['from google.cloud import storage',
+             'NAMING_PREFIX',
+             'def read_gs_auto_retraining_params_file()',
+             '''if data_payload['logName'] == f'projects/{PROJECT_ID}/logs/aiplatform.googleapis.com%2Fmodel_monitoring_anomaly':''']
+        ),
+    ]
+)
+def test_submission_service_main_jinja(
+    naming_prefix: str,
+    pipeline_root: str,
+    pipeline_job_runner_service_account: str,
+    pipeline_job_submission_service_type: str,
+    project_id: str,
+    setup_model_monitoring: bool,
+    is_included: bool,
+    expected_output_snippets: List[str]):
+    """Tests submission_service_main_jinja, which generates content
+       for main.py to be written to the serivces/submission_service directory. 
+       There are five test cases for this function:
+        1. Checks for functions_framework code elements when set to cloud-functions.
+        2. Checks that Flask app code elements are not included when set to cloud-functions.
+        3. Checks for Flask app code elements when set to cloud-run.
+        4. Checks that functions_framework code elements are not included when set to cloud-run.
+        5. Checks that model_monitoring auto retraining code elements exists when setup_model_monitoring is True.
+
+    Args:
+        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
+        pipeline_root: GS location where to store metadata from pipeline runs.
+        pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
+        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
+        project_id: The project ID.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
+        is_included: Boolean that determines whether to check if the expected_output_snippets exist in the string or not.
+        expected_output_snippets: Strings that are expected to be included (or not) based on the is_included boolean.
+    """
+    submission_service_main_py = render_jinja(
+        template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
+        generated_license=GENERATED_LICENSE,
+        naming_prefix=naming_prefix,
+        pipeline_root=pipeline_root,
+        pipeline_job_runner_service_account=pipeline_job_runner_service_account,
+        pipeline_job_submission_service_type=pipeline_job_submission_service_type,
+        project_id=project_id,
+        setup_model_monitoring=setup_model_monitoring)
+
+    for snippet in expected_output_snippets:
+        if is_included:
+            assert snippet in submission_service_main_py
+        elif not is_included:
+            assert snippet not in submission_service_main_py
