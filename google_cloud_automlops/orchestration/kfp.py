@@ -29,7 +29,7 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices
+from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices, BaseMonitoring
 from google_cloud_automlops.utils.utils import (
     execute_process,
     get_components_list,
@@ -47,6 +47,9 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_COMPONENT_BASE,
     GENERATED_DEFAULTS_FILE,
     GENERATED_LICENSE,
+    GENERATED_MODEL_MONITORING_MONITOR_PY_FILE,
+    GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE,
+    GENERATED_MODEL_MONITORING_SH_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_FILE,
     GENERATED_PIPELINE_REQUIREMENTS_FILE,
@@ -275,7 +278,8 @@ class KFPPipeline(BasePipeline):
               custom_training_job_specs,
               pipeline_params,
               pubsub_topic_name,
-              use_ci):
+              use_ci,
+              setup_model_monitoring):
         """Constructs files for running and managing Kubeflow pipelines.
 
             Files created under AutoMLOps/:
@@ -302,6 +306,7 @@ class KFPPipeline(BasePipeline):
         self.pipeline_params = pipeline_params
         self.pubsub_topic_name = pubsub_topic_name
         self.use_ci = use_ci
+        self.setup_model_monitoring = setup_model_monitoring
 
         # Extract additional attributes from defaults file
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
@@ -317,9 +322,10 @@ class KFPPipeline(BasePipeline):
 
         # README.md: Write description of the contents of the directory
         write_file(
-            filepath=f'{BASE_DIR}README.md', 
+            filepath=f'{BASE_DIR}README.md',
             text=render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
+                setup_model_monitoring=self.setup_model_monitoring,
                 use_ci=self.use_ci),
             mode='w')
 
@@ -543,31 +549,51 @@ class KFPServices(BaseServices):
     def __init__(self) -> None:
         """Initializes KFPServices Object.
         """
+        super().__init__()
 
-    def _build_dockerfile(self):
-        """Writes the services/submission_service/Dockerfile #TODO add more
-        """
-        # Read in defaults params
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.pipeline_storage_path = defaults['pipelines']['pipeline_storage_path']
-        self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
-        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
-        self.project_id = defaults['gcp']['project_id']
-        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+    def build(self,
+              pipeline_storage_path,
+              pipeline_job_runner_service_account,
+              pipeline_job_submission_service_type,
+              project_id,
+              setup_model_monitoring):
+        super().build(
+            pipeline_storage_path,
+            pipeline_job_runner_service_account,
+            pipeline_job_submission_service_type,
+            project_id,
+            setup_model_monitoring)
 
-        # Set directory for files to be written to
-        self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
+    def _build_monitoring(self):
+        # Writes script create_model_monitoring_job.sh which creates a Vertex AI model monitoring job
+        write_and_chmod(
+            filepath=GENERATED_MODEL_MONITORING_SH_FILE,
+            text=render_jinja(
+                template_path=import_files(KFP_TEMPLATES_PATH + '.scripts') / 'create_model_monitoring_job.sh.j2',
+                generated_license=GENERATED_LICENSE,
+                base_dir=BASE_DIR
+            ))
 
+        # Writes monitor.py to create or update a model monitoring job in Vertex AI for a deployed model endpoint
         write_file(
-            f'{self.submission_service_base_dir}/Dockerfile', 
-            render_jinja(
-                template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2',
-                base_dir=BASE_DIR,
-                generated_license=GENERATED_LICENSE),
-            'w')
+            filepath=GENERATED_MODEL_MONITORING_MONITOR_PY_FILE,
+            text=render_jinja(
+                template_path=import_files(KFP_TEMPLATES_PATH + '.model_monitoring') / 'monitor.py.j2',
+                generated_license=GENERATED_LICENSE
+            ),
+            mode='w')
 
-    def _build_requirements(self):
-        """Writes the services/submission_service/requirements.txt #TODO add more
+        # Writes a requirements.txt to the model_monitoring directory
+        write_file(
+            filepath=GENERATED_MODEL_MONITORING_REQUIREMENTS_FILE,
+            text=render_jinja(template_path=import_files(KFP_TEMPLATES_PATH + '.model_monitoring') / 'requirements.txt.j2'),
+            mode='w')
+
+    def _build_submission_services(self):
+        """Writes the #TODO add more
+            services/submission_service/requirements.txt
+            services/submission_service/main.py
+            services/submission_service/Dockerfile
         """
         write_file(
             f'{self.submission_service_base_dir}/requirements.txt', 
@@ -577,9 +603,6 @@ class KFPServices(BaseServices):
                 pipeline_job_submission_service_type=self.pipeline_job_submission_service_type),
             'w')
 
-    def _build_main(self):
-        """Writes the services/submission_service/main.py file to #TODO add more
-        """
         write_file(
             f'{self.submission_service_base_dir}/main.py', 
             render_jinja(
@@ -588,5 +611,14 @@ class KFPServices(BaseServices):
                 pipeline_root=self.pipeline_storage_path,
                 pipeline_job_runner_service_account=self.pipeline_job_runner_service_account,
                 pipeline_job_submission_service_type=self.pipeline_job_submission_service_type,
-                project_id=self.project_id),
+                project_id=self.project_id,
+                setup_model_monitoring=self.setup_model_monitoring),
+            'w')
+
+        write_file(
+            f'{self.submission_service_base_dir}/Dockerfile', 
+            render_jinja(
+                template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2',
+                base_dir=BASE_DIR,
+                generated_license=GENERATED_LICENSE),
             'w')

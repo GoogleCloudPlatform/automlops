@@ -10,15 +10,28 @@ import flask
 {% if pipeline_job_submission_service_type == 'cloud-functions' %}import functions_framework{% endif %}
 from google.cloud import aiplatform
 import google.cloud.logging
+{% if setup_model_monitoring %}from google.cloud import storage
 
-{% if pipeline_job_submission_service_type == 'cloud-run' %}app = flask.Flask(__name__){% endif %}
-client = google.cloud.logging.Client(project="project")
-client.setup_logging()
-
+NAMING_PREFIX = '{{naming_prefix}}'{% endif %}
 PROJECT_ID = '{{project_id}}'
 PIPELINE_ROOT = '{{pipeline_root}}'
 PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT = '{{pipeline_job_runner_service_account}}'
 
+{% if pipeline_job_submission_service_type == 'cloud-run' %}app = flask.Flask(__name__){% endif %}
+client = google.cloud.logging.Client(project=PROJECT_ID)
+client.setup_logging()
+
+{% if setup_model_monitoring %}
+def read_gs_auto_retraining_params_file():
+    storage_client = storage.Client(project=PROJECT_ID)
+    bucket_name = PIPELINE_ROOT.split('/')[2]
+    bucket = storage_client.get_bucket(bucket_name)
+    file_name = f'pipeline_root/{NAMING_PREFIX}/automatic_retraining_parameters.json'
+    blob = bucket.blob(file_name)
+    data = json.loads(blob.download_as_string(client=None))
+    logging.info(f'Retraining using the following parameters located at {bucket_name}/{file_name}: \n{data}')
+    return data
+{% endif %}
 {% if pipeline_job_submission_service_type == 'cloud-functions' %}@functions_framework.http{% elif pipeline_job_submission_service_type == 'cloud-run' %}@app.route('/', methods=['POST']){% endif %}
 def process_request({% if pipeline_job_submission_service_type == 'cloud-functions' %}request: flask.Request{% endif %}) -> flask.Response:
     """HTTP web service to trigger pipeline execution.
@@ -47,6 +60,16 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
         logging.info('JSON Recieved:')
         logging.info(data_payload)
 
+        optional_labels = {}
+        {% if setup_model_monitoring %}
+        try:
+            if data_payload['logName'] == f'projects/{PROJECT_ID}/logs/aiplatform.googleapis.com%2Fmodel_monitoring_anomaly':
+                logging.info('Model monitoring anomaly detected - triggering model retraining.')
+                data_payload = read_gs_auto_retraining_params_file()
+                optional_labels['trigger'] = 'monitoring_anomaly'
+        except KeyError:
+            pass
+        {% endif %}
         if 'gs_pipeline_spec_path' in data_payload:
             gs_pipeline_spec_path = data_payload['gs_pipeline_spec_path']
             del data_payload['gs_pipeline_spec_path']
@@ -67,7 +90,8 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
             pipeline_job_runner_service_account=PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT,
             pipeline_params=data_payload,
             pipeline_spec_path=gs_pipeline_spec_path,
-            experiment=vertex_exp)
+            experiment=vertex_exp,
+            labels=optional_labels)
         return flask.make_response({
             'dashboard_uri': dashboard_uri,
             'resource_name': resource_name
@@ -85,7 +109,8 @@ def submit_pipeline(
     pipeline_spec_path: str,
     experiment: str,
     display_name: str = 'mlops-pipeline-run',
-    enable_caching: bool = False) -> Tuple[str, str]:
+    enable_caching: bool = False,
+    labels: dict = None) -> Tuple[str, str]:
     """Submits a pipeline run.
 
     Args:
@@ -97,6 +122,7 @@ def submit_pipeline(
         experiment: Optional name of Vertex AI experiment.
         display_name: Name to call the pipeline.
         enable_caching: Should caching be enabled (Boolean)
+        labels: Optional labels to be added to the PipelineJob.
     """
     logging.info('Pipeline Parms Configured:')
     logging.info(pipeline_params)
@@ -107,7 +133,8 @@ def submit_pipeline(
         template_path = pipeline_spec_path,
         pipeline_root = pipeline_root,
         parameter_values = pipeline_params,
-        enable_caching = enable_caching)
+        enable_caching = enable_caching,
+        labels = labels)
     logging.info('AI Platform job built. Submitting...')
     job.submit(
         experiment=experiment,

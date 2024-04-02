@@ -44,6 +44,7 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
+    GENERATED_MODEL_MONITORING_DIRS,
     OUTPUT_DIR
 )
 from google_cloud_automlops.utils.utils import (
@@ -57,7 +58,7 @@ from google_cloud_automlops.utils.utils import (
     read_yaml_file,
     resources_generation_manifest,
     stringify_job_spec_list,
-    validate_schedule,
+    validate_use_ci,
     write_file
 )
 # Orchestration imports
@@ -130,6 +131,7 @@ def launchAll(
     schedule_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     schedule_name: Optional[str] = None,
     schedule_pattern: Optional[str] = DEFAULT_SCHEDULE_PATTERN,
+    setup_model_monitoring: Optional[bool] = False,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
     source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
@@ -170,6 +172,7 @@ def launchAll(
         schedule_location: The location of the scheduler resource.
         schedule_name: The name of the scheduler resource.
         schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
+        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
         source_repo_branch: The branch to use in the source repository.
         source_repo_name: The name of the source repository to use.
         source_repo_type: The type of source repository to use (e.g. gitlab, github, etc.)
@@ -206,6 +209,7 @@ def launchAll(
         schedule_location=schedule_location,
         schedule_name=schedule_name,
         schedule_pattern=schedule_pattern,
+        setup_model_monitoring=setup_model_monitoring,
         source_repo_branch=source_repo_branch,
         source_repo_name=source_repo_name,
         source_repo_type=source_repo_type,
@@ -244,6 +248,7 @@ def generate(
     schedule_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     schedule_name: Optional[str] = None,
     schedule_pattern: Optional[str] = DEFAULT_SCHEDULE_PATTERN,
+    setup_model_monitoring: Optional[bool] = False,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
     source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
@@ -259,8 +264,8 @@ def generate(
 
     Args: See launchAll() function.
     """
-    # Validate that use_ci=True if schedule_pattern parameter is set
-    validate_schedule(schedule_pattern, use_ci)
+    # Validate that use_ci=True if schedule_pattern parameter is set or setup_model_monitoring is True
+    validate_use_ci(setup_model_monitoring, schedule_pattern, use_ci)
 
     # Validate currently supported tools
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:
@@ -288,6 +293,8 @@ def generate(
         make_dirs(GENERATED_TERRAFORM_DIRS)
     if deployment_framework == Deployer.GITHUB_ACTIONS.value:
         make_dirs(GENERATED_GITHUB_DIRS)
+    if setup_model_monitoring:
+        make_dirs(GENERATED_MODEL_MONITORING_DIRS)
 
     # Set derived vars if none were given for certain variables
     derived_artifact_repo_name = coalesce(artifact_repo_name, f'{naming_prefix}-artifact-registry')
@@ -321,6 +328,7 @@ def generate(
         schedule_location=schedule_location,
         schedule_name=derived_schedule_name,
         schedule_pattern=schedule_pattern,
+        setup_model_monitoring=setup_model_monitoring,
         source_repo_branch=source_repo_branch,
         source_repo_name=derived_source_repo_name,
         source_repo_type=source_repo_type,
@@ -345,10 +353,11 @@ def generate(
                               description=pipeline_glob.description,
                               comps_dict=components_dict)
         kfppipe.build(base_image,
-                      custom_training_job_specs,
+                      derived_custom_training_job_specs,
                       pipeline_params,
                       pubsub_topic_name,
-                      use_ci)
+                      use_ci,
+                      setup_model_monitoring)
 
         # Write kubeflow components code
         logging.info(f'Writing kubeflow components code to {BASE_DIR}components')
@@ -356,10 +365,20 @@ def generate(
             logging.info(f'     -- Writing {comp.name}')
             KFPComponent(func=comp.func, packages_to_install=comp.packages_to_install).build()
 
+        if setup_model_monitoring:
+            logging.info(f'Writing model monitoring code to {BASE_DIR}model_monitoring')
+
         # If user specified services, write services scripts
         if use_ci:
             logging.info(f'Writing submission service code to {BASE_DIR}services')
-            KFPServices().build()
+            defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+            KFPServices().build(
+                pipeline_storage_path=defaults['pipelines']['pipeline_storage_path'],
+                pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account'],
+                pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type'],
+                project_id=project_id,
+                setup_model_monitoring=setup_model_monitoring
+            )
 
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:

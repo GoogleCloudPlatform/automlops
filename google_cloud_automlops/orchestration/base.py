@@ -232,13 +232,15 @@ class BasePipeline():
         self.use_ci = None
         self.project_id = None
         self.gs_pipeline_job_spec_path = None
+        self.setup_model_monitoring = None
 
     def build(self,
               base_image,
               custom_training_job_specs,
               pipeline_params,
               pubsub_topic_name,
-              use_ci):
+              use_ci,
+              setup_model_monitoring):
         """Instantiates an abstract built method to create and write pipeline files. Also
         reads in defaults file to save default arguments to attributes.
 
@@ -253,6 +255,7 @@ class BasePipeline():
             pipeline_params (_type_): _description_
             pubsub_topic_name (_type_): _description_
             use_ci (_type_): _description_
+            setup_model_monitoring (_type_): _description_
         """
         # Save parameters as attributes
         self.base_image = base_image
@@ -260,6 +263,7 @@ class BasePipeline():
         self.pipeline_params = pipeline_params
         self.pubsub_topic_name = pubsub_topic_name
         self.use_ci = use_ci
+        self.setup_model_monitoring = setup_model_monitoring
 
         # Extract additional attributes from defaults file
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
@@ -313,42 +317,44 @@ class BaseServices():
         self.pipeline_job_submission_service_type = None
         self.project_id = None
         self.pipeline_job_submission_service_type = None
+        self.setup_model_monitoring = None
 
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
 
-    def build(self):
+    def build(self,
+              pipeline_storage_path,
+              pipeline_job_runner_service_account,
+              pipeline_job_submission_service_type,
+              project_id,
+              setup_model_monitoring):
         """Constructs and writes a Dockerfile, requirements.txt, and
         main.py to the services/submission_service directory. 
         """
 
         # Read in defaults params
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.pipeline_storage_path = defaults['pipelines']['pipeline_storage_path']
-        self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
-        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
-        self.project_id = defaults['gcp']['project_id']
-        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+        self.pipeline_storage_path = pipeline_storage_path
+        self.pipeline_job_runner_service_account = pipeline_job_runner_service_account
+        self.pipeline_job_submission_service_type = pipeline_job_submission_service_type
+        self.project_id = project_id
+        self.setup_model_monitoring = setup_model_monitoring
 
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
 
         # Build services files
-        self._build_main()
-        self._build_dockerfile()
-        self._build_requirements()
+        self._build_submission_services()
 
-    def _build_dockerfile(self):
-        """Abstract method to create the Dockerfile file of the services/submission_service directory.
+        # Setup model monitoring
+        if self.setup_model_monitoring:
+            self._build_monitoring()
+
+    def _build_monitoring(self):
+        """Abstract method to create the model monitoring files.
         """
-        raise NotImplementedError("Subclass needs to define this.")
+        raise NotImplementedError("Subclass needs to define this")
 
-    def _build_requirements(self):
-        """Abstract method to create the requirements.txt file of the services/submission_service directory.
-        """
-        raise NotImplementedError("Subclass needs to define this.")
-
-    def _build_main(self):
-        """Abstract method to create the main.py file of the services/submission_service directory.
+    def _build_submission_services(self):
+        """Abstract method to create the Dockerfile, requirements.txt, and main.py files of the services/submission_service directory.
         """
         raise NotImplementedError("Subclass needs to define this.")
