@@ -47,16 +47,18 @@ from google_cloud_automlops.utils.constants import (
     PLACEHOLDER_IMAGE
 )
 
+from google_cloud_automlops.utils.enums import (
+    Orchestrator,
+    PipelineJobSubmitter
+)
+
 from google_cloud_automlops.deployments.enums import (
     ArtifactRepository,
     CodeRepository,
     Deployer
 )
 from google_cloud_automlops.provisioning.enums import Provisioner
-from google_cloud_automlops.orchestration.enums import (
-    Orchestrator,
-    PipelineJobSubmitter
-)
+
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.

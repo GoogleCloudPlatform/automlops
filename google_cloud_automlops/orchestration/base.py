@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Creates enums for orchestrator and submission service options as well as generic component, pipeline, and services objects."""
+"""Creates generic component, pipeline, and services objects."""
 
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103
@@ -20,7 +20,6 @@
 
 import ast
 import docstring_parser
-from enum import Enum
 import inspect
 from typing import Callable, List, Optional, TypeVar, Union
 
@@ -35,23 +34,6 @@ from google_cloud_automlops.utils.constants import (
 )
 
 T = TypeVar('T')
-
-
-class Orchestrator(Enum):
-    """Enum representing the available options for orchestration management."""
-
-    KFP = 'kfp'
-    # ARGO_WORKFLOWS = 'argo-workflows'   # roadmap item
-    # TFX = 'tfx'   # roadmap item
-    # AIRFLOW = 'airflow'   # roadmap item
-    # RAY = 'ray'   # roadmap item
-
-
-class PipelineJobSubmitter(Enum):
-    """Enum representing the available options for the Pipeline Job submission service."""
-
-    CLOUD_FUNCTIONS = 'cloud-functions'
-    CLOUD_RUN = 'cloud-run'
 
 
 class BaseComponent():
@@ -85,7 +67,7 @@ class BaseComponent():
         self.name = func.__name__
         self.packages_to_install = [] if not packages_to_install else packages_to_install
 
-        # Parse the docstring for description 
+        # Parse the docstring for description
         self.parsed_docstring = docstring_parser.parse(inspect.getdoc(func))
         self.description = self.parsed_docstring.short_description
 
@@ -110,7 +92,7 @@ class BaseComponent():
         self.project_id = defaults['gcp']['project_id']
         self.naming_prefix = defaults['gcp']['naming_prefix']
 
-        raise NotImplementedError("Subclass needs to define this.")
+        raise NotImplementedError('Subclass needs to define this.')
 
     def _get_function_return_types(self) -> list:
         """Returns a formatted list of function return types.
@@ -199,10 +181,9 @@ class BasePipeline():
 
     def __init__(self,
                  func: Optional[Callable] = None,
-                 *,
                  name: Optional[str] = None,
                  description: Optional[str] = None,
-                 comps_dict: dict):
+                 comps_dict: dict = None):
         """Initiates a pipeline object created out of a function holding
         all necessary code.
 
@@ -270,7 +251,7 @@ class BasePipeline():
         self.project_id = defaults['gcp']['project_id']
         self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
 
-        raise NotImplementedError("Subclass needs to define this.")
+        raise NotImplementedError('Subclass needs to define this.')
 
     def get_pipeline_components(self, pipeline_func: Callable, comps_dict: dict):
         """Returns a list of components used within a given pipeline.
@@ -282,7 +263,7 @@ class BasePipeline():
         Returns:
             List: Components from comps_dict used within the pipeline_func.
         """
-        # Retrieves pipeline source code and parses it into an Abstract Syntax Tree (AST) 
+        # Retrieves pipeline source code and parses it into an Abstract Syntax Tree (AST)
         code = inspect.getsource(pipeline_func)
         ast_tree = ast.parse(code)
 
@@ -352,9 +333,9 @@ class BaseServices():
     def _build_monitoring(self):
         """Abstract method to create the model monitoring files.
         """
-        raise NotImplementedError("Subclass needs to define this")
+        raise NotImplementedError('Subclass needs to define this')
 
     def _build_submission_services(self):
         """Abstract method to create the Dockerfile, requirements.txt, and main.py files of the services/submission_service directory.
         """
-        raise NotImplementedError("Subclass needs to define this.")
+        raise NotImplementedError('Subclass needs to define this.')

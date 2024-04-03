@@ -29,7 +29,7 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices, BaseMonitoring
+from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices
 from google_cloud_automlops.utils.utils import (
     execute_process,
     get_components_list,
@@ -72,7 +72,7 @@ class KFPComponent(BaseComponent):
     """
 
     def __init__(self,
-                 func: Optional[Callable] = None, 
+                 func: Optional[Callable] = None,
                  packages_to_install: Optional[List[str]] = None):
         """Initiates a KFP Component object created out of a function holding
         all necessary code.
@@ -237,17 +237,13 @@ class KFPComponent(BaseComponent):
 
 class KFPPipeline(BasePipeline):
     """Creates a KFP specific Pipeline object for #TODO: add more
-
-    Args:
-        Pipeline (object): Generic Pipeline object.
     """
 
     def __init__(self,
                  func: Optional[Callable] = None,
-                 *,
                  name: Optional[str] = None,
                  description: Optional[str] = None,
-                 comps_dict: dict) -> None:
+                 comps_dict: dict = None) -> None:
         """Initiates a KFP pipeline object created out of a function holding
         all necessary code.
 

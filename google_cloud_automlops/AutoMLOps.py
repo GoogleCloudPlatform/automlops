@@ -47,7 +47,6 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
-    GENERATED_MODEL_MONITORING_DIRS,
     OUTPUT_DIR
 )
 from google_cloud_automlops.utils.utils import (
@@ -66,7 +65,7 @@ from google_cloud_automlops.utils.utils import (
     write_yaml_file
 )
 # Orchestration imports
-from google_cloud_automlops.orchestration.base import (
+from google_cloud_automlops.utils.enums import (
     Orchestrator,
     PipelineJobSubmitter
 )
