@@ -19,9 +19,10 @@
 # pylint: disable=line-too-long
 
 import ast
-import docstring_parser
 import inspect
 from typing import Callable, List, Optional, TypeVar, Union
+
+import docstring_parser
 
 from google_cloud_automlops.utils.utils import (
     get_function_source_definition,
@@ -39,7 +40,6 @@ T = TypeVar('T')
 class BaseComponent():
     """The Component object represents a component defined by the user.
     """
-
     def __init__(self,
                  func: Optional[Callable] = None,
                  packages_to_install: Optional[List[str]] = None):
@@ -47,15 +47,15 @@ class BaseComponent():
         all necessary code.
 
         Args:
-            func: The python function to create a component from. The function
-                should have type annotations for all its arguments, indicating how
-                it is intended to be used (e.g. as an input/output Artifact object,
-                a plain parameter, or a path to a file).
-            packages_to_install: A list of optional packages to install before
-                executing func. These will always be installed at component runtime.
+            func (Optional[Callable]): The python function to create a component from. The function
+                should have type annotations for all its arguments, indicating how it is intended to
+                be used (e.g. as an input/output Artifact object, a plain parameter, or a path to a
+                file). Defaults to None.
+            packages_to_install (Optional[List[str]]): A list of optional packages to install before
+                executing func. These will always be installed at component runtime. Defaults to None.
 
         Raises:
-            ValueError: Confirms that the input is an existing function.
+            ValueError: The parameter `func` is not an existing function.
         """
 
         # Confirm the input is an existing function
@@ -83,9 +83,13 @@ class BaseComponent():
         self.naming_prefix = None
 
     def build(self):
-        """Instantiates an abstract built method to create and write task files. Also
-        reads in defaults file to save default arguments to attributes.
+        """Instantiates an abstract built method to create and write task files. Also reads in
+        defaults file to save default arguments to attributes.
+
+        Raises:
+            NotImplementedError: The subclass has not defined the `build` method.
         """
+
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
         self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
         self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
@@ -99,6 +103,7 @@ class BaseComponent():
 
         Returns:
             list: return value list with types converted to kubeflow spec.
+
         Raises:
             Exception: If return type is provided and not a NamedTuple.
         """
@@ -133,8 +138,9 @@ class BaseComponent():
 
         Returns:
             list: Params list with types converted to kubeflow spec.
+
         Raises:
-            Exception: If parameter type hints are not provided.
+            Exception: Parameter type hints are not provided.
         """
         # Extract function parameter names and their descriptions from the function's docstring
         signature = inspect.signature(self.func)
@@ -160,12 +166,15 @@ class BaseComponent():
 
     def maybe_strip_optional_from_annotation(self, annotation: T) -> T:
         """Strips 'Optional' from 'Optional[<type>]' if applicable.
-        For example::
-            Optional[str] -> str
-            str -> str
-            List[int] -> List[int]
+
+            For example::
+                Optional[str] -> str
+                str -> str
+                List[int] -> List[int]
+
         Args:
             annotation: The original type annotation which may or may not has `Optional`.
+
         Returns:
             The type inside Optional[] if Optional exists, otherwise the original type.
         """
@@ -188,14 +197,14 @@ class BasePipeline():
         all necessary code.
 
         Args:
-            func: The python function to create a pipeline from. The function
-                should have type annotations for all its arguments, indicating how
-                it is intended to be used (e.g. as an input/output Artifact object,
-                a plain parameter, or a path to a file).
-            name: The name of the pipeline.
-            description: Short description of what the pipeline does.
-            comps_list: Dictionary of potential components for pipeline to utilize imported
-                as the global held in AutoMLOps.py.
+            func (Optional[Callable]): The python function to create a pipeline from. The function
+                should have type annotations for all its arguments, indicating how it is intended to
+                be used (e.g. as an input/output Artifact object, a plain parameter, or a path to a
+                file). Defaults to None.
+            name (Optional[str]): The name of the pipeline. Defaults to None.
+            description (Optional[str]): Short description of what the pipeline does. Defaults to None.
+            comps_list (dict): Dictionary of potential components for pipeline to utilize imported
+                as the global held in AutoMLOps.py. Defaults to None.
         """
         # Instantiate and set key pipeline attributes
         self.func = func
@@ -216,14 +225,10 @@ class BasePipeline():
         self.setup_model_monitoring = None
 
     def build(self,
-              base_image,
-              custom_training_job_specs,
-              pipeline_params,
-              pubsub_topic_name,
-              use_ci,
-              setup_model_monitoring):
-        """Instantiates an abstract built method to create and write pipeline files. Also
-        reads in defaults file to save default arguments to attributes.
+              pipeline_params: dict,
+              custom_training_job_specs: Optional[List] = None):
+        """Instantiates an abstract built method to create and write pipeline files. Also reads in
+        defaults file to save default arguments to attributes.
 
         Files created must include:
             1. README.md
@@ -231,29 +236,31 @@ class BasePipeline():
             3. Requirements.txt
 
         Args:
-            base_image (_type_): _description_
-            custom_training_job_specs (_type_): _description_
-            pipeline_params (_type_): _description_
-            pubsub_topic_name (_type_): _description_
-            use_ci (_type_): _description_
-            setup_model_monitoring (_type_): _description_
+            custom_training_job_specs (dict): Specifies the specs to run the training job with.
+            pipeline_params (Optional[List]): Dictionary containing runtime pipeline parameters.
+                Defaults to None.
+
+        Raises:
+            NotImplementedError: The subclass has not defined the `build` method.
         """
         # Save parameters as attributes
-        self.base_image = base_image
         self.custom_training_job_specs = custom_training_job_specs
         self.pipeline_params = pipeline_params
-        self.pubsub_topic_name = pubsub_topic_name
-        self.use_ci = use_ci
-        self.setup_model_monitoring = setup_model_monitoring
 
         # Extract additional attributes from defaults file
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
         self.project_id = defaults['gcp']['project_id']
         self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
+        self.base_image = defaults['gcp']['base_image']
+        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
+        self.use_ci = defaults['tooling']['use_ci']
+        self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
 
         raise NotImplementedError('Subclass needs to define this.')
 
-    def get_pipeline_components(self, pipeline_func: Callable, comps_dict: dict):
+    def get_pipeline_components(self,
+                                pipeline_func: Callable,
+                                comps_dict: dict) -> list:
         """Returns a list of components used within a given pipeline.
 
         Args:
@@ -303,22 +310,26 @@ class BaseServices():
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
 
-    def build(self,
-              pipeline_storage_path,
-              pipeline_job_runner_service_account,
-              pipeline_job_submission_service_type,
-              project_id,
-              setup_model_monitoring):
-        """Constructs and writes a Dockerfile, requirements.txt, and
-        main.py to the services/submission_service directory. 
+    def build(self):
+        """Constructs and writes files related to submission services and model monitoring. 
+        
+            Files created under AutoMLOps/:
+                services/
+                    submission_service/
+                        Dockerfile
+                        main.py
+                        requirements.txt
+                model_monitoring/ (if requested)
+                    monitor.py
+                    requirements.txt
         """
-
-        # Read in defaults params
-        self.pipeline_storage_path = pipeline_storage_path
-        self.pipeline_job_runner_service_account = pipeline_job_runner_service_account
-        self.pipeline_job_submission_service_type = pipeline_job_submission_service_type
-        self.project_id = project_id
-        self.setup_model_monitoring = setup_model_monitoring
+        # Extract additional attributes from defaults file
+        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.pipeline_storage_path = defaults['pipelines']['pipeline_storage_path']
+        self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
+        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+        self.project_id = defaults['gcp']['project_id']
+        self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
 
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
@@ -332,10 +343,17 @@ class BaseServices():
 
     def _build_monitoring(self):
         """Abstract method to create the model monitoring files.
+
+        Raises:
+            NotImplementedError: The subclass has not defined the `_build_monitoring` method.
         """
         raise NotImplementedError('Subclass needs to define this')
 
     def _build_submission_services(self):
-        """Abstract method to create the Dockerfile, requirements.txt, and main.py files of the services/submission_service directory.
+        """Abstract method to create the Dockerfile, requirements.txt, and main.py files of the
+            services/submission_service directory.
+
+        Raises:
+            NotImplementedError: The subclass has not defined the `_build_submission_services` method.
         """
         raise NotImplementedError('Subclass needs to define this.')

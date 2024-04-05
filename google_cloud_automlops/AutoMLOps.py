@@ -357,12 +357,7 @@ def generate(
                               name=pipeline_glob.name,
                               description=pipeline_glob.description,
                               comps_dict=components_dict)
-        kfppipe.build(base_image,
-                      derived_custom_training_job_specs,
-                      pipeline_params,
-                      pubsub_topic_name,
-                      use_ci,
-                      setup_model_monitoring)
+        kfppipe.build(pipeline_params, derived_custom_training_job_specs)
 
         # Write kubeflow components code
         logging.info(f'Writing kubeflow components code to {BASE_DIR}components')
@@ -377,13 +372,7 @@ def generate(
         if use_ci:
             logging.info(f'Writing submission service code to {BASE_DIR}services')
             defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-            KFPServices().build(
-                pipeline_storage_path=defaults['pipelines']['pipeline_storage_path'],
-                pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account'],
-                pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type'],
-                project_id=project_id,
-                setup_model_monitoring=setup_model_monitoring
-            )
+            KFPServices().build()
 
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:

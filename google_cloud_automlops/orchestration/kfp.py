@@ -68,22 +68,21 @@ class KFPComponent(BaseComponent):
     """Creates a KFP specific Component object for #TODO: add more
 
     Args:
-        Component (object): Generic Component object.
+        BaseComponent (object): Generic Component object.
     """
 
     def __init__(self,
                  func: Optional[Callable] = None,
                  packages_to_install: Optional[List[str]] = None):
-        """Initiates a KFP Component object created out of a function holding
-        all necessary code.
+        """Initiates a KFP Component object created out of a function holding all necessary code.
 
         Args:
-            func: The python function to create a component from. The function
+            func (Optional[Callable]): The python function to create a component from. The function
                 should have type annotations for all its arguments, indicating how
                 it is intended to be used (e.g. as an input/output Artifact object,
-                a plain parameter, or a path to a file).
-            packages_to_install: A list of optional packages to install before
-                executing func. These will always be installed at component runtime.
+                a plain parameter, or a path to a file). Defaults to None.
+            packages_to_install (Optional[List[str]]): A list of optional packages to install before
+                executing func. These will always be installed at component runtime. Defaults to None.
         """
         super().__init__(func, packages_to_install)
 
@@ -158,8 +157,11 @@ class KFPComponent(BaseComponent):
             contents=self.component_spec,
             mode='a')
 
-    def _get_packages_to_install_command(self):
-        """Returns a list of formatted list of commands, including code for tmp storage.
+    def _get_packages_to_install_command(self) -> list:
+        """Creates a list of formatted list of commands, including code for tmp storage.
+
+        Returns:
+            list: Formatted commands to install necessary packages. #TODO: add more, where is this used
         """
         newline = '\n'
         concat_package_list = ' '.join([repr(str(package)) for package in self.packages_to_install])
@@ -172,12 +174,12 @@ class KFPComponent(BaseComponent):
             f'''{newline}''')
         return ['sh', '-c', install_python_packages_script, self.src_code]
 
-    def _create_component_spec(self):
-        """Creates a tmp component scaffold which will be used by the formalize function.
-        Code is temporarily stored in component_spec['implementation']['container']['command'].
+    def _create_component_spec(self) -> dict:
+        """Creates a tmp component scaffold which will be used by the formalize function. Code is
+        temporarily stored in component_spec['implementation']['container']['command'].
 
         Returns:
-            _type_: _description_ #TODO: FILL OUT
+            dict: _description_ #TODO: FILL OUT
         """
         # Instantiate component yaml attributes
         component_spec = {}
@@ -203,20 +205,20 @@ class KFPComponent(BaseComponent):
         return component_spec
 
     def _update_params(self, params: list) -> list:
-        """Converts the parameter types from Python types
-        to Kubeflow types. Currently only supports
+        """Converts the parameter types from Python types to Kubeflow types. Currently only supports
         Python primitive types.
 
         Args:
-            params: Pipeline parameters. A list of dictionaries,
-                each param is a dict containing keys:
-                    'name': required, str param name.
-                    'type': required, python primitive type.
-                    'description': optional, str param desc.
+            params: Pipeline parameters. A list of dictionaries, Each param is a dict containing keys:
+                'name': required, str param name.
+                'type': required, python primitive type.
+                'description': optional, str param desc.
+
         Returns:
             list: Params list with converted types.
+
         Raises:
-            Exception: If an inputted type is not a primitive.
+            ValueError: If an inputted type is not a primitive.
         """
         python_kfp_types_mapper = {
             int: 'Integer',
@@ -237,25 +239,26 @@ class KFPComponent(BaseComponent):
 
 class KFPPipeline(BasePipeline):
     """Creates a KFP specific Pipeline object for #TODO: add more
-    """
 
+    Args:
+        BasePipeline (object): Generic Pipeline object.
+    """
     def __init__(self,
                  func: Optional[Callable] = None,
                  name: Optional[str] = None,
                  description: Optional[str] = None,
                  comps_dict: dict = None) -> None:
-        """Initiates a KFP pipeline object created out of a function holding
-        all necessary code.
+        """Initiates a KFP pipeline object created out of a function holding all necessary code.
 
         Args:
-            func: The python function to create a pipeline from. The function
-                should have type annotations for all its arguments, indicating how
-                it is intended to be used (e.g. as an input/output Artifact object,
-                a plain parameter, or a path to a file).
-            name: The name of the pipeline.
-            description: Short description of what the pipeline does.
-            comps_list: Dictionary of potential components for pipeline to utilize imported
-                as the global held in AutoMLOps.py.
+            func (Optional[Callable]): The python function to create a pipeline from. The functio
+                should have type annotations for all its arguments, indicating how it is intended
+                to be used (e.g. as an input/output Artifact object, a plain parameter, or a path
+                to a file). Defaults to None.
+            name (Optional[str]): The name of the pipeline. Defaults to None.
+            description (Optional[str]): Short description of what the pipeline does. Defaults to None.
+            comps_list (dict): Dictionary of potential components for pipeline to utilize imported
+                as the global held in AutoMLOps.py. Defaults to None.
         """
         super().__init__(
             func=func,
@@ -270,12 +273,8 @@ class KFPPipeline(BasePipeline):
             + self._get_compile_step())
 
     def build(self,
-              base_image,
-              custom_training_job_specs,
-              pipeline_params,
-              pubsub_topic_name,
-              use_ci,
-              setup_model_monitoring):
+              pipeline_params: dict,
+              custom_training_job_specs: Optional[List] = None):
         """Constructs files for running and managing Kubeflow pipelines.
 
             Files created under AutoMLOps/:
@@ -295,19 +294,25 @@ class KFPPipeline(BasePipeline):
                     pipeline_runner.py
                     requirements.txt
                     runtime_parameters/pipeline_parameter_values.json
+
+        Args:
+            custom_training_job_specs (dict): Specifies the specs to run the training job with.
+            pipeline_params (Optional[List]): Dictionary containing runtime pipeline parameters. Defaults
+                to None.
+
         """
         # Save parameters as attributes
-        self.base_image = base_image
         self.custom_training_job_specs = custom_training_job_specs
         self.pipeline_params = pipeline_params
-        self.pubsub_topic_name = pubsub_topic_name
-        self.use_ci = use_ci
-        self.setup_model_monitoring = setup_model_monitoring
 
         # Extract additional attributes from defaults file
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
         self.project_id = defaults['gcp']['project_id']
         self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
+        self.base_image = defaults['gcp']['base_image']
+        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
+        self.use_ci = defaults['tooling']['use_ci']
+        self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
 
         # Build necessary folders
         make_dirs([
@@ -428,14 +433,10 @@ class KFPPipeline(BasePipeline):
         write_file(BASE_DIR + GENERATED_PARAMETER_VALUES_PATH, serialized_params, 'w')
 
     def _get_pipeline_decorator(self):
-        """Creates the kfp pipeline decorator.
-
-        Args:
-            name: The name of the pipeline.
-            description: Short description of what the pipeline does.
+        """Constructs the kfp pipeline decorator.
 
         Returns:
-            str: Python compile function call.
+            str: KFP pipeline decorator.
         """
         name_str = f'''(\n    name='{self.name}',\n'''
         desc_str = f'''    description='{self.description}',\n''' if self.description else ''
@@ -443,13 +444,10 @@ class KFPPipeline(BasePipeline):
         return '@dsl.pipeline' + name_str + desc_str + ending_str
 
     def _get_compile_step(self):
-        """Creates the compile function call.
-
-        Args:
-            func_name: The name of the pipeline function.
+        """Constructs the compile function call.
 
         Returns:
-            str: Python compile function call.
+            str: Compile function call.
         """
         return (
             f'\n'
@@ -459,12 +457,14 @@ class KFPPipeline(BasePipeline):
             f'\n'
         )
 
-    def _create_component_base_requirements(self):
-        """Writes a requirements.txt to the component_base directory.
-        Infers pip requirements from the python srcfiles using 
-        pipreqs. Takes user-inputted requirements, and addes some 
-        default gcp packages as well as packages that are often missing
-        in setup.py files (e.g db_types, pyarrow, gcsfs, fsspec).
+    def _create_component_base_requirements(self) -> str:
+        """Writes a requirements.txt to the component_base directory. Infers pip requirements from
+        the python srcfiles using pipreqs. Takes user-inputted requirements, and addes some default
+        gcp packages as well as packages that are often missing in setup.py files (e.g db_types,
+        pyarrow, gcsfs, fsspec). TODO: update this as it returns a string, doesn't write a file.
+
+        Returns:
+            str: TODO
         """
         reqs_filename = f'{GENERATED_COMPONENT_BASE}/requirements.txt'
         default_gcp_reqs = [
@@ -539,28 +539,16 @@ class KFPServices(BaseServices):
     """Creates a KFP specific Services object for #TODO: add more
 
     Args:
-        Services (object): Generic Services object.
+        BaseServices (object): Generic Services object.
     """
-
-    def __init__(self) -> None:
-        """Initializes KFPServices Object.
-        """
-        super().__init__()
-
-    def build(self,
-              pipeline_storage_path,
-              pipeline_job_runner_service_account,
-              pipeline_job_submission_service_type,
-              project_id,
-              setup_model_monitoring):
-        super().build(
-            pipeline_storage_path,
-            pipeline_job_runner_service_account,
-            pipeline_job_submission_service_type,
-            project_id,
-            setup_model_monitoring)
-
     def _build_monitoring(self):
+        """Writes files necessary for implementing model monitoring. Files created are:
+            scripts/
+                create_model_monitoring_job.sh
+            model_monitoring/
+                monitor.py
+                requirements.txt
+        """
         # Writes script create_model_monitoring_job.sh which creates a Vertex AI model monitoring job
         write_and_chmod(
             filepath=GENERATED_MODEL_MONITORING_SH_FILE,
@@ -586,10 +574,12 @@ class KFPServices(BaseServices):
             mode='w')
 
     def _build_submission_services(self):
-        """Writes the #TODO add more
-            services/submission_service/requirements.txt
-            services/submission_service/main.py
-            services/submission_service/Dockerfile
+        """Writes the files necessary for utilizing submission services. Files written are:
+            services/
+                submission_service/
+                    Dockerfile
+                    main.py
+                    requirements.txt
         """
         write_file(
             f'{self.submission_service_base_dir}/requirements.txt', 
