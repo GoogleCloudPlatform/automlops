@@ -130,9 +130,9 @@ DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
 PINNED_KFP_VERSION = 'kfp<2.0.0'
 
 # Provisioning Template Paths
-TERRAFORM_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.terraform.templates'
-PULUMI_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.pulumi.templates'
-GCLOUD_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.gcloud.templates'
+TERRAFORM_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.terraform'
+PULUMI_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.pulumi'
+GCLOUD_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.gcloud'
 KFP_TEMPLATES_PATH = 'google_cloud_automlops.orchestration.templates.kfp'
 CLOUDBUILD_TEMPLATES_PATH = 'google_cloud_automlops.deployments.cloudbuild.templates'
 GITHUB_ACTIONS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.github_actions.templates'

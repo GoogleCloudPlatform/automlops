@@ -67,21 +67,18 @@ from google_cloud_automlops.utils.utils import (
 # Orchestration imports
 from google_cloud_automlops.utils.enums import (
     Orchestrator,
-    PipelineJobSubmitter
+    PipelineJobSubmitter,
+    Provisioner
 )
 from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices
 from google_cloud_automlops.orchestration.kfp import KFPComponent, KFPPipeline, KFPServices
 
 # Provisioning imports
-from google_cloud_automlops.provisioning.pulumi import builder as PulumiBuilder
-from google_cloud_automlops.provisioning.terraform import builder as TerraformBuilder
-from google_cloud_automlops.provisioning.gcloud import builder as GcloudBuilder
-from google_cloud_automlops.provisioning.enums import Provisioner
-from google_cloud_automlops.provisioning.configs import (
-    PulumiConfig,
-    TerraformConfig,
-    GcloudConfig
-)
+from google_cloud_automlops.provisioning.base import Infrastructure
+from google_cloud_automlops.provisioning.terraform import Terraform
+from google_cloud_automlops.provisioning.gcloud import GCloud
+from google_cloud_automlops.provisioning.pulumi import Pulumi
+
 # Deployment imports
 from google_cloud_automlops.deployments.cloudbuild import builder as CloudBuildBuilder
 from google_cloud_automlops.deployments.github_actions import builder as GithubActionsBuilder
@@ -377,60 +374,15 @@ def generate(
     # Generate files required to provision resources
     if provisioning_framework == Provisioner.GCLOUD.value:
         logging.info(f'Writing gcloud provisioning code to {BASE_DIR}provision')
-        GcloudBuilder.build(project_id, GcloudConfig(
-            artifact_repo_location=artifact_repo_location,
-            artifact_repo_name=derived_artifact_repo_name,
-            artifact_repo_type=artifact_repo_type,
-            build_trigger_location=build_trigger_location,
-            build_trigger_name=derived_build_trigger_name,
-            deployment_framework=deployment_framework,
-            naming_prefix=naming_prefix,
-            pipeline_job_runner_service_account=derived_pipeline_job_runner_service_account,
-            pipeline_job_submission_service_location=pipeline_job_submission_service_location,
-            pipeline_job_submission_service_name=derived_pipeline_job_submission_service_name,
-            pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-            pubsub_topic_name=derived_pubsub_topic_name,
-            schedule_location=schedule_location,
-            schedule_name=derived_schedule_name,
-            schedule_pattern=schedule_pattern,
-            source_repo_branch=source_repo_branch,
-            source_repo_name=derived_source_repo_name,
-            source_repo_type=source_repo_type,
-            storage_bucket_location=storage_bucket_location,
-            storage_bucket_name=derived_storage_bucket_name,
-            use_ci=use_ci,
-            vpc_connector=vpc_connector))
+        GCloud(provision_credentials_key=provision_credentials_key).build()
 
     elif provisioning_framework == Provisioner.TERRAFORM.value:
         logging.info(f'Writing terraform provisioning code to {BASE_DIR}provision')
-        TerraformBuilder.build(project_id, TerraformConfig(
-            artifact_repo_location=artifact_repo_location,
-            artifact_repo_name=derived_artifact_repo_name,
-            artifact_repo_type=artifact_repo_type,
-            build_trigger_location=build_trigger_location,
-            build_trigger_name=derived_build_trigger_name,
-            deployment_framework=deployment_framework,
-            naming_prefix=naming_prefix,
-            pipeline_job_runner_service_account=derived_pipeline_job_runner_service_account,
-            pipeline_job_submission_service_location=pipeline_job_submission_service_location,
-            pipeline_job_submission_service_name=derived_pipeline_job_submission_service_name,
-            pipeline_job_submission_service_type=pipeline_job_submission_service_type,
-            provision_credentials_key=provision_credentials_key,
-            pubsub_topic_name=derived_pubsub_topic_name,
-            schedule_location=schedule_location,
-            schedule_name=derived_schedule_name,
-            schedule_pattern=schedule_pattern,
-            source_repo_branch=source_repo_branch,
-            source_repo_name=derived_source_repo_name,
-            source_repo_type=source_repo_type,
-            storage_bucket_location=storage_bucket_location,
-            storage_bucket_name=derived_storage_bucket_name,
-            use_ci=use_ci,
-            vpc_connector=vpc_connector))
+        Terraform(provision_credentials_key=provision_credentials_key).build()
 
     # Pulumi - Currently a roadmap item
     # elif provisioning_framework == Provisioner.PULUMI.value:
-    #     PulumiBuilder.build(project_id, PulumiConfig)
+    #     Pulumi(provision_credentials_key=provision_credentials_key).build()
 
     # Generate files required to run cicd pipeline
     if deployment_framework == Deployer.CLOUDBUILD.value:

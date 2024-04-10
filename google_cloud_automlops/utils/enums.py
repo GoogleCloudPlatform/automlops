@@ -37,3 +37,42 @@ class PipelineJobSubmitter(Enum):
 
     CLOUD_FUNCTIONS = 'cloud-functions'
     CLOUD_RUN = 'cloud-run'
+
+class Deployer(Enum):
+    """Enum representing the available options for orchestration management."""
+
+    CLOUDBUILD = 'cloud-build'
+    GITHUB_ACTIONS = 'github-actions'
+    # GITLAB_CI = 'gitlab-ci'   # roadmap item
+    # JENKINS = 'jenkins'   # roadmap item
+
+
+class CodeRepository(Enum):
+    """Enum representing the available options for source code repositories."""
+
+    BITBUCKET = 'bitbucket'   # roadmap item
+    CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
+    GITHUB = 'github'
+    GITLAB = 'gitlab'   # roadmap item
+
+
+class ArtifactRepository(Enum):
+    """Enum representing the available options for artifact repositories."""
+
+    ARTIFACT_REGISTRY = 'artifact-registry'
+
+
+class Provisioner(Enum):
+    """Enum representing the available providers for infrastructure management."""
+
+    TERRAFORM = 'terraform'
+    # PULUMI = 'pulumi' roadmap item
+    GCLOUD = 'gcloud'
+
+
+class PulumiRuntime(Enum):
+    """Enum representing the available pulumi runtimes."""
+
+    PYTHON = 'python'
+    TYPESCRIPT = 'typescript'
+    GO = 'go'

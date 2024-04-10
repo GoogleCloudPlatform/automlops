@@ -7,7 +7,7 @@ config:
     environment: dev
     default_region: {{region}}
   devops_plm_automlops_{{pipeline_model_name}}:buckets:
-    - name: {{gcs_bucket_name}}
+    - name: {{storage_bucket_name}}
       location: {{region}}
       labels:
         provider: {{pipeline_model_name}}

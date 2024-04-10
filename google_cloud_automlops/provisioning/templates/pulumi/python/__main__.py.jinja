@@ -114,8 +114,8 @@ try:
     )
 
     cloudbuild_trigger = gcp.cloudbuild.Trigger(
-        resource_name=f"{stack_infra}-{{cloud_build_trigger_name}}",
-        name="{{cloud_build_trigger_name}}",
+        resource_name=f"{stack_infra}-{{build_trigger_name}}",
+        name="{{build_trigger_name}}",
         project=project_id,
         filename="cloudbuild.yaml",
         service_account=f"projects/{project_id}/serviceAccounts/cloudbuild-runner-sa@{project_id}.iam.gserviceaccount.com",
