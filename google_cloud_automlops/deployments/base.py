@@ -24,7 +24,7 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
-from google_cloud_automlops.utils.constants import GENERATED_DEFAULTS_FILE,
+from google_cloud_automlops.utils.constants import GENERATED_DEFAULTS_FILE
 
 from google_cloud_automlops.utils.utils import read_yaml_file
 
