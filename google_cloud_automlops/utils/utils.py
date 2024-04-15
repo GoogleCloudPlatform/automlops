@@ -19,6 +19,12 @@
 # pylint: disable=line-too-long
 # pylint: disable=broad-exception-caught
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
+
 import inspect
 import itertools
 import json
@@ -36,10 +42,13 @@ from googleapiclient import discovery
 import google.auth
 
 from google_cloud_automlops.utils.constants import (
+    BASE_DIR,
     CACHE_DIR,
     DEFAULT_SCHEDULE_PATTERN,
+    GENERATED_DEFAULTS_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_JOB_SPEC_PATH,
+    GITOPS_TEMPLATES_PATH,
     IAM_ROLES_RUNNER_SA,
     MIN_GCLOUD_BETA_VERSION,
     MIN_GCLOUD_SDK_VERSION,
@@ -52,12 +61,12 @@ from google_cloud_automlops.utils.enums import (
     PipelineJobSubmitter
 )
 
-from google_cloud_automlops.deployments.enums import (
+from google_cloud_automlops.utils.enums import (
     ArtifactRepository,
     CodeRepository,
-    Deployer
+    Deployer,
+    Provisioner
 )
-from google_cloud_automlops.provisioning.enums import Provisioner
 
 
 def make_dirs(directories: list):
@@ -1014,3 +1023,64 @@ def coalesce(*arg):
         if el is not None:
             return el
     return None
+
+def git_workflow():
+    """Initializes a git repo if one doesn't already exist,
+    then pushes to the specified branch and triggers a build job.
+    """
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    deployment_framework = defaults['tooling']['deployment_framework']
+    source_repository_type = defaults['gcp']['source_repository_type']
+    if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+        git_remote_origin_url = f'''https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['source_repository_name']}'''
+    elif source_repository_type == CodeRepository.GITHUB.value:
+        git_remote_origin_url = f'''git@github.com:{defaults['gcp']['source_repository_name']}.git'''
+    elif source_repository_type == CodeRepository.GITLAB.value:
+        git_remote_origin_url = f'''git@gitlab.com:{defaults['gcp']['source_repository_name']}.git'''
+    elif source_repository_type == CodeRepository.BITBUCKET.value:
+        git_remote_origin_url = f'''git@bitbucket.org:{defaults['gcp']['source_repository_name']}.git'''
+
+    if not os.path.exists(f'{BASE_DIR}.git'):
+        # Initialize git and configure credentials
+        execute_process(f'git -C {BASE_DIR} init', to_null=False)
+        if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+            execute_process(
+                f'''git -C {BASE_DIR} config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+        # Add repo and branch
+        execute_process(
+            f'''git -C {BASE_DIR} remote add origin {git_remote_origin_url}''', to_null=False)
+        execute_process(
+            f'''git -C {BASE_DIR} checkout -B {defaults['gcp']['source_repository_branch']}''', to_null=False)
+        has_remote_branch = subprocess.check_output(
+            [f'''git -C {BASE_DIR} ls-remote origin {defaults['gcp']['source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+
+        write_file(
+            f'{BASE_DIR}.gitignore',
+            render_jinja(template_path=import_files(GITOPS_TEMPLATES_PATH) / 'gitignore.j2'),
+            'w')
+
+        # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
+        if not has_remote_branch:
+            execute_process(f'git -C {BASE_DIR} add .gitignore', to_null=False)
+            execute_process(f'''git -C {BASE_DIR} commit -m 'init' ''', to_null=False)
+            execute_process(
+                f'''git -C {BASE_DIR} push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
+
+    # Check for remote origin url mismatch
+    actual_remote = subprocess.check_output(
+        [f'git -C {BASE_DIR} config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+    if actual_remote != git_remote_origin_url:
+        raise RuntimeError(
+            f'Expected remote origin url {git_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
+
+    # Add, commit, and push changes to CSR
+    execute_process(f'git -C {BASE_DIR} add .', to_null=False)
+    execute_process(f'''git -C {BASE_DIR} commit -m 'Run AutoMLOps' ''', to_null=False)
+    execute_process(
+        f'''git -C {BASE_DIR} push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
+    # pylint: disable=logging-fstring-interpolation
+    logging.info(
+        f'''Pushing code to {defaults['gcp']['source_repository_branch']} branch, triggering build...''')
+    if deployment_framework == Deployer.CLOUDBUILD.value:
+        logging.info(
+            f'''Cloud Build job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')

@@ -55,6 +55,7 @@ from google_cloud_automlops.utils.utils import (
     coalesce,
     create_default_config,
     execute_process,
+    git_workflow,
     make_dirs,
     precheck_deployment_requirements,
     read_yaml_file,
@@ -66,6 +67,9 @@ from google_cloud_automlops.utils.utils import (
 )
 # Orchestration imports
 from google_cloud_automlops.utils.enums import (
+    ArtifactRepository,
+    CodeRepository,
+    Deployer,
     Orchestrator,
     PipelineJobSubmitter,
     Provisioner
@@ -80,18 +84,8 @@ from google_cloud_automlops.provisioning.gcloud import GCloud
 from google_cloud_automlops.provisioning.pulumi import Pulumi
 
 # Deployment imports
-from google_cloud_automlops.deployments.cloudbuild import builder as CloudBuildBuilder
-from google_cloud_automlops.deployments.github_actions import builder as GithubActionsBuilder
-from google_cloud_automlops.deployments.enums import (
-    ArtifactRepository,
-    CodeRepository,
-    Deployer
-)
-from google_cloud_automlops.deployments.configs import (
-    CloudBuildConfig,
-    GitHubActionsConfig
-)
-from google_cloud_automlops.deployments.gitops.git_utils import git_workflow
+from google_cloud_automlops.deployments.cloudbuild import CloudBuild
+from google_cloud_automlops.deployments.github_actions import GitHubActions
 
 # Set up logging
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -387,29 +381,18 @@ def generate(
     # Generate files required to run cicd pipeline
     if deployment_framework == Deployer.CLOUDBUILD.value:
         logging.info(f'Writing cloud build config to {GENERATED_CLOUDBUILD_FILE}')
-        CloudBuildBuilder.build(CloudBuildConfig(
-                artifact_repo_location=artifact_repo_location,
-                artifact_repo_name=derived_artifact_repo_name,
-                naming_prefix=naming_prefix,
-                project_id=project_id,
-                pubsub_topic_name=derived_pubsub_topic_name,
-                use_ci=use_ci))
+        CloudBuild().build()
+
     if deployment_framework == Deployer.GITHUB_ACTIONS.value:
         if project_number is None:
             raise ValueError('Project number must be specified in order to use to use Github Actions integration.')
         logging.info(f'Writing GitHub Actions config to {GENERATED_GITHUB_ACTIONS_FILE}')
-        GithubActionsBuilder.build(GitHubActionsConfig(
-                artifact_repo_location=artifact_repo_location,
-                artifact_repo_name=derived_artifact_repo_name,
-                naming_prefix=naming_prefix,
-                project_id=project_id,
-                project_number=project_number,
-                pubsub_topic_name=derived_pubsub_topic_name,
-                source_repo_branch=source_repo_branch,
-                use_ci=use_ci,
-                workload_identity_pool=workload_identity_pool,
-                workload_identity_provider=workload_identity_provider,
-                workload_identity_service_account=workload_identity_service_account))
+        GitHubActions(
+            project_number=project_number,
+            workload_identity_pool=workload_identity_pool,
+            workload_identity_provider=workload_identity_provider,
+            workload_identity_service_account=workload_identity_service_account
+        ).build()
     logging.info('Code Generation Complete.')
 
 

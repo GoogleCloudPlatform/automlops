@@ -134,9 +134,9 @@ TERRAFORM_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.terraf
 PULUMI_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.pulumi'
 GCLOUD_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.gcloud'
 KFP_TEMPLATES_PATH = 'google_cloud_automlops.orchestration.templates.kfp'
-CLOUDBUILD_TEMPLATES_PATH = 'google_cloud_automlops.deployments.cloudbuild.templates'
-GITHUB_ACTIONS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.github_actions.templates'
-GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.gitops.templates'
+CLOUDBUILD_TEMPLATES_PATH = 'google_cloud_automlops.deployments.templates.cloudbuild'
+GITHUB_ACTIONS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.templates.github_actions'
+GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.utils.templates'
 
 # Required IAM Roles for pipeline runner service account
 IAM_ROLES_RUNNER_SA = [

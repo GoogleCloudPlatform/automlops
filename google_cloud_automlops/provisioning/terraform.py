@@ -41,7 +41,7 @@ from google_cloud_automlops.utils.constants import (
     TERRAFORM_TEMPLATES_PATH
 )
 
-from google_cloud_automlops.deployments.enums import (
+from google_cloud_automlops.utils.enums import (
     Deployer
 )
 
