@@ -22,7 +22,6 @@ import os
 import tempfile
 from typing import Callable, List
 
-import pandas as pd
 import pytest
 import pytest_mock
 import yaml

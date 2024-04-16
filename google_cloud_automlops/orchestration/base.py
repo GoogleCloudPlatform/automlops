@@ -60,7 +60,7 @@ class BaseComponent():
 
         # Confirm the input is an existing function
         if not inspect.isfunction(func):
-            raise ValueError(f"{func} must be of type function.")
+            raise ValueError(f'{func} must be of type function.')
 
         # Set simple attributes of the component function
         self.func = func
