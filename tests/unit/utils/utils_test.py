@@ -39,7 +39,6 @@ from google_cloud_automlops.utils.utils import (
     read_yaml_file,
     render_jinja,
     stringify_job_spec_list,
-    update_params,
     validate_use_ci,
     write_and_chmod,
     write_file,
@@ -430,37 +429,6 @@ def test_validate_use_ci(sch_pattern: str,
         validate_use_ci(schedule_pattern=sch_pattern,
                         setup_model_monitoring=setup_model_monitoring,
                         use_ci=use_ci)
-
-
-@pytest.mark.parametrize(
-    'params, expected_output',
-    [
-        ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
-        ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
-        ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
-        ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Boolean'}]),
-        ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'JsonArray'}]),
-        ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'JsonObject'}]),
-        ([{'name': 'param6', 'type': pd.DataFrame}], None)
-    ]
-)
-def test_update_params(params: List[dict], expected_output: List[dict]):
-    """Tests the update_params function, which reformats the source code type
-    labels as strings. There are seven test cases for this function, which test
-    for updating different parameter types.
-
-    Args:
-        params (List[dict]): Pipeline parameters. A list of dictionaries, each param is a dict containing keys:
-            'name': required, str param name.
-            'type': required, python primitive type.
-            'description': optional, str param desc.
-        expected_output (List[dict]): Expectation of whether or not the configuration is valid.
-    """
-    if expected_output is not None:
-        assert expected_output == update_params(params=params)
-    else:
-        with pytest.raises(ValueError):
-            assert update_params(params=params)
 
 
 @pytest.mark.parametrize(

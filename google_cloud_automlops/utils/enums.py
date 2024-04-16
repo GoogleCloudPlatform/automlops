@@ -22,6 +22,23 @@ pipeline, and services objects."""
 from enum import Enum
 
 
+class Deployer(Enum):
+    """Enum representing the available options for orchestration management."""
+
+    CLOUDBUILD = 'cloud-build'
+    GITHUB_ACTIONS = 'github-actions'
+    # GITLAB_CI = 'gitlab-ci'   # roadmap item
+    # JENKINS = 'jenkins'   # roadmap item
+
+
+class Provisioner(Enum):
+    """Enum representing the available providers for infrastructure management."""
+
+    TERRAFORM = 'terraform'
+    # PULUMI = 'pulumi' roadmap item
+    GCLOUD = 'gcloud'
+
+
 class Orchestrator(Enum):
     """Enum representing the available options for orchestration management."""
 
@@ -32,19 +49,10 @@ class Orchestrator(Enum):
     # RAY = 'ray'   # roadmap item
 
 
-class PipelineJobSubmitter(Enum):
-    """Enum representing the available options for the Pipeline Job submission service."""
+class ArtifactRepository(Enum):
+    """Enum representing the available options for artifact repositories."""
 
-    CLOUD_FUNCTIONS = 'cloud-functions'
-    CLOUD_RUN = 'cloud-run'
-
-class Deployer(Enum):
-    """Enum representing the available options for orchestration management."""
-
-    CLOUDBUILD = 'cloud-build'
-    GITHUB_ACTIONS = 'github-actions'
-    # GITLAB_CI = 'gitlab-ci'   # roadmap item
-    # JENKINS = 'jenkins'   # roadmap item
+    ARTIFACT_REGISTRY = 'artifact-registry'
 
 
 class CodeRepository(Enum):
@@ -56,18 +64,11 @@ class CodeRepository(Enum):
     GITLAB = 'gitlab'   # roadmap item
 
 
-class ArtifactRepository(Enum):
-    """Enum representing the available options for artifact repositories."""
+class PipelineJobSubmitter(Enum):
+    """Enum representing the available options for the Pipeline Job submission service."""
 
-    ARTIFACT_REGISTRY = 'artifact-registry'
-
-
-class Provisioner(Enum):
-    """Enum representing the available providers for infrastructure management."""
-
-    TERRAFORM = 'terraform'
-    # PULUMI = 'pulumi' roadmap item
-    GCLOUD = 'gcloud'
+    CLOUD_FUNCTIONS = 'cloud-functions'
+    CLOUD_RUN = 'cloud-run'
 
 
 class PulumiRuntime(Enum):

@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""AutoMLOps is a tool that generates a production-style MLOps pipeline
-   from Jupyter Notebooks."""
+"""AutoMLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks."""
 
 # pylint: disable=C0103
 # pylint: disable=line-too-long
@@ -22,7 +21,6 @@
 # pylint: disable=global-at-module-level
 
 import functools
-import json
 import logging
 import os
 import sys
@@ -137,9 +135,8 @@ def launchAll(
     workload_identity_pool: Optional[str] = None,
     workload_identity_provider: Optional[str] = None,
     workload_identity_service_account: Optional[str] = None):
-    """Generates relevant pipeline and component artifacts,
-       then provisions resources, builds, compiles, and submits the PipelineJob.
-       Check constants file for variable default values.
+    """Generates relevant pipeline and component artifacts, then provisions resources, builds,
+    compiles, and submits the PipelineJob. Check constants file for variable default values.
 
     Args:
         project_id: The project ID.
@@ -253,8 +250,8 @@ def generate(
     workload_identity_pool: Optional[str] = None, #TODO: integrate optional creation of pool and provider during provisioning stage
     workload_identity_provider: Optional[str] = None,
     workload_identity_service_account: Optional[str] = None):
-    """Generates relevant pipeline and component artifacts.
-       Check constants file for variable default values.
+    """Generates relevant pipeline and component artifacts. Check constants file for variable
+    default values.
 
     Args: See launchAll() function.
     """
@@ -263,21 +260,38 @@ def generate(
 
     # Validate currently supported tools
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:
-        raise ValueError(f'Unsupported artifact repository type: {artifact_repo_type}')
+        raise ValueError(
+            f'Unsupported artifact repository type: {artifact_repo_type}. \
+            Supported frameworks include: {", ".join([e.value for e in ArtifactRepository])}'
+        )
     if source_repo_type not in [e.value for e in CodeRepository]:
-        raise ValueError(f'Unsupported source repository type: {source_repo_type}')
+        raise ValueError(
+            f'Unsupported source repository type: {source_repo_type}. \
+            Supported frameworks include: {", ".join([e.value for e in CodeRepository])}'
+        )
     if pipeline_job_submission_service_type not in [e.value for e in PipelineJobSubmitter]:
-        raise ValueError(f'Unsupported pipeline job submissions service type: {pipeline_job_submission_service_type}')
+        raise ValueError(
+            f'Unsupported pipeline job submissions service type: {pipeline_job_submission_service_type}. \
+            Supported frameworks include: {", ".join([e.value for e in PipelineJobSubmitter])}'
+        )
     if orchestration_framework not in [e.value for e in Orchestrator]:
-        raise ValueError(f'Unsupported orchestration framework: {orchestration_framework}')
+        raise ValueError(
+            f'Unsupported orchestration framework: {orchestration_framework}. \
+            Supported frameworks include: {", ".join([e.value for e in Orchestrator])}'
+        )
     if provisioning_framework not in [e.value for e in Provisioner]:
-        raise ValueError(f'Unsupported provisioning framework: {provisioning_framework}')
+        raise ValueError(
+            f'Unsupported provisioning framework: {provisioning_framework}. \
+            Supported frameworks include: {", ".join([e.value for e in Provisioner])}'
+        )
     if deployment_framework not in [e.value for e in Deployer]:
-        raise ValueError(f'Unsupported deployment framework: {deployment_framework}')
-
-    logging.info(f'Writing directories under {BASE_DIR}')
+        raise ValueError(
+            f'Unsupported deployment framework: {deployment_framework}. \
+            Supported frameworks include: {", ".join([e.value for e in Deployer])}'
+        )
 
     # Make standard directories
+    logging.info(f'Writing directories under {BASE_DIR}')
     make_dirs(GENERATED_DIRS)
 
     # Make optional directories
@@ -302,6 +316,7 @@ def generate(
     derived_storage_bucket_name = coalesce(storage_bucket_name, f'{project_id}-{naming_prefix}-bucket')
 
     # Write defaults.yaml
+    logging.info(f'Writing configurations to {GENERATED_DEFAULTS_FILE}')
     defaults = create_default_config(
         artifact_repo_location=artifact_repo_location,
         artifact_repo_name=derived_artifact_repo_name,
@@ -330,17 +345,11 @@ def generate(
         storage_bucket_name=derived_storage_bucket_name,
         use_ci=use_ci,
         vpc_connector=vpc_connector)
-    logging.info(f'Writing configurations to {GENERATED_DEFAULTS_FILE}')
-    # Write header and then yaml contents
     write_file(GENERATED_DEFAULTS_FILE, DEFAULTS_HEADER, 'w')
     write_yaml_file(GENERATED_DEFAULTS_FILE, defaults, 'a')
 
     # Generate files required to run a Kubeflow pipeline
     if orchestration_framework == Orchestrator.KFP.value:
-
-        # Log what files will be created
-        logging.info(f'Writing README.md to {BASE_DIR}README.md')
-        logging.info(f'Writing scripts to {BASE_DIR}scripts')
 
         # Write kubeflow pipeline code
         logging.info(f'Writing kubeflow pipelines code to {BASE_DIR}pipelines')
@@ -356,13 +365,9 @@ def generate(
             logging.info(f'     -- Writing {comp.name}')
             KFPComponent(func=comp.func, packages_to_install=comp.packages_to_install).build()
 
-        if setup_model_monitoring:
-            logging.info(f'Writing model monitoring code to {BASE_DIR}model_monitoring')
-
         # If user specified services, write services scripts
         if use_ci:
             logging.info(f'Writing submission service code to {BASE_DIR}services')
-            defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
             KFPServices().build()
 
     # Generate files required to provision resources
@@ -383,7 +388,7 @@ def generate(
         logging.info(f'Writing cloud build config to {GENERATED_CLOUDBUILD_FILE}')
         CloudBuild().build()
 
-    if deployment_framework == Deployer.GITHUB_ACTIONS.value:
+    elif deployment_framework == Deployer.GITHUB_ACTIONS.value:
         if project_number is None:
             raise ValueError('Project number must be specified in order to use to use Github Actions integration.')
         logging.info(f'Writing GitHub Actions config to {GENERATED_GITHUB_ACTIONS_FILE}')
@@ -397,9 +402,8 @@ def generate(
 
 
 def provision(hide_warnings: Optional[bool] = True):
-    """Provisions the necessary infra to run MLOps pipelines. 
-       The provisioning option (e.g. terraform, gcloud, etc.)
-       is set during the generate() step and stored in config/defaults.yaml. 
+    """Provisions the necessary infra to run MLOps pipelines. The provisioning option (e.g.
+    terraform, gcloud, etc.) is set during the generate() step and stored in config/defaults.yaml. 
 
     Args:
         hide_warnings: Boolean that specifies whether to show permissions warnings before provisioning.
@@ -419,10 +423,9 @@ def provision(hide_warnings: Optional[bool] = True):
 
 
 def deprovision():
-    """De-provisions the infra stood up during the provision() step.
-       deprovision currently only works with terraform. 
-       The provisioning option (e.g. terraform, gcloud, etc.)
-       is set during the generate() step and stored in config/defaults.yaml. 
+    """De-provisions the infra stood up during the provision() step. Deprovision currently only
+    works with terraform. The provisioning option (e.g. terraform, gcloud, etc.) is set during the
+    generate() step and stored in config/defaults.yaml. 
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     provisioning_framework = defaults['tooling']['provisioning_framework']
@@ -436,20 +439,16 @@ def deprovision():
 def deploy(
     hide_warnings: Optional[bool] = True,
     precheck: Optional[bool] = False):
-
-    """Builds and pushes the component_base image, compiles the pipeline,
-       and submits a message to the queueing service to execute a PipelineJob.
-       The specifics of the deploy step are dependent on the defaults set during
-       the generate() step, particularly:
-       - use_ci: if use_ci is False, the deploy step will use scripts/run_all.sh,
-            which will submit the build job, compile the pipeline, and submit the
-            PipelineJob all from the local machine.
-       - artifact_repo_type: Determines which type of artifact repo the image
-            is pushed to.
-       - deployment_framework: Determines which build tool to use for building.
-       - source_repo_type: Determines which source repo to use for versioning code
-            and triggering the build.
-       Defaults are stored in config/defaults.yaml.
+    """Builds and pushes the component_base image, compiles the pipeline, and submits a message to
+    the queueing service to execute a PipelineJob. The specifics of the deploy step are dependent on
+    the defaults set during the generate() step, particularly:
+        - use_ci: if use_ci is False, the deploy step will use scripts/run_all.sh, which will submit
+            the build job, compile the pipeline, and submit the PipelineJob all from the local machine.
+        - artifact_repo_type: Determines which type of artifact repo the image is pushed to.
+        - deployment_framework: Determines which build tool to use for building.
+        - source_repo_type: Determines which source repo to use for versioning code and triggering
+            the build.
+    Defaults are stored in config/defaults.yaml.
 
     Args:
         hide_warnings: Boolean that specifies whether to show permissions warnings before deploying.
@@ -495,16 +494,15 @@ def monitor(
     skew_thresholds: Optional[dict] = None,
     training_dataset: Optional[str] = None):
     """Creates or updates a Vertex AI Model Monitoring Job for a deployed model endpoint.
-       - The predicted target field and model endpoint are required.
-       - alert_emails, if specified, will send monitoring updates to the specified email(s)
-       - auto_retraining_params will set up automatic retraining by creating a Log Sink and
-            forwarding anomaly logs to the Pub/Sub Topic for retraining the model with the
-            params specified here. If this field is left Null, the model will not be
-            automatically retrained when an anomaly is detected.
-       - drift_thresholds and skew_thresholds are optional, but at least 1 of them 
-            must be specified.
-       - training_dataset must be specified if skew_thresholds are provided.
-       Defaults are stored in config/defaults.yaml.
+        - The predicted target field and model endpoint are required.
+        - alert_emails, if specified, will send monitoring updates to the specified email(s)
+        - auto_retraining_params will set up automatic retraining by creating a Log Sink and
+            forwarding anomaly logs to the Pub/Sub Topic for retraining the model with the params
+            specified here. If this field is left Null, the model will not be automatically
+            retrained when an anomaly is detected.
+        - drift_thresholds and skew_thresholds are optional, but at least 1 of them must be specified.
+        - training_dataset must be specified if skew_thresholds are provided.
+    Defaults are stored in config/defaults.yaml.
 
     Args:
         target_field: Prediction target column name in training dataset.
@@ -572,17 +570,17 @@ def component(func: Optional[Callable] = None,
     """Decorator for Python-function based components in AutoMLOps.
 
     Example usage:
-    from google_cloud_automlops import AutoMLOps
-    @AutoMLOps.component
-    def my_function_one(input: str, output: Output[Model]):
-      ...
+        from google_cloud_automlops import AutoMLOps
+        @AutoMLOps.component
+        def my_function_one(input: str, output: Output[Model]):
+        ...
+
     Args:
-        func: The python function to create a component from. The function
-            should have type annotations for all its arguments, indicating how
-            it is intended to be used (e.g. as an input/output Artifact object,
-            a plain parameter, or a path to a file).
-        packages_to_install: A list of optional packages to install before
-            executing func. These will always be installed at component runtime.
+        func: The python function to create a component from. The function should have type
+            annotations for all its arguments, indicating how it is intended to be used (e.g. as an
+            input/output Artifact object, a plain parameter, or a path to a file).
+        packages_to_install: A list of optional packages to install before executing func. These
+            will always be installed at component runtime.
     """
     if func is None:
         return functools.partial(
@@ -603,26 +601,26 @@ def pipeline(func: Optional[Callable] = None,
     """Decorator for Python-function based pipelines in AutoMLOps.
 
     Example usage:
-    from google_cloud_automlops import AutoMLOps
-    @AutoMLOps.pipeline
-    def pipeline(bq_table: str,
-                output_model_directory: str,
-                project: str,
-                region: str,
-                ):
+        from google_cloud_automlops import AutoMLOps
+        @AutoMLOps.pipeline
+        def pipeline(bq_table: str,
+                    output_model_directory: str,
+                    project: str,
+                    region: str,
+                    ):
 
-        dataset_task = create_dataset(
-            bq_table=bq_table,
-            project=project)
-      ...
+            dataset_task = create_dataset(
+                bq_table=bq_table,
+                project=project)
+        ...
+
     Args:
-        func: The python function to create a pipeline from. The function
-            should have type annotations for all its arguments, indicating how
-            it is intended to be used (e.g. as an input/output Artifact object,
-            a plain parameter, or a path to a file).
+        func: The python function to create a pipeline from. The function should have type
+            annotations for all its arguments, indicating how it is intended to be used (e.g. as an
+            input/output Artifact object, a plain parameter, or a path to a file).
         name: The name of the pipeline.
         description: Short description of what the pipeline does.
-  """
+    """
     if func is None:
         return functools.partial(
             pipeline,

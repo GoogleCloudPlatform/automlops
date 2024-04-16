@@ -255,7 +255,7 @@ def validate_use_ci(setup_model_monitoring: bool, schedule_pattern: str, use_ci:
 
     Note: this function does not validate that schedule_pattern is a properly formatted cron value.
     Cron format validation is done in the backend by GCP.
-    
+
     Args:
         setup_model_monitoring (bool): Specifies whether to set up a Vertex AI Model Monitoring Job.
         schedule_pattern (str): Cron formatted value used to create a Scheduled retrain job.
@@ -927,7 +927,8 @@ def precheck_deployment_requirements(defaults: dict):
         if pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             logging.info(f'Checking for Cloud Functions Pipeline Job Submission Service in project {project}...')
             service = discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
-            request = service.projects().locations().functions().get(name=f'projects/{project}/locations/{pipeline_job_submission_service_location}/functions/{pipeline_job_submission_service_name}')
+            request = service.projects().locations().functions().get(
+                name=f'projects/{project}/locations/{pipeline_job_submission_service_location}/functions/{pipeline_job_submission_service_name}')
             try:
                 request.execute()
             except Exception as err:
@@ -1041,11 +1042,13 @@ def git_workflow():
         git_remote_origin_url = f'''git@bitbucket.org:{defaults['gcp']['source_repository_name']}.git'''
 
     if not os.path.exists(f'{BASE_DIR}.git'):
+
         # Initialize git and configure credentials
         execute_process(f'git -C {BASE_DIR} init', to_null=False)
         if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
             execute_process(
                 f'''git -C {BASE_DIR} config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+
         # Add repo and branch
         execute_process(
             f'''git -C {BASE_DIR} remote add origin {git_remote_origin_url}''', to_null=False)
