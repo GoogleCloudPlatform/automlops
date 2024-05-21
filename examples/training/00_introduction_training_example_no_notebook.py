@@ -67,7 +67,6 @@ from google_cloud_automlops import AutoMLOps
 # ## Data Loading
 # Define a custom component for loading and creating a dataset using `@AutoMLOps.component`. Import statements and helper functions must be added inside the function. Provide parameter type hints.
 # 
-# **Note: we currently only support python primitive types for component parameters. If you would like to use something more advanced, please use the Kubeflow spec instead (see below in this notebook).**
 
 @AutoMLOps.component(
     packages_to_install=[
