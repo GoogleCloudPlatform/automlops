@@ -200,8 +200,8 @@ class KFPPipeline(BasePipeline):
         self.project_id = defaults['gcp']['project_id']
         self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
         self.base_image = defaults['gcp']['base_image']
-        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
         self.use_ci = defaults['tooling']['use_ci']
+        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name'] if self.use_ci else None
         self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
 
         # Build necessary folders
