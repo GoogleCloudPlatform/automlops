@@ -47,32 +47,33 @@ class Infrastructure():
                 key file in JSON format.
         """
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.use_ci = defaults['tooling']['use_ci']
         self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
         self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
         self.artifact_repo_type = defaults['gcp']['artifact_repo_type']
-        self.build_trigger_location = defaults['gcp']['build_trigger_location']
-        self.build_trigger_name = defaults['gcp']['build_trigger_name']
+        self.build_trigger_location = defaults['gcp']['build_trigger_location'] if self.use_ci else None
+        self.build_trigger_name = defaults['gcp']['build_trigger_name'] if self.use_ci else None
         self.deployment_framework = defaults['tooling']['deployment_framework']
         self.naming_prefix = defaults['gcp']['naming_prefix']
         self.orchestration_framework = defaults['tooling']['orchestration_framework']
         self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
-        self.pipeline_job_submission_service_location = defaults['gcp']['pipeline_job_submission_service_location']
-        self.pipeline_job_submission_service_name = defaults['gcp']['pipeline_job_submission_service_name']
-        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
+        self.pipeline_job_submission_service_location = defaults['gcp']['pipeline_job_submission_service_location'] if self.use_ci else None
+        self.pipeline_job_submission_service_name = defaults['gcp']['pipeline_job_submission_service_name'] if self.use_ci else None
+        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type'] if self.use_ci else None
         self.project_id = defaults['gcp']['project_id']
         self.provision_credentials_key = provision_credentials_key
-        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
-        self.schedule_location = defaults['gcp']['schedule_location']
-        self.schedule_name = defaults['gcp']['schedule_name']
-        self.schedule_pattern = defaults['gcp']['schedule_pattern']
+        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name'] if self.use_ci else None
+        self.schedule_location = defaults['gcp']['schedule_location'] if self.use_ci else None
+        self.schedule_name = defaults['gcp']['schedule_name'] if self.use_ci else None
+        self.schedule_pattern = defaults['gcp']['schedule_pattern'] if self.use_ci else None
         self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
-        self.source_repo_branch = defaults['gcp']['source_repository_branch']
-        self.source_repo_name = defaults['gcp']['source_repository_name']
-        self.source_repo_type = defaults['gcp']['source_repository_type']
+        self.source_repo_branch = defaults['gcp']['source_repository_branch'] if self.use_ci else None
+        self.source_repo_name = defaults['gcp']['source_repository_name'] if self.use_ci else None
+        self.source_repo_type = defaults['gcp']['source_repository_type'] if self.use_ci else None
         self.storage_bucket_location = defaults['gcp']['storage_bucket_location']
         self.storage_bucket_name = defaults['gcp']['storage_bucket_name']
-        self.use_ci = defaults['tooling']['use_ci']
-        self.vpc_connector = defaults['gcp']['vpc_connector']
+
+        self.vpc_connector = defaults['gcp']['vpc_connector'] if self.use_ci else None
 
         self.required_apis = self._get_required_apis()
 
