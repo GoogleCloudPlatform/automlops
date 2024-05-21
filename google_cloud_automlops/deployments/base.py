@@ -31,15 +31,15 @@ class Deployment():
         """Initializes a generic Deployment object by reading in default attributes.
         """
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+        self.use_ci = defaults['tooling']['use_ci']
         self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
         self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
         self.deployment_framework = defaults['tooling']['deployment_framework']
         self.naming_prefix = defaults['gcp']['naming_prefix']
         self.project_id = defaults['gcp']['project_id']
-        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
-        self.source_repo_branch = defaults['gcp']['source_repository_branch']
-        self.source_repo_type = defaults['gcp']['source_repository_type']
-        self.use_ci = defaults['tooling']['use_ci']
+        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name'] if self.use_ci else None
+        self.source_repo_branch = defaults['gcp']['source_repository_branch'] if self.use_ci else None
+        self.source_repo_type = defaults['gcp']['source_repository_type'] if self.use_ci else None
 
     def build(self):
         """Abstract method to create all files in the #TODO
