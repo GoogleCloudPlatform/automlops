@@ -19,6 +19,7 @@ Or Install locally by cloning the repo and running `pip install .`
 - `google-auth==2.22.0`
 - `importlib-resources==6.0.1`
 - `Jinja2==3.1.2`
+- `kfp>=2.0.0`
 - `packaging==23.1`
 - `pipreqs==0.4.13`
 - `pydantic==2.3.0`
@@ -107,7 +108,7 @@ In order to use `AutoMLOps.provision(...)` with `provisioning_framework='terrafo
 ### Deploy
 In order to use `AutoMLOps.deploy(...)` with `use_ci=False`, the following are required:
 - Local python environment with these packages installed:
-    - `kfp<2.0.0`
+    - `kfp>=2.0.0`
     - `google-cloud-aiplatform`
     - `google-cloud-pipeline-components`
     - `google-cloud-storage`
@@ -327,7 +328,7 @@ AutoMLOps will generate the resources specified by these parameters (e.g. Artifa
 
 # Generating Code
 
-AutoMLOps generates code that is compatible with `kfp<2.0.0`. Upon running `AutoMLOps.generate(project_id='project-id', pipeline_params=pipeline_params, setup_model_monitoring=True, use_ci=True)`, a series of directories will be generated automatically:
+AutoMLOps generates code that is compatible with `kfp>=2.0.0`. Upon running `AutoMLOps.generate(project_id='project-id', pipeline_params=pipeline_params, setup_model_monitoring=True, use_ci=True)`, a series of directories will be generated automatically:
 
 ```bash
 .

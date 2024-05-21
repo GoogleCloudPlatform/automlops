@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Creates enums for orchestrator and submission service options as well as generic component,
-pipeline, and services objects."""
+"""Creates enums for orchestrator and submission service options
+as well as generic component, pipeline, and services objects."""
 
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103

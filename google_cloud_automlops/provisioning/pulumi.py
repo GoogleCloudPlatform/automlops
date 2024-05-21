@@ -17,6 +17,7 @@
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103
 # pylint: disable=line-too-long
+# pylint: disable=unused-import
 
 try:
     from importlib.resources import files as import_files

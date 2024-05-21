@@ -45,10 +45,6 @@ class CloudBuild(Deployment):
     """The Deployment object represents all information and functions to create an AutoMLOps
     system's deployment.
     """
-    def __init__(self):
-        """Initializes a GitHub Actions object by reading in default attributes.
-        """
-        super().__init__()
 
     def build(self):
         """Constructs CloudBuild yaml at AutoMLOps/cloudbuild.yaml.

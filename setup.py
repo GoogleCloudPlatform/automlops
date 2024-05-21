@@ -20,7 +20,7 @@ with open('README.md', 'r', encoding='utf-8') as file:
 
 setup(
     name='google-cloud-automlops',
-    version='1.2.9',
+    version='1.3.0',
     description='Build MLOps Pipelines in Minutes.',
     long_description=readme_contents,
     long_description_content_type='text/markdown',
@@ -38,6 +38,7 @@ setup(
                       'google-auth==2.22.0',
                       'importlib-resources==6.0.1',
                       'Jinja2==3.1.2',
+                      'kfp>=2.0.0',
                       'packaging==23.1',
                       'pipreqs==0.4.13',
                       'pydantic==2.3.0',

@@ -43,7 +43,6 @@ import google.auth
 
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
-    CACHE_DIR,
     DEFAULT_SCHEDULE_PATTERN,
     GENERATED_DEFAULTS_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
@@ -53,7 +52,6 @@ from google_cloud_automlops.utils.constants import (
     MIN_GCLOUD_BETA_VERSION,
     MIN_GCLOUD_SDK_VERSION,
     MIN_RECOMMENDED_TERRAFORM_VERSION,
-    PLACEHOLDER_IMAGE
 )
 
 from google_cloud_automlops.utils.enums import (
@@ -192,28 +190,6 @@ def delete_file(filepath: str):
         pass
 
 
-def get_components_list(full_path: bool = True) -> list:
-    """Reads yamls in the cache directory, verifies they are component yamls, and returns the name
-    of the files.
-
-    Args:
-        full_path (bool): If false, stores only the filename w/o extension.
-
-    Returns:
-        list: Contains the names or paths of all component yamls in the dir.
-    """
-    components_list = []
-    elements = os.listdir(CACHE_DIR)
-    for file in list(filter(lambda y: ('.yaml' or '.yml') in y, elements)):
-        path = os.path.join(CACHE_DIR, file)
-        if is_component_config(path):
-            if full_path:
-                components_list.append(path)
-            else:
-                components_list.append(os.path.basename(file).split('.')[0])
-    return components_list
-
-
 def is_component_config(filepath: str) -> bool:
     """Checks to see if the given file is a component yaml.
 
@@ -328,17 +304,6 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
         output.append(mapping)
     return output
 
-def is_using_kfp_spec(image: str) -> bool:
-    """Takes in an image string from a component yaml and determines if it came from kfp or not.
-
-    Args:
-        image (str): Image string. #TODO: make this more informative
-
-    Returns:
-        bool: Whether the component using kfp spec.
-    """
-    return image != PLACEHOLDER_IMAGE
-
 
 def create_default_config(artifact_repo_location: str,
                           artifact_repo_name: str,
@@ -436,7 +401,7 @@ def create_default_config(artifact_repo_location: str,
         defaults['gcp']['vpc_connector'] = vpc_connector
 
     defaults['pipelines'] = {}
-    defaults['pipelines']['gs_pipeline_job_spec_path'] = f'gs://{storage_bucket_name}/pipeline_root/{naming_prefix}/pipeline_job.json'
+    defaults['pipelines']['gs_pipeline_job_spec_path'] = f'gs://{storage_bucket_name}/pipeline_root/{naming_prefix}/pipeline_job.yaml'
     defaults['pipelines']['parameter_values_path'] = GENERATED_PARAMETER_VALUES_PATH
     defaults['pipelines']['pipeline_component_directory'] = 'components'
     defaults['pipelines']['pipeline_job_spec_path'] = GENERATED_PIPELINE_JOB_SPEC_PATH

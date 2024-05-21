@@ -30,7 +30,6 @@ import google_cloud_automlops.utils.utils
 from google_cloud_automlops.utils.utils import (
     delete_file,
     execute_process,
-    get_components_list,
     get_function_source_definition,
     is_component_config,
     make_dirs,
@@ -281,55 +280,6 @@ def test_delete_file(file_to_delete: str, valid_file: bool):
             file.write('This is a test file.')
             delete_file(file_to_delete)
             assert not os.path.exists(file_to_delete)
-
-
-@pytest.mark.parametrize(
-    'comp_path, comp_name, patch_cwd, expectation',
-    [
-        (['component.yaml'], ['component'], True, does_not_raise()),
-        ([], [], True, does_not_raise()),
-        (['component.yaml'], ['component'], False, pytest.raises(FileNotFoundError))
-    ]
-)
-def test_get_components_list(mocker: pytest_mock.MockerFixture,
-                             comp_path: List[str],
-                             comp_name: List[str],
-                             patch_cwd: bool,
-                             expectation):
-    """Tests get_components_list, which reads yamls in .AutoMLOps-cache directory,
-    verifies they are component yamls, and returns the name of the files. There
-    are three test cases for this function:
-        1. Expected outcome, component list is pulled as expected.
-        2. Verifies an empty list comes back if no YAMLs are present.
-        3. Call function with a nonexistent dir, expecting OSError.
-
-    Args:
-        mocker: Mocker to patch the cache directory for component files.
-        comp_path (List[str]): Path(s) to component yamls.
-        comp_name (List[str]): Name(s) of components.
-        patch_cwd (bool): Boolean flag indicating whether to patch the current working
-            directory from CACHE_DIR to root
-        expectation: Any corresponding expected errors for each set of
-            parameters.
-    """
-    if patch_cwd:
-        mocker.patch.object(google_cloud_automlops.utils.utils, 'CACHE_DIR', '.')
-    if comp_path:
-        for file in comp_path:
-            with open(file=file, mode='w', encoding='utf-8') as f:
-                yaml.dump(
-                    {
-                        'name': 'value1', 
-                        'inputs': 'value2',
-                        'implementation': 'value3'
-                    },
-                    f)
-    with expectation:
-        assert get_components_list(full_path=False) == comp_name
-        assert get_components_list(full_path=True) == [os.path.join('.', file) for file in comp_path]
-    for file in comp_path:
-        if os.path.exists(file):
-            os.remove(file)
 
 
 @pytest.mark.parametrize(

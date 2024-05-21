@@ -10,8 +10,8 @@ from google_cloud_pipeline_components.v1.custom_job import create_custom_trainin
 {% endif %}
 from google.cloud import storage
 import kfp
-from kfp.v2 import compiler, dsl
-from kfp.v2.dsl import *
+from kfp import compiler, dsl
+from kfp.dsl import *
 import yaml
 
 def upload_pipeline_spec(gs_pipeline_job_spec_path: str,

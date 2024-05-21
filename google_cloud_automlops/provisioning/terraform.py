@@ -52,14 +52,6 @@ class Terraform(Infrastructure):
     Args:
         Infrastructure (object): Generic Infrastructure object.
     """
-    def __init__(self, provision_credentials_key):
-        """Initializes Terraform infrastructure object.
-
-        Args:
-            provision_credentials_key (str): Either a path to or the contents of a service account
-                key file in JSON format.
-        """
-        super().__init__(provision_credentials_key)
 
     def build(self):
         """Creates all files needed to provision system infrastructure in terraform.

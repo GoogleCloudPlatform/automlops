@@ -1,13 +1,13 @@
 {{generated_license}}
 import argparse
 import json
-from kfp.v2.components import executor{% if not kfp_spec_bool %}
+from kfp.dsl import executor
 
 import kfp
-from kfp.v2 import dsl
-from kfp.v2.dsl import *
+from kfp import dsl
+from kfp.dsl import *
 from typing import *
-{% endif %}
+
 {{custom_code_contents}}
 def main():
     """Main executor."""

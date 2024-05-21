@@ -47,14 +47,6 @@ class GCloud(Infrastructure):
     Args:
         Infrastructure (object): Generic Infrastructure object.
     """
-    def __init__(self, provision_credentials_key: str):
-        """Initializes GCloud infrastructure object.
-
-        Args:
-            provision_credentials_key (str): Either a path to or the contents of a service account
-                key file in JSON format.
-        """
-        super().__init__(provision_credentials_key)
 
     def build(self):
         """Creates scripts/provision_resources.sh, which contains all GCloud commands needed to

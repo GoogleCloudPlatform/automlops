@@ -17,6 +17,7 @@
 # pylint: disable=anomalous-backslash-in-string
 # pylint: disable=C0103
 # pylint: disable=line-too-long
+# pylint: disable=broad-exception-caught
 
 import ast
 import inspect

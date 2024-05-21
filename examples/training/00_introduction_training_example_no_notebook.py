@@ -44,7 +44,7 @@ PROJECT_ID = 'automlops-sandbox'  # @param {type:"string"}
 # Set your Model ID below.
 MODEL_ID = 'dry-beans-dt'
 
-# # 1. AutoMLOps Pipeline
+# # Example Workflow
 # This workflow will define and generate a pipeline using AutoMLOps. AutoMLOps provides 2 functions for defining MLOps pipelines:
 
 # - `AutoMLOps.component(...)`: Defines a component, which is a containerized python function.
@@ -186,13 +186,17 @@ def deploy_model(
     project_id: str,
     region: str
 ):
-    """Custom component that trains a decision tree on the training data.
+    """Custom component that uploads a saved model from GCS to Vertex Model Registry
+       and deploys the model to an endpoint for online prediction.
 
     Args:
         model_directory: GS location of saved model.
         project_id: Project_id.
         region: Region.
     """
+    import pprint as pp
+    import random
+
     from google.cloud import aiplatform
 
     aiplatform.init(project=project_id, location=region)
@@ -212,9 +216,9 @@ def deploy_model(
         version_aliases=['champion', 'custom-training', 'decision-tree']
         version_description='first version'
 
-    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest'
+    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-2:latest'
     uploaded_model = aiplatform.Model.upload(
-        artifact_uri = model_directory,
+        artifact_uri=model_directory,
         model_id=model_id,
         display_name=model_name,
         parent_model=parent_model,
@@ -229,6 +233,16 @@ def deploy_model(
     endpoint = uploaded_model.deploy(
         machine_type='n1-standard-4',
         deployed_model_display_name='deployed-beans-model')
+
+    sample_input = [[random.uniform(0, 300) for x in range(16)]]
+
+    # Test endpoint predictions
+    print('running prediction test...')
+    try:
+        resp = endpoint.predict(instances=sample_input)
+        pp.pprint(resp)
+    except Exception as ex:
+        print('prediction request failed', ex)
 
 
 # ## Define the Pipeline

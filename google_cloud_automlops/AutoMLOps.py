@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""AutoMLOps is a tool that generates a production-style MLOps pipeline from Jupyter Notebooks."""
+"""AutoMLOps is a tool that generates a production-style MLOps pipelines."""
 
 # pylint: disable=C0103
+# pylint: disable=inconsistent-return-statements
 # pylint: disable=line-too-long
 # pylint: disable=unused-import
 # pylint: disable=logging-fstring-interpolation
 # pylint: disable=global-at-module-level
+# pylint: disable=global-variable-undefined
 
 import functools
 import logging
@@ -45,7 +47,6 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_RESOURCES_SH_FILE,
     GENERATED_SERVICES_DIRS,
     GENERATED_TERRAFORM_DIRS,
-    OUTPUT_DIR
 )
 from google_cloud_automlops.utils.utils import (
     account_permissions_warning,
@@ -91,12 +92,12 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO,
 logging.getLogger('googleapiclient').setLevel(logging.WARNING)
 logger = logging.getLogger()
 
-# Create output directory
-make_dirs([OUTPUT_DIR])
-
 # Set up global dictionaries to hold pipeline and components
 global components_dict
 components_dict = {}
+# # Set up global pipeline glob
+# global pipeline_glob
+# pipeline_glob = None
 
 def launchAll(
     project_id: str,
@@ -633,10 +634,3 @@ def pipeline(func: Optional[Callable] = None,
                                  description=description,
                                  comps_dict=components_dict)
         return
-
-
-def clear_cache():
-    """Deletes all temporary files stored in the cache directory."""
-    execute_process(f'rm -rf {OUTPUT_DIR}', to_null=False)
-    make_dirs([OUTPUT_DIR])
-    logging.info('Cache cleared.')

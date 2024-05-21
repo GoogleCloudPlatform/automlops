@@ -19,7 +19,6 @@
 # pylint: disable=line-too-long
 
 import json
-import re
 import textwrap
 from typing import Callable, List, Optional
 
@@ -29,10 +28,12 @@ except ImportError:
     # Try backported to PY<37 `importlib_resources`
     from importlib_resources import files as import_files
 
+from kfp.dsl import component
+from kfp import compiler
+
 from google_cloud_automlops.orchestration.base import BaseComponent, BasePipeline, BaseServices
 from google_cloud_automlops.utils.utils import (
     execute_process,
-    get_components_list,
     make_dirs,
     read_file,
     read_yaml_file,
@@ -60,7 +61,6 @@ from google_cloud_automlops.utils.constants import (
     GENERATED_RUN_ALL_SH_FILE,
     KFP_TEMPLATES_PATH,
     PINNED_KFP_VERSION,
-    PLACEHOLDER_IMAGE
 )
 
 
@@ -70,31 +70,6 @@ class KFPComponent(BaseComponent):
     Args:
         BaseComponent (object): Generic Component object.
     """
-
-    def __init__(self,
-                 func: Optional[Callable] = None,
-                 packages_to_install: Optional[List[str]] = None):
-        """Initiates a KFP Component object created out of a function holding all necessary code.
-
-        Args:
-            func (Optional[Callable]): The python function to create a component from. The function
-                should have type annotations for all its arguments, indicating how
-                it is intended to be used (e.g. as an input/output Artifact object,
-                a plain parameter, or a path to a file). Defaults to None.
-            packages_to_install (Optional[List[str]]): A list of optional packages to install before
-                executing func. These will always be installed at component runtime. Defaults to None.
-        """
-        super().__init__(func, packages_to_install)
-
-        # Update parameters and return types to reflect KFP data types
-        if self.parameters:
-            self.parameters = self._update_params(self.parameters)
-        if self.return_types:
-            self.return_types = self._update_params(self.return_types)
-
-        # Set packages to install and component spec attributes
-        self.packages_to_install_command = self._get_packages_to_install_command()
-        self.component_spec = self._create_component_spec()
 
     def build(self):
         """Constructs files for running and managing Kubeflow pipelines.
@@ -106,7 +81,8 @@ class KFPComponent(BaseComponent):
         self.naming_prefix = defaults['gcp']['naming_prefix']
 
         # Set and create directory for components if it does not already exist
-        component_dir = BASE_DIR + 'components/' + self.component_spec['name']
+        component_dir = BASE_DIR + 'components/' + self.name
+        comp_yaml_path = component_dir + '/component.yaml'
 
         # Build necessary folders
         # TODO: make this only happen for the first component? or pull into automlops.py
@@ -114,11 +90,6 @@ class KFPComponent(BaseComponent):
             component_dir,
             BASE_DIR + 'components/component_base/src/'])
 
-        # TODO: can this be removed?
-        kfp_spec_bool = self.component_spec['implementation']['container']['image'] != PLACEHOLDER_IMAGE
-
-        # Read in component specs
-        custom_code_contents = self.component_spec['implementation']['container']['command'][-1]
         compspec_image = (
                 f'''{self.artifact_repo_location}-docker.pkg.dev/'''
                 f'''{self.project_id}/'''
@@ -126,115 +97,34 @@ class KFPComponent(BaseComponent):
                 f'''{self.naming_prefix}/'''
                 f'''components/component_base:latest''')
 
-        # If using kfp, remove spaces in name and convert to lowercase
-        if kfp_spec_bool:
-            self.component_spec['name'] = self.component_spec['name'].replace(' ', '_').lower()
+        # Write component spec
+        customer_component = component(func=self.func, base_image=compspec_image)
+        compiler.Compiler().compile(customer_component, comp_yaml_path)
 
         # Write task script to component base
         write_file(
-            filepath=BASE_DIR + 'components/component_base/src/' + self.component_spec['name'] + '.py',
+            filepath=BASE_DIR + 'components/component_base/src/' + self.name + '.py',
             text=render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base.src') / 'task.py.j2',
                 generated_license=GENERATED_LICENSE,
-                kfp_spec_bool=kfp_spec_bool,
-                custom_code_contents=custom_code_contents),
+                custom_code_contents=self.src_code),
             mode='w')
 
-        # Update component_spec to include correct image and startup command
-        self.component_spec['implementation']['container']['image'] = compspec_image
-        self.component_spec['implementation']['container']['command'] = [
+        component_spec = read_yaml_file(comp_yaml_path)
+        # Update component_spec to include correct startup command
+        component_spec['deploymentSpec']['executors'][f'''exec-{self.name.replace('_', '-')}''']['container']['command'] = [
             'python3',
-            f'''/pipelines/component/src/{self.component_spec['name']+'.py'}''']
+            f'''/pipelines/component/src/{self.name + '.py'}''']
 
-        # Write license and component spec to the appropriate component.yaml file
-        comp_yaml_path = component_dir + '/component.yaml'
+        # Write license and overwrite component spec to the appropriate component.yaml file
         write_file(
             filepath=comp_yaml_path,
             text=GENERATED_LICENSE,
             mode='w')
         write_yaml_file(
             filepath=comp_yaml_path,
-            contents=self.component_spec,
+            contents=component_spec,
             mode='a')
-
-    def _get_packages_to_install_command(self) -> list:
-        """Creates a list of formatted list of commands, including code for tmp storage.
-
-        Returns:
-            list: Formatted commands to install necessary packages. #TODO: add more, where is this used
-        """
-        newline = '\n'
-        concat_package_list = ' '.join([repr(str(package)) for package in self.packages_to_install])
-        install_python_packages_script = (
-            f'''if ! [ -x "$(command -v pip)" ]; then{newline}'''
-            f'''    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip{newline}'''
-            f'''fi{newline}'''
-            f'''PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet \{newline}'''
-            f'''    --no-warn-script-location {concat_package_list} && "$0" "$@"{newline}'''
-            f'''{newline}''')
-        return ['sh', '-c', install_python_packages_script, self.src_code]
-
-    def _create_component_spec(self) -> dict:
-        """Creates a tmp component scaffold which will be used by the formalize function. Code is
-        temporarily stored in component_spec['implementation']['container']['command'].
-
-        Returns:
-            dict: _description_ #TODO: FILL OUT
-        """
-        # Instantiate component yaml attributes
-        component_spec = {}
-
-        # Save component name, description, outputs, and parameters
-        component_spec['name'] = self.name
-        if self.description:
-            component_spec['description'] = self.description
-        outputs = self.return_types
-        if outputs:
-            component_spec['outputs'] = outputs
-        component_spec['inputs'] = self.parameters
-
-        # TODO: comment
-        component_spec['implementation'] = {}
-        component_spec['implementation']['container'] = {}
-        component_spec['implementation']['container']['image'] = PLACEHOLDER_IMAGE
-        component_spec['implementation']['container']['command'] = self.packages_to_install_command
-        component_spec['implementation']['container']['args'] = ['--executor_input',
-                                                                {'executorInput': None},
-                                                                '--function_to_execute', 
-                                                                self.name]
-        return component_spec
-
-    def _update_params(self, params: list) -> list:
-        """Converts the parameter types from Python types to Kubeflow types. Currently only supports
-        Python primitive types.
-
-        Args:
-            params: Pipeline parameters. A list of dictionaries, Each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-
-        Returns:
-            list: Params list with converted types.
-
-        Raises:
-            ValueError: If an inputted type is not a primitive.
-        """
-        python_kfp_types_mapper = {
-            int: 'Integer',
-            str: 'String',
-            float: 'Float',
-            bool: 'Bool',
-            list: 'JsonArray',
-            dict: 'JsonObject'
-        }
-        for param in params:
-            try:
-                param['type'] = python_kfp_types_mapper[param['type']]
-            except KeyError as err:
-                raise ValueError(f'Unsupported python type - we only support '
-                                f'primitive types at this time. {err}') from err
-        return params
 
 
 class KFPPipeline(BasePipeline):
@@ -398,7 +288,7 @@ class KFPPipeline(BasePipeline):
                     pubsub_topic_name=self.pubsub_topic_name))
 
         # pipelines/pipeline.py: Generates a Kubeflow pipeline spec from custom components.
-        components_list = get_components_list(full_path=False)
+        components_list = self._get_component_list()
         pipeline_scaffold_contents = textwrap.indent(self.pipeline_scaffold, 4 * ' ')
         write_file(
             filepath=GENERATED_PIPELINE_FILE,
@@ -443,7 +333,7 @@ class KFPPipeline(BasePipeline):
         ending_str = ')\n'
         return '@dsl.pipeline' + name_str + desc_str + ending_str
 
-    def _get_compile_step(self):
+    def _get_compile_step(self) -> str:
         """Constructs the compile function call.
 
         Returns:
@@ -456,6 +346,14 @@ class KFPPipeline(BasePipeline):
             f'    package_path=pipeline_job_spec_path)\n'
             f'\n'
         )
+
+    def _get_component_list(self) -> str:
+        """Gets a list of all the component names in a pipeline.
+
+        Returns:
+            str: List of all component names.
+        """
+        return [comp.name for comp in self.comps]
 
     def _create_component_base_requirements(self) -> str:
         """Writes a requirements.txt to the component_base directory. Infers pip requirements from
@@ -504,12 +402,9 @@ class KFPPipeline(BasePipeline):
 
         # Get user-inputted requirements from the cache dir
         user_inp_reqs = []
-        components_path_list = get_components_list()
-        for component_path in components_path_list:
-            component_spec = read_yaml_file(component_path)
-            reqs = component_spec['implementation']['container']['command'][2]
-            formatted_reqs = re.findall('\'([^\']*)\'', reqs)
-            user_inp_reqs.extend(formatted_reqs)
+
+        for comp in self.comps:
+            user_inp_reqs.extend(comp.packages_to_install)
 
         # Check if user inputted requirements
         if user_inp_reqs:
