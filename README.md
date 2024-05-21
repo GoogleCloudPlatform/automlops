@@ -87,7 +87,7 @@ Inferencing
 - [coming soon] pulumi
 
 **Source Code Repositories**: Repository for versioning generated MLOps code
-- Cloud Source Repositories
+- [deprecating soon] Cloud Source Repositories
 - Bitbucket
 - Github
 - Gitlab
