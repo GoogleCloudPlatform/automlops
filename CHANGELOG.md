@@ -1,11 +1,19 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
-## [1.3.0] - 2024-5-17
+## [1.3.0] - 2024-5-22
 
 ### Added
 
 ### Changed
+
+- Refactored code to follow OOP paradigm
+- Made `kfp` a required dependency of AutoMLOps
+- kfp v2 code is now generated and required for use with AutoMLOps; before this version, `kfp<2.0.0` was required. kfp v2 is not always backwards compatibile with v1
+- Removed support for reading/writing kfp components directly. AutoMLOps now only supports our standard `AutoMLOps.component` and `AutoMLOps.pipeline` syntax rather than `dsl.component`
+- Removed requirement that input parameters for `AutoMLOps.component` be python primitives only
+- Removed the need for `.AutoMLOps-cache`; files are no longer written to an itermediary location and stored in memory instead
+- Updated examples directory to support new changes/updates
 
 ### Fixed
 

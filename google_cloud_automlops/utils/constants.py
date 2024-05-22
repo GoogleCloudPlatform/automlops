@@ -17,8 +17,6 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 
-import kfp
-
 # Apache license
 GENERATED_LICENSE = (
     '# Licensed under the Apache License, Version 2.0 (the "License");\n'
@@ -119,7 +117,7 @@ GENERATED_MODEL_MONITORING_DIRS = [
 DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
 
 # KFP v2 Migration constant
-PINNED_KFP_VERSION = f'kfp=={kfp.__version__}'
+PINNED_KFP_VERSION = 'kfp>=2.0.0'
 
 # Provisioning Template Paths
 TERRAFORM_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.terraform'
