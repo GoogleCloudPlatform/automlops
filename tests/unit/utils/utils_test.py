@@ -16,6 +16,7 @@
 
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
+# pylint: disable=unused-import
 
 from contextlib import nullcontext as does_not_raise
 import os
