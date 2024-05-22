@@ -1005,6 +1005,8 @@ def git_workflow():
         git_remote_origin_url = f'''git@gitlab.com:{defaults['gcp']['source_repository_name']}.git'''
     elif source_repository_type == CodeRepository.BITBUCKET.value:
         git_remote_origin_url = f'''git@bitbucket.org:{defaults['gcp']['source_repository_name']}.git'''
+    else:
+        raise ValueError(f'source_repository_type "{source_repository_type}" not an available option.')
 
     if not os.path.exists(f'{BASE_DIR}.git'):
 
