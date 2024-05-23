@@ -42,7 +42,7 @@ class Deployment():
         self.source_repo_type = defaults['gcp']['source_repository_type'] if self.use_ci else None
 
     def build(self):
-        """Abstract method to create all files in the #TODO
+        """Abstract method to create all files related to CI/CD deployments.
 
         Raises:
             NotImplementedError: The subclass has not defined the `build` method.

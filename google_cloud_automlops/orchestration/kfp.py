@@ -65,7 +65,7 @@ from google_cloud_automlops.utils.constants import (
 
 
 class KFPComponent(BaseComponent):
-    """Creates a KFP specific Component object for #TODO: add more
+    """Creates a KFP specific Component object for Kubeflow Pipelines.
 
     Args:
         BaseComponent (object): Generic Component object.
@@ -85,7 +85,7 @@ class KFPComponent(BaseComponent):
         comp_yaml_path = component_dir + '/component.yaml'
 
         # Build necessary folders
-        # TODO: make this only happen for the first component? or pull into automlops.py
+        # TODO: make this only happen for the first component or pull into automlops.py
         make_dirs([
             component_dir,
             BASE_DIR + 'components/component_base/src/'])
@@ -128,7 +128,7 @@ class KFPComponent(BaseComponent):
 
 
 class KFPPipeline(BasePipeline):
-    """Creates a KFP specific Pipeline object for #TODO: add more
+    """Creates a KFP specific Pipeline object for Kubeflow Pipelines.
 
     Args:
         BasePipeline (object): Generic Pipeline object.
@@ -156,7 +156,8 @@ class KFPPipeline(BasePipeline):
             description=description,
             comps_dict=comps_dict)
 
-        # Create pipeline scaffold attribute # TODO: more descriptive
+        # Create pipeline scaffold attribute, which is an empty pipelines template
+        # without the DAG definition
         self.pipeline_scaffold = (
             self._get_pipeline_decorator()
             + self.src_code
@@ -356,13 +357,14 @@ class KFPPipeline(BasePipeline):
         return [comp.name for comp in self.comps]
 
     def _create_component_base_requirements(self) -> str:
-        """Writes a requirements.txt to the component_base directory. Infers pip requirements from
-        the python srcfiles using pipreqs. Takes user-inputted requirements, and addes some default
-        gcp packages as well as packages that are often missing in setup.py files (e.g db_types,
-        pyarrow, gcsfs, fsspec). TODO: update this as it returns a string, doesn't write a file.
+        """Creates the contents of a requirements.txt to the component_base directory. 
+        Optionally infer pip requirements from the python srcfiles using pipreqs.
+        Takes user-inputted requirements, and addes some default gcp packages as well as
+        packages that are often missing in setup.py files (e.g db_types, pyarrow, 
+        gcsfs, fsspec).
 
         Returns:
-            str: TODO
+            str: contents of the requirements.txt for the pipeline job
         """
         reqs_filename = f'{GENERATED_COMPONENT_BASE}/requirements.txt'
         default_gcp_reqs = [
@@ -431,7 +433,7 @@ class KFPPipeline(BasePipeline):
 
 
 class KFPServices(BaseServices):
-    """Creates a KFP specific Services object for #TODO: add more
+    """Creates a KFP specific Services object for kubeflow pipelines.
 
     Args:
         BaseServices (object): Generic Services object.
