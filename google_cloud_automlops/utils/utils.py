@@ -19,6 +19,12 @@
 # pylint: disable=line-too-long
 # pylint: disable=broad-exception-caught
 
+try:
+    from importlib.resources import files as import_files
+except ImportError:
+    # Try backported to PY<37 `importlib_resources`
+    from importlib_resources import files as import_files
+
 import inspect
 import itertools
 import json
@@ -36,33 +42,36 @@ from googleapiclient import discovery
 import google.auth
 
 from google_cloud_automlops.utils.constants import (
-    CACHE_DIR,
+    BASE_DIR,
     DEFAULT_SCHEDULE_PATTERN,
+    GENERATED_DEFAULTS_FILE,
     GENERATED_PARAMETER_VALUES_PATH,
     GENERATED_PIPELINE_JOB_SPEC_PATH,
+    GITOPS_TEMPLATES_PATH,
     IAM_ROLES_RUNNER_SA,
     MIN_GCLOUD_BETA_VERSION,
     MIN_GCLOUD_SDK_VERSION,
     MIN_RECOMMENDED_TERRAFORM_VERSION,
-    PLACEHOLDER_IMAGE
 )
 
-from google_cloud_automlops.deployments.enums import (
-    ArtifactRepository,
-    CodeRepository,
-    Deployer
-)
-from google_cloud_automlops.provisioning.enums import Provisioner
-from google_cloud_automlops.orchestration.enums import (
+from google_cloud_automlops.utils.enums import (
     Orchestrator,
     PipelineJobSubmitter
 )
+
+from google_cloud_automlops.utils.enums import (
+    ArtifactRepository,
+    CodeRepository,
+    Deployer,
+    Provisioner
+)
+
 
 def make_dirs(directories: list):
     """Makes directories with the specified names.
 
     Args:
-        directories: Path of the directories to make.
+        directories (list): Path of the directories to make.
     """
     for d in directories:
         try:
@@ -72,13 +81,14 @@ def make_dirs(directories: list):
 
 
 def read_yaml_file(filepath: str) -> dict:
-    """Reads a yaml and returns file contents as a dict.
-       Defaults to utf-8 encoding.
+    """Reads a yaml and returns file contents as a dict. Defaults to utf-8 encoding.
 
     Args:
-        filepath: Path to the yaml.
+        filepath (str): Path to the yaml.
+
     Returns:
         dict: Contents of the yaml.
+
     Raises:
         Exception: If an error is encountered reading the file.
     """
@@ -95,11 +105,12 @@ def write_yaml_file(filepath: str, contents: dict, mode: str):
     """Writes a dictionary to yaml. Defaults to utf-8 encoding.
 
     Args:
-        filepath: Path to the file.
-        contents: Dictionary to be written to yaml.
-        mode: Read/write mode to be used.
+        filepath (str): Path to the file.
+        contents (dict): Dictionary to be written to yaml.
+        mode (str): Read/write mode to be used.
+
     Raises:
-        Exception: If an error is encountered writing the file.
+        Exception: An error is encountered while writing the file.
     """
     try:
         with open(filepath, mode, encoding='utf-8') as file:
@@ -110,15 +121,16 @@ def write_yaml_file(filepath: str, contents: dict, mode: str):
 
 
 def read_file(filepath: str) -> str:
-    """Reads a file and returns contents as a string.
-       Defaults to utf-8 encoding.
+    """Reads a file and returns contents as a string. Defaults to utf-8 encoding.
 
     Args:
-        filepath: Path to the file.
+        filepath (str): Path to the file.
+
     Returns:
         str: Contents of the file.
+
     Raises:
-        Exception: If an error is encountered reading the file.
+        Exception: An error is encountered while reading the file.
     """
     try:
         with open(filepath, 'r', encoding='utf-8') as file:
@@ -133,11 +145,12 @@ def write_file(filepath: str, text: str, mode: str):
     """Writes a file at the specified path. Defaults to utf-8 encoding.
 
     Args:
-        filepath: Path to the file.
-        text: Text to be written to file.
-        mode: Read/write mode to be used.
+        filepath (str): Path to the file.
+        text (str): Text to be written to file.
+        mode (str): Read/write mode to be used.
+
     Raises:
-        Exception: If an error is encountered writing the file.
+        Exception: An error is encountered writing the file.
     """
     try:
         with open(filepath, mode, encoding='utf-8') as file:
@@ -148,14 +161,14 @@ def write_file(filepath: str, text: str, mode: str):
 
 
 def write_and_chmod(filepath: str, text: str):
-    """Writes a file at the specified path and chmods the file
-       to allow for execution.
+    """Writes a file at the specified path and chmods the file to allow for execution.
 
     Args:
-        filepath: Path to the file.
-        text: Text to be written to file.
+        filepath (str): Path to the file.
+        text (str): Text to be written to file.
+
     Raises:
-        Exception: If an error is encountered chmod-ing the file.
+        Exception: An error is encountered while chmod-ing the file.
     """
     write_file(filepath, text, 'w')
     try:
@@ -166,11 +179,10 @@ def write_and_chmod(filepath: str, text: str):
 
 
 def delete_file(filepath: str):
-    """Deletes a file at the specified path.
-       If it does not exist, pass.
+    """Deletes a file at the specified path. If it does not exist, pass.
 
     Args:
-        filepath: Path to the file.
+        filepath (str): Path to the file.
     """
     try:
         os.remove(filepath)
@@ -178,32 +190,12 @@ def delete_file(filepath: str):
         pass
 
 
-def get_components_list(full_path: bool = True) -> list:
-    """Reads yamls in the cache directory, verifies they are component
-       yamls, and returns the name of the files.
-
-    Args:
-        full_path: Boolean; if false, stores only the filename w/o extension.
-    Returns:
-        list: Contains the names or paths of all component yamls in the dir.
-    """
-    components_list = []
-    elements = os.listdir(CACHE_DIR)
-    for file in list(filter(lambda y: ('.yaml' or '.yml') in y, elements)):
-        path = os.path.join(CACHE_DIR, file)
-        if is_component_config(path):
-            if full_path:
-                components_list.append(path)
-            else:
-                components_list.append(os.path.basename(file).split('.')[0])
-    return components_list
-
-
 def is_component_config(filepath: str) -> bool:
     """Checks to see if the given file is a component yaml.
 
     Args:
-        filepath: Path to a yaml file.
+        filepath (str): Path to a yaml file.
+
     Returns:
         bool: Whether the given file is a component yaml.
     """
@@ -216,10 +208,11 @@ def execute_process(command: str, to_null: bool):
     """Executes an external shell process.
 
     Args:
-        command: The string of the command to execute.
-        to_null: Determines where to send output.
+        command (str): Command to execute.
+        to_null (bool): Determines where to send output.
+
     Raises:
-        Exception: If an error occurs in executing the script.
+        Exception: An error occured while executing the script.
     """
     stdout = subprocess.DEVNULL if to_null else None
     try:
@@ -234,16 +227,18 @@ def execute_process(command: str, to_null: bool):
 
 def validate_use_ci(setup_model_monitoring: bool, schedule_pattern: str, use_ci: str):
     """Validates that the inputted schedule parameter and model_monitoring parameter align with the 
-        use_ci configuration.
+    use_ci configuration.
+
     Note: this function does not validate that schedule_pattern is a properly formatted cron value.
     Cron format validation is done in the backend by GCP.
-    
+
     Args:
-        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
-        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
-        use_ci: Flag that determines whether to use Cloud CI/CD.
+        setup_model_monitoring (bool): Specifies whether to set up a Vertex AI Model Monitoring Job.
+        schedule_pattern (str): Cron formatted value used to create a Scheduled retrain job.
+        use_ci (bool): Specifies whether to use Cloud CI/CD.
+
     Raises:
-        Exception: If use_ci validation fails.
+        Exception: use_ci validation failed.
     """
     if setup_model_monitoring and not use_ci:
         raise ValueError('use_ci must be set to True to use Model Monitoring.')
@@ -251,51 +246,19 @@ def validate_use_ci(setup_model_monitoring: bool, schedule_pattern: str, use_ci:
         raise ValueError('use_ci must be set to True to use Cloud Scheduler.')
 
 
-def update_params(params: list) -> list:
-    """Converts the parameter types from Python types
-       to Kubeflow types. Currently only supports
-       Python primitive types.
-
-    Args:
-        params: Pipeline parameters. A list of dictionaries,
-            each param is a dict containing keys:
-                'name': required, str param name.
-                'type': required, python primitive type.
-                'description': optional, str param desc.
-    Returns:
-        list: Params list with converted types.
-    Raises:
-        Exception: If an inputted type is not a primitive.
-    """
-    python_kfp_types_mapper = {
-        int: 'Integer',
-        str: 'String',
-        float: 'Float',
-        bool: 'Boolean',
-        list: 'JsonArray',
-        dict: 'JsonObject'
-    }
-    for param in params:
-        try:
-            param['type'] = python_kfp_types_mapper[param['type']]
-        except KeyError as err:
-            raise ValueError(f'Unsupported python type - we only support '
-                             f'primitive types at this time. {err}') from err
-    return params
-
-
 def get_function_source_definition(func: Callable) -> str:
     """Returns a formatted string of the source code.
 
     Args:
-        func: The python function to create a component from. The function
-            should have type annotations for all its arguments, indicating how
-            it is intended to be used (e.g. as an input/output Artifact object,
-            a plain parameter, or a path to a file).
+        func (Callable): The python function to create a component from. The function should have
+            type annotations for all its arguments, indicating how it is intended to be used (e.g.
+            as an input/output Artifact object, a plain parameter, or a path to a file).
+
     Returns:
         str: The source code from the inputted function.
+
     Raises:
-        Exception: If the preprocess operates failed.
+        Exception: The preprocess operations failed.
     """
     source_code = inspect.getsource(func)
     source_code = textwrap.dedent(source_code)
@@ -314,7 +277,7 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
     """Takes in a list of job spec dictionaries and turns them into strings.
 
     Args:
-        job_spec: Dictionary with job spec info. e.g.
+        job_spec (list): Dictionary with job spec info. e.g.
             custom_training_job_specs = [{
                 'component_spec': 'train_model',
                 'display_name': 'train-model-accelerated',
@@ -326,6 +289,8 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
     Returns:
         list[str]: Python formatted dictionary code.
     """
+    if not job_spec_list:
+        return None
     output = []
     for spec in job_spec_list:
         mapping = {}
@@ -338,17 +303,6 @@ def stringify_job_spec_list(job_spec_list: list) -> list:
         mapping['spec_string'] = mapping['spec_string'].replace('}', '    }') # align closing bracket
         output.append(mapping)
     return output
-
-def is_using_kfp_spec(image: str) -> bool:
-    """Takes in an image string from a component yaml and determines if it came from kfp or not.
-
-    Args:
-        image: image string.
-
-    Returns:
-        bool: is the component using kfp spec.
-    """
-    return image != PLACEHOLDER_IMAGE
 
 
 def create_default_config(artifact_repo_location: str,
@@ -378,41 +332,43 @@ def create_default_config(artifact_repo_location: str,
                           storage_bucket_name: str,
                           use_ci: bool,
                           vpc_connector: str) -> dict:
-    """Creates defaults.yaml file contents as a dict. This defaults
-       file is used by subsequent functions and by the pipeline
-       files themselves.
+    """Creates defaults.yaml file contents as a dict. This defaults file is used by subsequent
+    functions and by the pipeline files themselves.
 
     Args:
-        artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
-        artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
-        artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
-        base_image: The image to use in the component base dockerfile.
-        build_trigger_location: The location of the build trigger (for cloud build).
-        build_trigger_name: The name of the build trigger (for cloud build).
-        deployment_framework: The CI tool to use (e.g. cloud build, github actions, etc.)
-        naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
-        orchestration_framework: The orchestration framework to use (e.g. kfp, tfx, etc.)
-        pipeline_job_runner_service_account: Service Account to run PipelineJobs.
-        pipeline_job_submission_service_location: The location of the cloud submission service.
-        pipeline_job_submission_service_name: The name of the cloud submission service.
-        pipeline_job_submission_service_type: The tool to host for the cloud submission service (e.g. cloud run, cloud functions).
-        project_id: The project ID.
-        provisioning_framework: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
-        pubsub_topic_name: The name of the pubsub topic to publish to.
-        schedule_location: The location of the scheduler resource.
-        schedule_name: The name of the scheduler resource.
-        schedule_pattern: Cron formatted value used to create a Scheduled retrain job.
-        setup_model_monitoring: Boolean parameter which specifies whether to set up a Vertex AI Model Monitoring Job.
-        source_repo_branch: The branch to use in the source repository.
-        source_repo_name: The name of the source repository to use.
-        source_repo_type: The type of source repository to use (e.g. gitlab, github, etc.)
-        storage_bucket_location: Region of the GS bucket.
-        storage_bucket_name: GS bucket name where pipeline run metadata is stored.
-        use_ci: Flag that determines whether to use Cloud CI/CD.
-        vpc_connector: The name of the vpc connector to use.
+        artifact_repo_location (str): Region of the artifact repo (default use with Artifact Registry).
+        artifact_repo_name (str): Artifact repo name where components are stored (default use with
+            Artifact Registry).
+        artifact_repo_type (str): Type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
+        base_image (str): Image to use in the component base dockerfile.
+        build_trigger_location (str): Location of the build trigger (for cloud build).
+        build_trigger_name (str): Name of the build trigger (for cloud build).
+        deployment_framework (str): Name of CI tool to use (e.g. cloud build, github actions, etc.)
+        naming_prefix (str): Unique value used to differentiate pipelines and services across
+            AutoMLOps runs.
+        orchestration_framework (str): Orchestration framework to use (e.g. kfp, tfx, etc.)
+        pipeline_job_runner_service_account (str): Service Account to run PipelineJobs.
+        pipeline_job_submission_service_location (str): Location of the cloud submission service.
+        pipeline_job_submission_service_name (str): Name of the cloud submission service.
+        pipeline_job_submission_service_type (str): Tool to host for the cloud submission service
+            (e.g. cloud run, cloud functions).
+        project_id (str): The project ID.
+        provisioning_framework (str): IaC tool to use (e.g. Terraform, Pulumi, etc.)
+        pubsub_topic_name (str): Name of the pubsub topic to publish to.
+        schedule_location (str): Location of the scheduler resource.
+        schedule_name (str): Name of the scheduler resource.
+        schedule_pattern (str): Cron formatted value used to create a Scheduled retrain job.
+        setup_model_monitoring (bool): Specifies whether to set up a Vertex AI Model Monitoring Job.
+        source_repo_branch (str): Branch to use in the source repository.
+        source_repo_name (str): Name of the source repository to use.
+        source_repo_type (str): Type of source repository to use (e.g. gitlab, github, etc.)
+        storage_bucket_location (str): Region of the GS bucket.
+        storage_bucket_name (str): GS bucket name where pipeline run metadata is stored.
+        use_ci (bool): Specifies whether to use Cloud CI/CD.
+        vpc_connector (str): Name of the vpc connector to use.
 
     Returns:
-        dict: Defaults yaml file content
+        dict: Defaults yaml file content.
     """
     defaults = {}
     defaults['gcp'] = {}
@@ -445,7 +401,7 @@ def create_default_config(artifact_repo_location: str,
         defaults['gcp']['vpc_connector'] = vpc_connector
 
     defaults['pipelines'] = {}
-    defaults['pipelines']['gs_pipeline_job_spec_path'] = f'gs://{storage_bucket_name}/pipeline_root/{naming_prefix}/pipeline_job.json'
+    defaults['pipelines']['gs_pipeline_job_spec_path'] = f'gs://{storage_bucket_name}/pipeline_root/{naming_prefix}/pipeline_job.yaml'
     defaults['pipelines']['parameter_values_path'] = GENERATED_PARAMETER_VALUES_PATH
     defaults['pipelines']['pipeline_component_directory'] = 'components'
     defaults['pipelines']['pipeline_job_spec_path'] = GENERATED_PIPELINE_JOB_SPEC_PATH
@@ -459,7 +415,7 @@ def create_default_config(artifact_repo_location: str,
     defaults['tooling']['use_ci'] = use_ci
 
     if setup_model_monitoring:
-        # These fields to be set when AutoMLOps.monitor() is called
+        # These fields will be set up if and when AutoMLOps.monitor() is called
         defaults['monitoring'] = {}
         defaults['monitoring']['target_field'] = None
         defaults['monitoring']['model_endpoint'] = None
@@ -479,14 +435,14 @@ def create_default_config(artifact_repo_location: str,
 
 
 def get_required_apis(defaults: dict) -> list:
-    """Returns the list of required APIs based on the user tooling selection
-       determined during the generate() step.
+    """Returns the list of required APIs based on the user tooling selection determined during
+    the generate() step.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of required APIs
+        list: Required APIs.
     """
     required_apis = [
         'cloudbuild.googleapis.com',
@@ -517,15 +473,14 @@ def get_required_apis(defaults: dict) -> list:
 
 
 def get_provision_min_permissions(defaults: dict) -> list:
-    """Returns the list of minimum required permissions to run
-       the provision() step based on the user tooling selection
-       determined during the generate() step.
+    """Returns the list of minimum required permissions to run the provision() step based on the
+    user tooling selection determined during the generate() step.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of required permissions
+        list: Required permissions.
     """
     required_permissions = [
         'serviceusage.services.enable',
@@ -555,16 +510,15 @@ def get_provision_min_permissions(defaults: dict) -> list:
 
 
 def get_provision_recommended_roles(defaults: dict) -> list:
-    """Returns the list of recommended roles to run
-       the provision() step based on the user tooling selection
-       determined during the generate() step. These roles have
-       the minimum permissions required for provision.
+    """Creates the list of recommended roles to run the provision() step based on the user tooling
+    selection determined during the generate() step. These roles have the minimum permissions
+    required for provision.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of recommended roles
+        list: Recommended provision roles.
     """
     recommended_roles = [
         'roles/serviceusage.serviceUsageAdmin',
@@ -590,17 +544,16 @@ def get_provision_recommended_roles(defaults: dict) -> list:
 
 
 def get_deploy_with_precheck_min_permissions(defaults: dict) -> list:
-    """Returns the list of minimum required permissions to run
-       the deploy() step based on the user tooling selection
-       determined during the generate() step. This function is called
-       when precheck=True, which makes several API calls to determine if the infra
-       exists to run deploy() and increases the required list of permissions.
+    """Creates the list of minimum required permissions to run the deploy() step based on the user
+    tooling selection, determined during the generate() step. This function is called when
+    precheck=True, which makes several API calls to determine if the infra exists to run deploy()
+    and increases the required list of permissions.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of minimum permissions to deploy with precheck=True
+        list: Minimum permissions to deploy with precheck=True.
     """
     recommended_permissions = [
         'serviceusage.services.get',
@@ -625,17 +578,16 @@ def get_deploy_with_precheck_min_permissions(defaults: dict) -> list:
 
 
 def get_deploy_with_precheck_recommended_roles(defaults: dict) -> list:
-    """Returns the list of recommended roles to run
-       the deploy() step based on the user tooling selection
-       determined during the generate() step. This function is called
-       when precheck=True, which makes several API calls to determine if the infra
-       exists to run deploy() and increases the required list of permissions.
+    """Returns the list of recommended roles to run the deploy() step based on the user tooling
+    selection determined during the generate() step. This function is called when precheck=True,
+    which makes several API calls to determine if the infra exists to run deploy() and increases the
+    required list of permissions.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of recommended roles to deploy with precheck=True
+        list: Recommended roles to deploy with precheck=True.
     """
     recommended_roles = [
         'roles/serviceusage.serviceUsageViewer',
@@ -660,16 +612,15 @@ def get_deploy_with_precheck_recommended_roles(defaults: dict) -> list:
 
 
 def get_deploy_without_precheck_min_permissions(defaults: dict) -> list:
-    """Returns the list of minimum required permissions to run
-       the deploy() step based on the user tooling selection
-       determined during the generate() step. This function is called
-       when precheck=False, which decreases the required list of permissions.
+    """Creates the list of minimum required permissions to run the deploy() step based on the user
+    tooling selection determined during the generate() step. This function is called when
+    precheck=False, which decreases the required list of permissions.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of minimum permissions to deploy with precheck=False
+        list: Minimum permissions to deploy with precheck=False.
     """
     recommended_permissions = []
     if defaults['tooling']['use_ci']:
@@ -681,16 +632,15 @@ def get_deploy_without_precheck_min_permissions(defaults: dict) -> list:
 
 
 def get_deploy_without_precheck_recommended_roles(defaults: dict) -> list:
-    """Returns the list of recommended roles to run
-       the deploy() step based on the user tooling selection
-       determined during the generate() step. This function is called
-       when precheck=False, which decreases the required list of permissions.
+    """Creates the list of recommended roles to run the deploy() step based on the user tooling
+    selection determined during the generate() step. This function is called when precheck=False,
+    which decreases the required list of permissions.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of recommended roles to deploy with precheck=False
+        list: Recommended roles to deploy with precheck=False.
     """
     recommended_roles = []
     if defaults['tooling']['use_ci']:
@@ -702,15 +652,14 @@ def get_deploy_without_precheck_recommended_roles(defaults: dict) -> list:
 
 
 def get_model_monitoring_min_permissions(defaults: dict) -> list:
-    """Returns the list of minimum required permissions to run
-       the monitor() step based on the user tooling selection
-       determined during the generate() step.
+    """Creates the list of minimum required permissions to run the monitor() step based on the user
+    tooling selection determined during the generate() step.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of minimum permissions to create a monitoring job.
+        list: Minimum permissions to create a monitoring job.
     """
     recommended_permissions = [
         'aiplatform.endpoints.list',
@@ -724,15 +673,14 @@ def get_model_monitoring_min_permissions(defaults: dict) -> list:
 
 
 def get_model_monitoring_recommended_roles(defaults: dict) -> list:
-    """Returns the list of recommended roles to run
-       the monitor() step based on the user tooling selection
-       determined during the generate() step.
+    """Creates the list of recommended roles to run the monitor() step based on the user tooling
+    selection determined during the generate() step.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
 
     Returns:
-        list: The list of recommended roles to create a monitoring job.
+        list: Recommended roles to create a monitoring job.
     """
     recommended_roles = ['roles/aiplatform.user']
     if defaults['monitoring']['auto_retraining_params']:
@@ -744,8 +692,9 @@ def account_permissions_warning(operation: str, defaults: dict):
     """Logs the current gcloud account and generates warnings based on the operation being performed.
 
     Args:
-        operation: Specifies which operation is being performed. Available options {provision, deploy_with_precheck, deploy_without_precheck, model_monitoring}
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        operation (str): Specifies which operation is being performed. Available options {provision,
+            deploy_with_precheck, deploy_without_precheck, model_monitoring}.
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
     """
     bullet_nl = '\n-'
     gcp_account = subprocess.check_output(
@@ -773,10 +722,10 @@ def account_permissions_warning(operation: str, defaults: dict):
 
 def check_installation_versions(provisioning_framework: str):
     """Checks the version of the provisioning tool (e.g. terraform, gcloud) and generates warning if
-       either the tool is not installed, or if it below the recommended version.
+    either the tool is not installed, or if it below the recommended version.
 
     Args:
-        provisioning_framework: The IaC tool to use (e.g. Terraform, Pulumi, etc.)
+        provisioning_framework (str): The IaC tool to use (e.g. Terraform, Pulumi, etc.).
     """
     if provisioning_framework == Provisioner.GCLOUD.value:
         try:
@@ -812,12 +761,11 @@ def check_installation_versions(provisioning_framework: str):
 
 
 def precheck_deployment_requirements(defaults: dict):
-    """Checks to see if the necessary MLOps infra exists to run
-       the deploy() step based on the user tooling selection
-       determined during the generate() step.
+    """Checks to see if the necessary MLOps infra exists to run the deploy() step based on the user
+    tooling selection determined during the generate() step.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults: Contents of the Defaults yaml file (config/defaults.yaml).
     """
     use_ci = defaults['tooling']['use_ci']
     artifact_repo_location = defaults['gcp']['artifact_repo_location']
@@ -944,7 +892,8 @@ def precheck_deployment_requirements(defaults: dict):
         if pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             logging.info(f'Checking for Cloud Functions Pipeline Job Submission Service in project {project}...')
             service = discovery.build('cloudfunctions', 'v1', credentials=credentials, cache_discovery=False)
-            request = service.projects().locations().functions().get(name=f'projects/{project}/locations/{pipeline_job_submission_service_location}/functions/{pipeline_job_submission_service_name}')
+            request = service.projects().locations().functions().get(
+                name=f'projects/{project}/locations/{pipeline_job_submission_service_location}/functions/{pipeline_job_submission_service_name}')
             try:
                 request.execute()
             except Exception as err:
@@ -970,7 +919,7 @@ def resources_generation_manifest(defaults: dict):
     """Logs urls of generated resources.
 
     Args:
-        defaults: Dictionary contents of the Defaults yaml file (config/defaults.yaml)
+        defaults (dict): Contents of the Defaults yaml file (config/defaults.yaml).
     """
     logging.info('Please wait for this build job to complete.')
     logging.info('\n'
@@ -1021,8 +970,7 @@ def render_jinja(template_path, **template_vars):
 
     Args:
         template_path (str): The path to the Jinja2 template file.
-        **template_vars: Keyword arguments representing variables to substitute 
-            in the template.
+        **template_vars: Keyword arguments representing variables to substitute in the template.
 
     Returns:
         str: The rendered template as a string.
@@ -1030,3 +978,79 @@ def render_jinja(template_path, **template_vars):
     with open(template_path, 'r', encoding='utf-8') as f:
         template = Template(f.read())
         return template.render(**template_vars)
+
+def coalesce(*arg):
+    """Creates the first non-None value from a sequence of arguments.
+
+    Returns:
+        The first non-None argument, or None if all arguments are None.
+    """
+    for el in arg:
+        if el is not None:
+            return el
+    return None
+
+def git_workflow():
+    """Initializes a git repo if one doesn't already exist,
+    then pushes to the specified branch and triggers a build job.
+    """
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    deployment_framework = defaults['tooling']['deployment_framework']
+    source_repository_type = defaults['gcp']['source_repository_type']
+    if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+        git_remote_origin_url = f'''https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['source_repository_name']}'''
+    elif source_repository_type == CodeRepository.GITHUB.value:
+        git_remote_origin_url = f'''git@github.com:{defaults['gcp']['source_repository_name']}.git'''
+    elif source_repository_type == CodeRepository.GITLAB.value:
+        git_remote_origin_url = f'''git@gitlab.com:{defaults['gcp']['source_repository_name']}.git'''
+    elif source_repository_type == CodeRepository.BITBUCKET.value:
+        git_remote_origin_url = f'''git@bitbucket.org:{defaults['gcp']['source_repository_name']}.git'''
+    else:
+        raise ValueError(f'source_repository_type "{source_repository_type}" not an available option.')
+
+    if not os.path.exists(f'{BASE_DIR}.git'):
+
+        # Initialize git and configure credentials
+        execute_process(f'git -C {BASE_DIR} init', to_null=False)
+        if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
+            execute_process(
+                f'''git -C {BASE_DIR} config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
+
+        # Add repo and branch
+        execute_process(
+            f'''git -C {BASE_DIR} remote add origin {git_remote_origin_url}''', to_null=False)
+        execute_process(
+            f'''git -C {BASE_DIR} checkout -B {defaults['gcp']['source_repository_branch']}''', to_null=False)
+        has_remote_branch = subprocess.check_output(
+            [f'''git -C {BASE_DIR} ls-remote origin {defaults['gcp']['source_repository_branch']}'''], shell=True, stderr=subprocess.STDOUT)
+
+        write_file(
+            f'{BASE_DIR}.gitignore',
+            render_jinja(template_path=import_files(GITOPS_TEMPLATES_PATH) / 'gitignore.j2'),
+            'w')
+
+        # This will initialize the branch, a second push will be required to trigger the cloudbuild job after initializing
+        if not has_remote_branch:
+            execute_process(f'git -C {BASE_DIR} add .gitignore', to_null=False)
+            execute_process(f'''git -C {BASE_DIR} commit -m 'init' ''', to_null=False)
+            execute_process(
+                f'''git -C {BASE_DIR} push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
+
+    # Check for remote origin url mismatch
+    actual_remote = subprocess.check_output(
+        [f'git -C {BASE_DIR} config --get remote.origin.url'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
+    if actual_remote != git_remote_origin_url:
+        raise RuntimeError(
+            f'Expected remote origin url {git_remote_origin_url} but found {actual_remote}. Reset your remote origin url to continue.')
+
+    # Add, commit, and push changes to CSR
+    execute_process(f'git -C {BASE_DIR} add .', to_null=False)
+    execute_process(f'''git -C {BASE_DIR} commit -m 'Run AutoMLOps' ''', to_null=False)
+    execute_process(
+        f'''git -C {BASE_DIR} push origin {defaults['gcp']['source_repository_branch']} --force''', to_null=False)
+    # pylint: disable=logging-fstring-interpolation
+    logging.info(
+        f'''Pushing code to {defaults['gcp']['source_repository_branch']} branch, triggering build...''')
+    if deployment_framework == Deployer.CLOUDBUILD.value:
+        logging.info(
+            f'''Cloud Build job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')

@@ -1,0 +1,138 @@
+{{generated_license}}
+
+import os
+import pulumi
+import pulumi_gcp as gcp
+from pulumi import Config, log, ResourceOptions, StackReference, export
+
+config = Config()
+
+#######################################################################################
+# General Config
+#######################################################################################
+general_cfg = config.require_object("general")
+project_id = general_cfg.get("project_id")
+model_name = general_cfg.get("model_name")
+environment = general_cfg.get("environment")
+default_region = general_cfg.get("default_region")
+
+vertex_pipeline_name = f"{model_name}"
+
+stack_infra = f"{model_name}-{environment}"
+
+#######################################################################################
+# Service Accounts Config
+#######################################################################################
+service_accounts = config.require_object("service_accounts") or []
+
+#######################################################################################
+# Storage Config
+#######################################################################################
+buckets = config.require_object("buckets") or []
+
+#######################################################################################
+# IAMMember Bindings Config
+#######################################################################################
+iam_cfg = config.require_object("service_accounts_iam")
+iam_cfg = list(iam_cfg) if iam_cfg else []
+
+#######################################################################################
+# Init
+#######################################################################################
+try:
+    if buckets:
+        for i, bucket in enumerate(buckets):
+            gcp.storage.Bucket(
+                resource_name=f'{stack_infra}-{bucket["name"]}-{i}',
+                project=project_id,
+                name=bucket["name"],
+                location=bucket["location"],
+                labels=bucket["labels"],
+                opts=ResourceOptions(
+                    depends_on=[]
+                )
+            )
+
+    if service_accounts:
+        for i, svc in enumerate(service_accounts):
+            gcp.serviceaccount.Account(
+                resource_name=f'{stack_infra}-{svc["account_id"]}-{i}',
+                project=project_id,
+                account_id=svc["account_id"],
+                display_name=svc["display_name"],
+                description=svc["description"],
+                opts=ResourceOptions(
+                    depends_on=[]
+                )
+            )
+
+##################################################################################
+## IAMMember - service_accounts_iam:
+##################################################################################
+    for iam_obj in iam_cfg:
+        for iam_role in iam_obj["role_bindings"]:
+            gcp.projects.IAMMember(
+                resource_name=f'{stack_infra}-{iam_obj["name"]}-{iam_obj["role_bindings"].index(iam_role)}',
+                member=iam_obj["account_id"],
+                project=project_id,
+                role=iam_role,
+                opts=ResourceOptions(
+                    depends_on=[
+                    ]
+                ),
+            )
+
+    artifactregistry_repo = gcp.artifactregistry.Repository(
+        resource_name=f"{stack_infra}-{{artifact_repo_name}}",
+        project=project_id,
+        description="Docker artifact repository",
+        format="DOCKER",
+        location=default_region,
+        repository_id="{{artifact_repo_name}}",
+        opts=ResourceOptions(
+            depends_on=[]
+        )
+    )
+
+    source_repo = gcp.sourcerepo.Repository(
+        resource_name=f"{stack_infra}-{{source_repo_name}}",
+        name="{{source_repo_name}}",
+        project=project_id,
+        opts=ResourceOptions(
+            depends_on=[]
+        )
+    )
+
+    cloudtasks_queue = gcp.cloudtasks.Queue(
+        resource_name=f"{stack_infra}-{{cloudtasks_queue_name}}",
+        name="{{cloudtasks_queue_name}}",
+        project=project_id,
+        location=default_region,
+        opts=ResourceOptions(
+            depends_on=[]
+        )
+    )
+
+    cloudbuild_trigger = gcp.cloudbuild.Trigger(
+        resource_name=f"{stack_infra}-{{build_trigger_name}}",
+        name="{{build_trigger_name}}",
+        project=project_id,
+        filename="cloudbuild.yaml",
+        service_account=f"projects/{project_id}/serviceAccounts/cloudbuild-runner-sa@{project_id}.iam.gserviceaccount.com",
+        location=default_region,
+        trigger_template=gcp.cloudbuild.TriggerTriggerTemplateArgs(
+            branch_name="main",
+            repo_name="{{source_repo_name}}",
+        ),
+        opts=ResourceOptions(
+            depends_on=[
+                source_repo
+            ]
+        )
+    )
+
+#######################################################################################
+except Exception as ex:
+    log.error(f"Environment {environment} -> {ex}")
+    raise ex
+#######################################################################################

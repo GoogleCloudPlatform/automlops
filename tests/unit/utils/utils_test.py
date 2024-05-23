@@ -16,13 +16,13 @@
 
 # pylint: disable=line-too-long
 # pylint: disable=missing-function-docstring
+# pylint: disable=unused-import
 
 from contextlib import nullcontext as does_not_raise
 import os
 import tempfile
 from typing import Callable, List
 
-import pandas as pd
 import pytest
 import pytest_mock
 import yaml
@@ -31,7 +31,6 @@ import google_cloud_automlops.utils.utils
 from google_cloud_automlops.utils.utils import (
     delete_file,
     execute_process,
-    get_components_list,
     get_function_source_definition,
     is_component_config,
     make_dirs,
@@ -39,7 +38,6 @@ from google_cloud_automlops.utils.utils import (
     read_yaml_file,
     render_jinja,
     stringify_job_spec_list,
-    update_params,
     validate_use_ci,
     write_and_chmod,
     write_file,
@@ -286,55 +284,6 @@ def test_delete_file(file_to_delete: str, valid_file: bool):
 
 
 @pytest.mark.parametrize(
-    'comp_path, comp_name, patch_cwd, expectation',
-    [
-        (['component.yaml'], ['component'], True, does_not_raise()),
-        ([], [], True, does_not_raise()),
-        (['component.yaml'], ['component'], False, pytest.raises(FileNotFoundError))
-    ]
-)
-def test_get_components_list(mocker: pytest_mock.MockerFixture,
-                             comp_path: List[str],
-                             comp_name: List[str],
-                             patch_cwd: bool,
-                             expectation):
-    """Tests get_components_list, which reads yamls in .AutoMLOps-cache directory,
-    verifies they are component yamls, and returns the name of the files. There
-    are three test cases for this function:
-        1. Expected outcome, component list is pulled as expected.
-        2. Verifies an empty list comes back if no YAMLs are present.
-        3. Call function with a nonexistent dir, expecting OSError.
-
-    Args:
-        mocker: Mocker to patch the cache directory for component files.
-        comp_path (List[str]): Path(s) to component yamls.
-        comp_name (List[str]): Name(s) of components.
-        patch_cwd (bool): Boolean flag indicating whether to patch the current working
-            directory from CACHE_DIR to root
-        expectation: Any corresponding expected errors for each set of
-            parameters.
-    """
-    if patch_cwd:
-        mocker.patch.object(google_cloud_automlops.utils.utils, 'CACHE_DIR', '.')
-    if comp_path:
-        for file in comp_path:
-            with open(file=file, mode='w', encoding='utf-8') as f:
-                yaml.dump(
-                    {
-                        'name': 'value1', 
-                        'inputs': 'value2',
-                        'implementation': 'value3'
-                    },
-                    f)
-    with expectation:
-        assert get_components_list(full_path=False) == comp_name
-        assert get_components_list(full_path=True) == [os.path.join('.', file) for file in comp_path]
-    for file in comp_path:
-        if os.path.exists(file):
-            os.remove(file)
-
-
-@pytest.mark.parametrize(
     'yaml_contents, expectation',
     [
         (
@@ -430,37 +379,6 @@ def test_validate_use_ci(sch_pattern: str,
         validate_use_ci(schedule_pattern=sch_pattern,
                         setup_model_monitoring=setup_model_monitoring,
                         use_ci=use_ci)
-
-
-@pytest.mark.parametrize(
-    'params, expected_output',
-    [
-        ([{'name': 'param1', 'type': int}], [{'name': 'param1', 'type': 'Integer'}]),
-        ([{'name': 'param2', 'type': str}], [{'name': 'param2', 'type': 'String'}]),
-        ([{'name': 'param3', 'type': float}], [{'name': 'param3', 'type': 'Float'}]),
-        ([{'name': 'param4', 'type': bool}], [{'name': 'param4', 'type': 'Boolean'}]),
-        ([{'name': 'param5', 'type': list}], [{'name': 'param5', 'type': 'JsonArray'}]),
-        ([{'name': 'param6', 'type': dict}], [{'name': 'param6', 'type': 'JsonObject'}]),
-        ([{'name': 'param6', 'type': pd.DataFrame}], None)
-    ]
-)
-def test_update_params(params: List[dict], expected_output: List[dict]):
-    """Tests the update_params function, which reformats the source code type
-    labels as strings. There are seven test cases for this function, which test
-    for updating different parameter types.
-
-    Args:
-        params (List[dict]): Pipeline parameters. A list of dictionaries, each param is a dict containing keys:
-            'name': required, str param name.
-            'type': required, python primitive type.
-            'description': optional, str param desc.
-        expected_output (List[dict]): Expectation of whether or not the configuration is valid.
-    """
-    if expected_output is not None:
-        assert expected_output == update_params(params=params)
-    else:
-        with pytest.raises(ValueError):
-            assert update_params(params=params)
 
 
 @pytest.mark.parametrize(

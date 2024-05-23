@@ -34,9 +34,6 @@ GENERATED_LICENSE = (
     '# DISCLAIMER: This code is generated as part of the AutoMLOps output.\n'
 )
 
-# Placeholder
-PLACEHOLDER_IMAGE = 'AutoMLOps_image_tbd'
-
 ## Default values
 # Default docker base image
 DEFAULT_BASE_IMAGE = 'python:3.9-slim'
@@ -82,7 +79,7 @@ GENERATED_COMPONENT_BASE = BASE_DIR + 'components/component_base'
 GENERATED_COMPONENT_BASE_SRC = BASE_DIR + 'components/component_base/src'
 COMPONENT_BASE_RELATIVE_PATH = 'components/component_base'
 GENERATED_PARAMETER_VALUES_PATH = 'pipelines/runtime_parameters/pipeline_parameter_values.json'
-GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.json'
+GENERATED_PIPELINE_JOB_SPEC_PATH = 'scripts/pipeline_spec/pipeline_job.yaml'
 GENERATED_DIRS = [
     BASE_DIR,
     BASE_DIR + 'components',
@@ -116,27 +113,20 @@ GENERATED_MODEL_MONITORING_DIRS = [
     BASE_DIR + 'model_monitoring',
 ]
 
-# temporary files
-CACHE_DIR = '.AutoMLOps-cache'
-PIPELINE_CACHE_FILE = CACHE_DIR + '/pipeline_scaffold.py'
-
-# KFP Spec output_file location
-OUTPUT_DIR = CACHE_DIR
-
 # Generated kfp pipeline metadata name
 DEFAULT_PIPELINE_NAME = 'automlops-pipeline'
 
 # KFP v2 Migration constant
-PINNED_KFP_VERSION = 'kfp<2.0.0'
+PINNED_KFP_VERSION = 'kfp>=2.0.0'
 
 # Provisioning Template Paths
-TERRAFORM_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.terraform.templates'
-PULUMI_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.pulumi.templates'
-GCLOUD_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.gcloud.templates'
-KFP_TEMPLATES_PATH = 'google_cloud_automlops.orchestration.kfp.templates'
-CLOUDBUILD_TEMPLATES_PATH = 'google_cloud_automlops.deployments.cloudbuild.templates'
-GITHUB_ACTIONS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.github_actions.templates'
-GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.gitops.templates'
+TERRAFORM_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.terraform'
+PULUMI_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.pulumi'
+GCLOUD_TEMPLATES_PATH = 'google_cloud_automlops.provisioning.templates.gcloud'
+KFP_TEMPLATES_PATH = 'google_cloud_automlops.orchestration.templates.kfp'
+CLOUDBUILD_TEMPLATES_PATH = 'google_cloud_automlops.deployments.templates.cloudbuild'
+GITHUB_ACTIONS_TEMPLATES_PATH = 'google_cloud_automlops.deployments.templates.github_actions'
+GITOPS_TEMPLATES_PATH = 'google_cloud_automlops.utils.templates'
 
 # Required IAM Roles for pipeline runner service account
 IAM_ROLES_RUNNER_SA = [
