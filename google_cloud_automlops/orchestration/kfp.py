@@ -98,8 +98,8 @@ class KFPComponent(BaseComponent):
                 f'''components/component_base:latest''')
 
         # Write component spec
-        customer_component = component(func=self.func, base_image=compspec_image)
-        compiler.Compiler().compile(customer_component, comp_yaml_path)
+        custom_component = component(func=self.func, base_image=compspec_image)
+        compiler.Compiler().compile(custom_component, comp_yaml_path)
 
         # Write task script to component base
         write_file(
