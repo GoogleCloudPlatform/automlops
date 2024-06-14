@@ -76,6 +76,9 @@ jobs:
       - name: 'Install AMO locally'
         run: |
           pip install .
+      # Set the working directory to test/integration to contain the generated files
+      # TODO move this to a temp directory
       - name: Run integration tests
+        working-directory: tests/integration
         run: |
-          pytest tests/integration --cov=AutoMLOps=
+          pytest --cov=AutoMLOps=
