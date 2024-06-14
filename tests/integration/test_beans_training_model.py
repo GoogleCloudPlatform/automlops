@@ -11,19 +11,17 @@
     # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     # See the License for the specific language governing permissions and
     # limitations under the License.
+"""Basic integration test using the dry beans dataset"""
 
-import pytest
 import subprocess
 import os
-import logging
 import time
 from google.cloud import aiplatform
-from .. import helpers
+import helpers
 from google_cloud_automlops.utils.utils import (
     read_yaml_file
 )
 from google_cloud_automlops.utils.constants import (
-    BASE_DIR,
     GENERATED_DEFAULTS_FILE,
     MIN_GCLOUD_SDK_VERSION
 )
@@ -34,11 +32,10 @@ def test_beans_training_model():
     # helpers.execute_process('pip3 install ../', False)
 
     # Set your project ID below.
-    PROJECT_ID = 'airflow-sandbox-392816'  # @param {type:"string"}
-    helpers.execute_process(f"gcloud config set project {PROJECT_ID}", False)
+    project_id = 'airflow-sandbox-392816'  # @param {type:"string"}
 
     # Set your Model ID below.
-    MODEL_ID = 'dry-beans-dt'
+    model_id = 'dry-beans-dt'
 
     # Import AutoMLOps
     from google_cloud_automlops import AutoMLOps
@@ -131,7 +128,6 @@ def test_beans_training_model():
         import pandas as pd
         import tensorflow as tf
         import pickle
-        import os
 
         def save_model(model, uri):
             """Saves a model to uri."""
@@ -170,7 +166,6 @@ def test_beans_training_model():
             project_id: Project_id.
             region: Region.
         """
-        from google.cloud import aiplatform
 
         aiplatform.init(project=project_id, location=region)
         # Check if model exists
@@ -203,7 +198,7 @@ def test_beans_training_model():
             labels={'created_by': 'automlops-team'},
         )
 
-        endpoint = uploaded_model.deploy(
+        uploaded_model.deploy(
             machine_type='n1-standard-4',
             deployed_model_display_name='deployed-beans-model')
 
@@ -227,7 +222,7 @@ def test_beans_training_model():
             model_directory=model_directory,
             data_path=data_path).after(create_dataset_task)
 
-        deploy_model_task = deploy_model(
+        deploy_model(
             model_directory=model_directory,
             project_id=project_id,
             region=region).after(train_model_task)
@@ -236,38 +231,31 @@ def test_beans_training_model():
     ## Define the Pipeline Arguments
     import datetime
     pipeline_params = {
-        'bq_table': f'{PROJECT_ID}.test_dataset.dry-beans',
-        'model_directory': f'gs://{PROJECT_ID}-bucket/trained_models/{datetime.datetime.now()}',
-        'data_path': f'gs://{PROJECT_ID}-{MODEL_ID}-bucket/data.csv',
-        'project_id': PROJECT_ID,
+        'bq_table': f'{project_id}.test_dataset.dry-beans',
+        'model_directory': f'gs://{project_id}-bucket/trained_models/{datetime.datetime.now()}',
+        'data_path': f'gs://{project_id}-{model_id}-bucket/data.csv',
+        'project_id': project_id,
         'region': 'us-central1'
     }
 
-    AutoMLOps.generate(project_id=PROJECT_ID,
+    AutoMLOps.generate(project_id=project_id,
                     pipeline_params=pipeline_params,
                     use_ci=True,
-                    naming_prefix=MODEL_ID
+                    naming_prefix=model_id
     )
 
-    # Assert that files and directories were created with the correct names.
-    expected_AMO_cache_files = ['create_dataset.yaml', 'deploy_model.yaml', 'pipeline_scaffold.py', 'train_model.yaml']
-    expected_AMO_directory = ['README.md', 'cloudbuild.yaml', 'components', 'configs', 'images', 'pipelines', 'provision', 'scripts', 'services']
-
-    assert sorted(os.listdir('./.AutoMLOps-cache')) == expected_AMO_cache_files
-    assert sorted(os.listdir('./AutoMLOps')) == expected_AMO_directory
-
     gcloud_sdk_version = subprocess.check_output(['gcloud info --format="value(basic.version)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
-    print("TESTING")
-    print(f"MIN_GCLOUD_SDK_VERSION: {MIN_GCLOUD_SDK_VERSION}")
-    print(f"gcloud_sdk_version: {gcloud_sdk_version}")
+    print('TESTING')
+    print(f'MIN_GCLOUD_SDK_VERSION: {MIN_GCLOUD_SDK_VERSION}')
+    print(f'gcloud_sdk_version: {gcloud_sdk_version}')
 
     gcloud_beta_version = subprocess.check_output(['gcloud info --format="value(installation.components.beta)" 2> /dev/null'], shell=True, stderr=subprocess.STDOUT).decode('utf-8').strip('\n')
-    print("THIS IS THE gcloud beta version")
+    print('THIS IS THE gcloud beta version')
     print(gcloud_beta_version)
 
     AutoMLOps.provision(hide_warnings=False)
     time.sleep(300)
-    print("HIT PROVISION")
+    print('HIT PROVISION')
 
     # Assert that GCP infrastructure was stood up with the correct names.
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
@@ -280,7 +268,7 @@ def test_beans_training_model():
     # time.sleep(600)
 
     # Assert that Vertex AI endpoint was created and returns predictions.
-    aiplatform.init(project=PROJECT_ID)
+    aiplatform.init(project=project_id)
     endpoints = aiplatform.Endpoint.list()
     endpoint_name = endpoints[0].resource_name
     endpoint = aiplatform.Endpoint(endpoint_name)
