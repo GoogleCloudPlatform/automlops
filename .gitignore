@@ -147,3 +147,4 @@ cython_debug/
 
 # Local Configs
 config.yaml
+.python-version
