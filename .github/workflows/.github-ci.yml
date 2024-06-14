@@ -51,6 +51,9 @@ jobs:
   integration-tests:
     needs: [lint-checks, unit-tests]
     runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
     steps:
       - uses: actions/checkout@v3
       - name: Set up Python 3.10
@@ -61,6 +64,18 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip3 install -r requirements.txt
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: ''
+          service_account: ''
+          project_id: ''
+      - name: 'Configure gcloud'
+        run: tests/integration/configure-gcloud.sh
+      - name: 'Install AMO locally'
+        run: |
+          pip install .
       - name: Run integration tests
         run: |
           pytest tests/integration --cov=AutoMLOps=
