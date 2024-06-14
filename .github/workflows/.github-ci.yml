@@ -68,11 +68,11 @@ jobs:
         uses: 'google-github-actions/auth@v2'
         with:
           token_format: 'access_token'
-          workload_identity_provider: ''
-          service_account: ''
-          project_id: ''
+          workload_identity_provider: ${{ secrets.WorkloadIdentityProvider }}
+          service_account: ${{ secrets.IntegrationTestServiceAccount }}
+          project_id: ${{ secrets.IntegrationTestProjectId }}
       - name: 'Configure gcloud'
-        run: tests/integration/configure-gcloud.sh
+        run: tests/integration/configure-gcloud.sh ${{ secrets.IntegrationTestProjectId }}
       - name: 'Install AMO locally'
         run: |
           pip install .
