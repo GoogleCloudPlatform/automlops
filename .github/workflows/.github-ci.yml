@@ -69,11 +69,11 @@ jobs:
         uses: 'google-github-actions/auth@v2'
         with:
           token_format: 'access_token'
-          workload_identity_provider: ${{ secrets.WorkloadIdentityProvider }}
-          service_account: ${{ secrets.IntegrationTestServiceAccount }}
-          project_id: ${{ secrets.IntegrationTestProjectId }}
+          workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
+          service_account: '${{ secrets.INTEGRATION_TEST_SERVICE_ACCOUNT }}'
+          project_id: '${{ secrets.INTEGRATION_TEST_PROJECT_ID }}'
       - name: 'Configure gcloud'
-        run: tests/integration/configure-gcloud.sh ${{ secrets.IntegrationTestProjectId }}
+        run: tests/integration/configure-gcloud.sh ${{ secrets.INTEGRATION_TEST_PROJECT_ID }}
       - name: 'Install AMO locally'
         run: |
           pip install .
@@ -82,6 +82,6 @@ jobs:
       - name: Run integration tests
         working-directory: tests/integration
         env:
-          PROJECT_ID: ${{ secrets.IntegrationTestProjectId }}
+          PROJECT_ID: ${{ secrets.INTEGRATION_TEST_PROJECT_ID }}
         run: |
           pytest --cov=AutoMLOps=
