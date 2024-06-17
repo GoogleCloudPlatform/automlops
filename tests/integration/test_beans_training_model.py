@@ -181,8 +181,6 @@ def pipeline(bq_table: str,
 
 
 def test_beans_training_model():
-    # Importing here to avoid conflict with repeated import in deploy_model
-
     project_id = os.environ.get('PROJECT_ID')
     model_id = 'dry-beans-dt'
     ## Define the Pipeline Arguments
