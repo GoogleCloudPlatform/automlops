@@ -184,8 +184,8 @@ def test_beans_training_model():
     # Importing here to avoid conflict with repeated import in deploy_model
     from google.cloud import aiplatform
 
-    project_id = ''
-    model_id = ''
+    project_id = os.environ.get('PROJECT_ID')
+    model_id = 'dry-beans-dt'
     ## Define the Pipeline Arguments
     timestamp = datetime.datetime.now()
     model_directory = f'gs://{project_id}-bucket/trained_models/{timestamp}'

@@ -81,5 +81,7 @@ jobs:
       # TODO move this to a temp directory
       - name: Run integration tests
         working-directory: tests/integration
+        env:
+          PROJECT_ID: ${{ secrets.IntegrationTestProjectId }}
         run: |
           pytest --cov=AutoMLOps=
