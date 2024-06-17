@@ -182,7 +182,6 @@ def pipeline(bq_table: str,
 
 def test_beans_training_model():
     # Importing here to avoid conflict with repeated import in deploy_model
-    from google.cloud import aiplatform
 
     project_id = os.environ.get('PROJECT_ID')
     model_id = 'dry-beans-dt'
@@ -213,6 +212,8 @@ def test_beans_training_model():
     helpers.assert_successful_provisioning(defaults)
 
     # Assert that Vertex AI endpoint was created and returns predictions.
+
+    from google.cloud import aiplatform
     aiplatform.init(project=project_id)
     endpoints = aiplatform.Endpoint.list()
     endpoint_name = endpoints[0].resource_name
