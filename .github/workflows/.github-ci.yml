@@ -22,8 +22,9 @@ jobs:
       with:
         python-version: "3.10"
     - name: Install Python dependencies
-      run: |
+      run: | # force numpy to be latest non 2.x version due to incompatibility with google-cloud-aiplatform
         python3 -m pip install --upgrade pip
+        pip3 install numpy==1.26.4
         pip3 install -r requirements.txt
     - name: Check for licenses
       run: |
@@ -84,7 +85,6 @@ jobs:
       # TODO move this to a temp directory
       - name: 'Install integration test-specific dependencies'
         run: |
-          pip3 install --upgrade numpy
           pip3 install google-cloud-aiplatform
       - name: Run integration tests
         working-directory: tests/integration
