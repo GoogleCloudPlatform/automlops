@@ -65,7 +65,6 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           pip3 install -r requirements.txt
-          pip3 install google-cloud-aiplatform
       - name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
         with:
@@ -83,6 +82,10 @@ jobs:
           pip install .
       # Set the working directory to test/integration to contain the generated files
       # TODO move this to a temp directory
+      - name: 'Install integration test-specific dependencies'
+        run: |
+          pip3 install --upgrade numpy
+          pip3 install google-cloud-aiplatform
       - name: Run integration tests
         working-directory: tests/integration
         env:
