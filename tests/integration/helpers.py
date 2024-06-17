@@ -22,7 +22,7 @@ def execute_process(command: str, to_null: bool):
             stdout=stdout,
             stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as err:
-        raise RuntimeError(f'Error executing process. {err}') from err
+        raise RuntimeError(f"Error executing process. {err}") from err
 
 def assert_successful_provisioning(defaults):
     try:
@@ -30,7 +30,7 @@ def assert_successful_provisioning(defaults):
     # pylint: disable=broad-exception-caught
     except Exception as e:
         # Assert False with informative error message
-        assert False, f'Unexpected error with provisioning: {e}'
+        assert False, f"Unexpected error with provisioning: {e}"
     else:
         # No exception occurred, assert True
         assert True
