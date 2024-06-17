@@ -74,7 +74,7 @@ jobs:
           project_id: '${{ secrets.INTEGRATION_TEST_PROJECT_ID }}'
       - name: 'Configure gcloud'
         run: tests/integration/configure-gcloud.sh ${{ secrets.INTEGRATION_TEST_PROJECT_ID }}
-      - name: 'Install AMO locally.'
+      - name: 'Install AMO locally'
         run: |
           pip install .
       # Set the working directory to test/integration to contain the generated files
