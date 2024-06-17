@@ -16,15 +16,7 @@
 import os
 import time
 import datetime
-import pickle
 import helpers
-from sklearn import preprocessing
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.model_selection import train_test_split
-import pandas as pd
-import tensorflow as tf
-from google.cloud import aiplatform
-from google.cloud import bigquery
 from google_cloud_automlops import AutoMLOps
 from google_cloud_automlops.utils.utils import (
     read_yaml_file
@@ -32,11 +24,6 @@ from google_cloud_automlops.utils.utils import (
 from google_cloud_automlops.utils.constants import (
     GENERATED_DEFAULTS_FILE,
 )
-
-def save_model(model, uri):
-    """Saves a model to uri."""
-    with tf.io.gfile.GFile(uri, 'w') as f:
-        pickle.dump(model, f)
 
 @AutoMLOps.component(
     packages_to_install=[
@@ -56,6 +43,10 @@ def create_dataset(bq_table: str, data_path: str, project_id: str):
         data_path: The gcs location to write the csv.
         project_id: The project ID.
     """
+    # pylint: disable=unused-import
+    import pandas as pd
+    from google.cloud import bigquery
+    from sklearn import preprocessing
 
     get_query = f'SELECT * FROM `{bq_table}`'
     bq_client = bigquery.Client(project=project_id)
@@ -80,6 +71,12 @@ def train_model(data_path: str, model_directory: str):
         data_path: GS location where the training data.
         model_directory: GS location of saved model.
     """
+    import pickle
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.model_selection import train_test_split
+    import pandas as pd
+    import tensorflow as tf
+
     df = pd.read_csv(data_path)
     labels = df.pop('Class').tolist()
     data = df.values.tolist()
@@ -97,7 +94,9 @@ def train_model(data_path: str, model_directory: str):
 
 
 # ## Uploading & Deploying the Model
-# Define a custom component for uploading and deploying a model in Vertex AI, using `@AutoMLOps.component`. Import statements and helper functions must be added inside the function.
+# Define a custom component for uploading and deploying a model in Vertex AI,
+# using `@AutoMLOps.component`. Import statements and helper functions must
+# be added inside the function.
 
 @AutoMLOps.component(
     packages_to_install=[
@@ -113,6 +112,8 @@ def deploy_model(model_directory: str, project_id: str, region: str):
         region: Region.
     """
 
+    from google.cloud import aiplatform
+
     aiplatform.init(project=project_id, location=region)
     # Check if model exists
     models = aiplatform.Model.list()
@@ -121,7 +122,8 @@ def deploy_model(model_directory: str, project_id: str, region: str):
         parent_model = model_name
         model_id = None
         is_default_version=False
-        version_aliases=['experimental', 'challenger', 'custom-training', 'decision-tree']
+        version_aliases=['experimental', 'challenger', 'custom-training', \
+                         'decision-tree']
         version_description='challenger version'
     else:
         parent_model = None
@@ -130,7 +132,8 @@ def deploy_model(model_directory: str, project_id: str, region: str):
         version_aliases=['champion', 'custom-training', 'decision-tree']
         version_description='first version'
 
-    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest'
+    serving_container = \
+        'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-0:latest'
     uploaded_model = aiplatform.Model.upload(
         artifact_uri = model_directory,
         model_id=model_id,
@@ -149,9 +152,12 @@ def deploy_model(model_directory: str, project_id: str, region: str):
         deployed_model_display_name='deployed-beans-model')
 
 # ## Define the Pipeline
-# Define your pipeline using `@AutoMLOps.pipeline`. You can optionally give the pipeline a name and description. Define the structure by listing the components to be called in your pipeline; use `.after` to specify the order of execution.
+# Define your pipeline using `@AutoMLOps.pipeline`. You can optionally give
+# the pipeline a name and description. Define the structure by listing the
+# components to be called in your pipeline; use `.after` to specify the
+# order of execution.
 
-@AutoMLOps.pipeline #(name='automlops-pipeline', description='This is an optional description')
+@AutoMLOps.pipeline
 def pipeline(bq_table: str,
             model_directory: str,
             data_path: str,
@@ -175,12 +181,17 @@ def pipeline(bq_table: str,
 
 
 def test_beans_training_model():
+    # Importing here to avoid conflict with repeated import in deploy_model
+    from google.cloud import aiplatform
+
     project_id = ''
     model_id = ''
     ## Define the Pipeline Arguments
+    timestamp = datetime.datetime.now()
+    model_directory = f'gs://{project_id}-bucket/trained_models/{timestamp}'
     pipeline_params = {
         'bq_table': f'{project_id}.test_dataset.dry-beans',
-        'model_directory': f'gs://{project_id}-bucket/trained_models/{datetime.datetime.now()}',
+        'model_directory': model_directory,
         'data_path': f'gs://{project_id}-{model_id}-bucket/data.csv',
         'project_id': project_id,
         'region': 'us-central1'
@@ -200,12 +211,6 @@ def test_beans_training_model():
     # Assert that GCP infrastructure was stood up with the correct names.
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     helpers.assert_successful_provisioning(defaults)
-    # helpers.assert_repository_exists(repository_name="dry-beans-dt-repository")
-    # helpers.assert_build_trigger_exists(trigger_name="dry-beans-dt-build-trigger")
-    # helpers.assert_scheduler_job_exists(scheduler_name="dry-beans-dt-schedule")
-
-    # AutoMLOps.deploy(precheck=True, hide_warnings=False)
-    # time.sleep(600)
 
     # Assert that Vertex AI endpoint was created and returns predictions.
     aiplatform.init(project=project_id)
