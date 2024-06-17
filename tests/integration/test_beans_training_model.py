@@ -200,17 +200,14 @@ def test_beans_training_model():
                     naming_prefix=model_id
     )
 
-
     AutoMLOps.provision(hide_warnings=False)
     time.sleep(300)
-    print('HIT PROVISION')
 
     # Assert that GCP infrastructure was stood up with the correct names.
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     helpers.assert_successful_provisioning(defaults)
 
     # Assert that Vertex AI endpoint was created and returns predictions.
-
     from google.cloud import aiplatform
     aiplatform.init(project=project_id)
     endpoints = aiplatform.Endpoint.list()
