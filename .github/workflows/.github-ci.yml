@@ -22,9 +22,8 @@ jobs:
       with:
         python-version: "3.10"
     - name: Install Python dependencies
-      run: | # force numpy to be latest non 2.x version due to incompatibility with google-cloud-aiplatform
+      run: |
         python3 -m pip install --upgrade pip
-        pip3 install numpy==1.26.4
         pip3 install -r requirements.txt
     - name: Check for licenses
       run: |
@@ -63,8 +62,9 @@ jobs:
         with:
           python-version: "3.10"
       - name: Install Python dependencies
-        run: |
+        run: | # force numpy to be latest non 2.x version due to incompatibility with google-cloud-aiplatform
           python3 -m pip install --upgrade pip
+          pip3 install numpy==1.26.4
           pip3 install -r requirements.txt
       - name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'
