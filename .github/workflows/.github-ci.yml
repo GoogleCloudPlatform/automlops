@@ -72,8 +72,11 @@ jobs:
           workload_identity_provider: '${{ secrets.WORKLOAD_IDENTITY_PROVIDER }}'
           service_account: '${{ secrets.INTEGRATION_TEST_SERVICE_ACCOUNT }}'
           project_id: '${{ secrets.INTEGRATION_TEST_PROJECT_ID }}'
-      - name: 'Configure gcloud'
-        run: bash tests/integration/configure-gcloud.sh ${{ secrets.INTEGRATION_TEST_PROJECT_ID }}
+      - name: "Set up Cloud SDK"
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          project_id: '${{ secrets.INTEGRATION_TEST_PROJECT_ID }}'
+          install_components: 'beta'
       - name: 'Install AMO locally'
         run: |
           pip install .
