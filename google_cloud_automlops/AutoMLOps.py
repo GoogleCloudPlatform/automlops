@@ -261,34 +261,40 @@ def generate(
 
     # Validate currently supported tools
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:
+        #pylint: disable=inconsistent-quotes
         raise ValueError(
             f'Unsupported artifact repository type: {artifact_repo_type}. \
-            Supported frameworks include: {', '.join([e.value for e in ArtifactRepository])}'
+            Supported frameworks include: {", ".join([e.value for e in ArtifactRepository])}'
         )
     if source_repo_type not in [e.value for e in CodeRepository]:
+        #pylint: disable=inconsistent-quotes
         raise ValueError(
             f'Unsupported source repository type: {source_repo_type}. \
-            Supported frameworks include: {', '.join([e.value for e in CodeRepository])}'
+            Supported frameworks include: {", ".join([e.value for e in CodeRepository])}'
         )
     if pipeline_job_submission_service_type not in [e.value for e in PipelineJobSubmitter]:
+        #pylint: disable=inconsistent-quotes
         raise ValueError(
             f'Unsupported pipeline job submissions service type: {pipeline_job_submission_service_type}. \
-            Supported frameworks include: {', '.join([e.value for e in PipelineJobSubmitter])}'
+            Supported frameworks include: {", ".join([e.value for e in PipelineJobSubmitter])}'
         )
     if orchestration_framework not in [e.value for e in Orchestrator]:
+        #pylint: disable=inconsistent-quotes
         raise ValueError(
             f'Unsupported orchestration framework: {orchestration_framework}. \
-            Supported frameworks include: {', '.join([e.value for e in Orchestrator])}'
+            Supported frameworks include: {", ".join([e.value for e in Orchestrator])}'
         )
     if provisioning_framework not in [e.value for e in Provisioner]:
+        #pylint: disable=inconsistent-quotes
         raise ValueError(
             f'Unsupported provisioning framework: {provisioning_framework}. \
-            Supported frameworks include: {', '.join([e.value for e in Provisioner])}'
+            Supported frameworks include: {", ".join([e.value for e in Provisioner])}'
         )
     if deployment_framework not in [e.value for e in Deployer]:
+        #pylint: disable=inconsistent-quotes
         raise ValueError(
             f'Unsupported deployment framework: {deployment_framework}. \
-            Supported frameworks include: {', '.join([e.value for e in Deployer])}'
+            Supported frameworks include: {", ".join([e.value for e in Deployer])}'
         )
 
     # Make standard directories
