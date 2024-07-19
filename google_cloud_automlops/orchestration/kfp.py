@@ -357,10 +357,10 @@ class KFPPipeline(BasePipeline):
         return [comp.name for comp in self.comps]
 
     def _create_component_base_requirements(self) -> str:
-        """Creates the contents of a requirements.txt to the component_base directory. 
+        """Creates the contents of a requirements.txt to the component_base directory.
         Optionally infer pip requirements from the python srcfiles using pipreqs.
         Takes user-inputted requirements, and addes some default gcp packages as well as
-        packages that are often missing in setup.py files (e.g db_types, pyarrow, 
+        packages that are often missing in setup.py files (e.g db_types, pyarrow,
         gcsfs, fsspec).
 
         Returns:
@@ -479,7 +479,7 @@ class KFPServices(BaseServices):
                     requirements.txt
         """
         write_file(
-            f'{self.submission_service_base_dir}/requirements.txt', 
+            f'{self.submission_service_base_dir}/requirements.txt',
             render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'requirements.txt.j2',
                 pinned_kfp_version=PINNED_KFP_VERSION,
@@ -487,7 +487,7 @@ class KFPServices(BaseServices):
             'w')
 
         write_file(
-            f'{self.submission_service_base_dir}/main.py', 
+            f'{self.submission_service_base_dir}/main.py',
             render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
                 generated_license=GENERATED_LICENSE,
@@ -499,7 +499,7 @@ class KFPServices(BaseServices):
             'w')
 
         write_file(
-            f'{self.submission_service_base_dir}/Dockerfile', 
+            f'{self.submission_service_base_dir}/Dockerfile',
             render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'Dockerfile.j2',
                 base_dir=BASE_DIR,

@@ -144,7 +144,7 @@ def launchAll(
         pipeline_params: Dictionary containing runtime pipeline parameters.
         artifact_repo_location: Region of the artifact repo (default use with Artifact Registry).
         artifact_repo_name: Artifact repo name where components are stored (default use with Artifact Registry).
-        artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)        
+        artifact_repo_type: The type of artifact repository to use (e.g. Artifact Registry, JFrog, etc.)
         base_image: The image to use in the component base dockerfile.
         build_trigger_location: The location of the build trigger (for cloud build).
         build_trigger_name: The name of the build trigger (for cloud build).
@@ -173,7 +173,7 @@ def launchAll(
         hide_warnings: Boolean used to specify whether to show provision/deploy permission warnings
         use_ci: Flag that determines whether to use Cloud CI/CD.
         vpc_connector: The name of the vpc connector to use.
-        workload_identity_pool: Pool for workload identity federation. 
+        workload_identity_pool: Pool for workload identity federation.
         workload_identity_provider: Provider for workload identity federation.
         workload_identity_service_account: Service account for workload identity federation (specify the full string).
     """
@@ -263,32 +263,32 @@ def generate(
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:
         raise ValueError(
             f'Unsupported artifact repository type: {artifact_repo_type}. \
-            Supported frameworks include: {", ".join([e.value for e in ArtifactRepository])}'
+            Supported frameworks include: {', '.join([e.value for e in ArtifactRepository])}'
         )
     if source_repo_type not in [e.value for e in CodeRepository]:
         raise ValueError(
             f'Unsupported source repository type: {source_repo_type}. \
-            Supported frameworks include: {", ".join([e.value for e in CodeRepository])}'
+            Supported frameworks include: {', '.join([e.value for e in CodeRepository])}'
         )
     if pipeline_job_submission_service_type not in [e.value for e in PipelineJobSubmitter]:
         raise ValueError(
             f'Unsupported pipeline job submissions service type: {pipeline_job_submission_service_type}. \
-            Supported frameworks include: {", ".join([e.value for e in PipelineJobSubmitter])}'
+            Supported frameworks include: {', '.join([e.value for e in PipelineJobSubmitter])}'
         )
     if orchestration_framework not in [e.value for e in Orchestrator]:
         raise ValueError(
             f'Unsupported orchestration framework: {orchestration_framework}. \
-            Supported frameworks include: {", ".join([e.value for e in Orchestrator])}'
+            Supported frameworks include: {', '.join([e.value for e in Orchestrator])}'
         )
     if provisioning_framework not in [e.value for e in Provisioner]:
         raise ValueError(
             f'Unsupported provisioning framework: {provisioning_framework}. \
-            Supported frameworks include: {", ".join([e.value for e in Provisioner])}'
+            Supported frameworks include: {', '.join([e.value for e in Provisioner])}'
         )
     if deployment_framework not in [e.value for e in Deployer]:
         raise ValueError(
             f'Unsupported deployment framework: {deployment_framework}. \
-            Supported frameworks include: {", ".join([e.value for e in Deployer])}'
+            Supported frameworks include: {', '.join([e.value for e in Deployer])}'
         )
 
     # Make standard directories
@@ -404,7 +404,7 @@ def generate(
 
 def provision(hide_warnings: Optional[bool] = True):
     """Provisions the necessary infra to run MLOps pipelines. The provisioning option (e.g.
-    terraform, gcloud, etc.) is set during the generate() step and stored in config/defaults.yaml. 
+    terraform, gcloud, etc.) is set during the generate() step and stored in config/defaults.yaml.
 
     Args:
         hide_warnings: Boolean that specifies whether to show permissions warnings before provisioning.
@@ -426,7 +426,7 @@ def provision(hide_warnings: Optional[bool] = True):
 def deprovision():
     """De-provisions the infra stood up during the provision() step. Deprovision currently only
     works with terraform. The provisioning option (e.g. terraform, gcloud, etc.) is set during the
-    generate() step and stored in config/defaults.yaml. 
+    generate() step and stored in config/defaults.yaml.
     """
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     provisioning_framework = defaults['tooling']['provisioning_framework']
@@ -515,7 +515,7 @@ def monitor(
             Defaults to None; if left None, the model will not be retrained if an alert is generated.
         drift_thresholds: Compares incoming data to data previously seen to check for drift.
         hide_warnings: Boolean that specifies whether to show permissions warnings before monitoring.
-        job_display_name: Display name of the ModelDeploymentMonitoringJob. The name can be up to 128 characters 
+        job_display_name: Display name of the ModelDeploymentMonitoringJob. The name can be up to 128 characters
             long and can be consist of any UTF-8 characters.
         monitoring_interval: Configures model monitoring job scheduling interval in hours.
             This defines how often the monitoring jobs are triggered.
