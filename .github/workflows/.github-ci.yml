@@ -14,13 +14,16 @@ on:
 
 jobs:
   lint-checks:
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python 3.10
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.10"
+        python-version: ${{ matrix.python-version }}
     - name: Install Python dependencies
       run: |
         python3 -m pip install --upgrade pip
@@ -33,14 +36,17 @@ jobs:
         pylint --jobs=0 $(git ls-files '*.py') --ignore-paths=example --rcfile=.pylintrc
 
   unit-tests:
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     needs: [lint-checks]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version:  ${{ matrix.python-version }}
       - name: Install Python dependencies
         run: |
           python3 -m pip install --upgrade pip
@@ -50,6 +56,9 @@ jobs:
           pytest tests/unit --cov=AutoMLOps=
 
   integration-tests:
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
     needs: [lint-checks, unit-tests]
     runs-on: ubuntu-latest
     permissions:
@@ -57,10 +66,10 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.10
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version:  ${{ matrix.python-version }}
       - name: Install Python dependencies
         run: | # force numpy to be latest non 2.x version due to incompatibility with google-cloud-aiplatform
           python3 -m pip install --upgrade pip
