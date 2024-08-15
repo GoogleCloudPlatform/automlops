@@ -20,6 +20,7 @@ as well as generic component, pipeline, and services objects."""
 # pylint: disable=line-too-long
 
 from enum import Enum
+from pydantic import BaseModel
 
 
 class Deployer(Enum):
@@ -58,10 +59,10 @@ class ArtifactRepository(Enum):
 class CodeRepository(Enum):
     """Enum representing the available options for source code repositories."""
 
-    BITBUCKET = 'bitbucket'   # roadmap item
+    # BITBUCKET = 'bitbucket'   # roadmap item
     CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
-    GITHUB = 'github'
-    GITLAB = 'gitlab'   # roadmap item
+    # GITHUB = 'github'
+    # GITLAB = 'gitlab'   # roadmap item
 
 
 class PipelineJobSubmitter(Enum):
@@ -77,3 +78,69 @@ class PulumiRuntime(Enum):
     PYTHON = 'python'
     TYPESCRIPT = 'typescript'
     GO = 'go'
+
+
+class GCPLocations(Enum):
+    US_CENTRAL_1 = "us-central1"
+    US_EAST_1 = "us-east1"
+    US_EAST_4 = "us-east4"
+    US_EAST_5 = "us-east5"
+    US_WEST_1 = "us-west1"
+    US_WEST_2 = "us-west2"
+    US_WEST_3 = "us-west3"
+    US_WEST_4 = "us-west4"
+    US_SOUTH_1 = "us-south1"
+
+
+class Metadata(BaseModel):
+    name: str
+    type: str
+    description: str
+
+
+class GCP(BaseModel):
+    artifact_repo_location: GCPLocations
+    artifact_repo_name: str
+    artifact_repo_type: str
+    base_image: str
+    build_trigger_location: str
+    build_trigger_name: str
+    naming_prefix: str
+    pipeline_job_runner_service_account: str
+    pipeline_job_submission_service_location: str
+    pipeline_job_submission_service_name: str
+    pipeline_job_submission_service_type: str
+    project_id: str
+    setup_model_monitoring: bool
+    pubsub_topic_name: str
+    schedule_location: str
+    schedule_name: str
+    schedule_pattern: str
+    source_repository_branch: str
+    source_repository_name: str
+    source_repository_type: str
+    storage_bucket_location: str
+    storage_bucket_name: str
+    vpc_connector: str
+
+
+class PipelineSpecs(BaseModel):
+    gs_pipeline_job_spec_path: str
+    parameter_values_path: str
+    pipeline_component_directory: str
+    pipeline_job_spec_path: str
+    pipeline_region: str
+    pipeline_storage_path: str
+
+
+class Tooling(BaseModel):
+    deployment_framework: Deployer
+    provisioning_framework: Provisioner
+    orchestration_framework: Orchestrator
+    use_ci: bool
+
+
+class Defaults(BaseModel):
+    gcp: GCP
+    pipeline_specs: PipelineSpecs
+    tooling: Tooling
