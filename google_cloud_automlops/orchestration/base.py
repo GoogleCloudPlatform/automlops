@@ -40,7 +40,7 @@ from google_cloud_automlops.utils.enums import (
     Tooling,
     Defaults,
     GCPLocations,
-    Metadata
+    Parameter
 )
 
 T = TypeVar('T')
@@ -167,14 +167,15 @@ class BaseComponent():
         if not (hasattr(annotation,'__annotations__') and isinstance(annotation.__annotations__, dict)):
             raise TypeError(f'''Return type hint for function "{self.name}" must be a NamedTuple.''')
 
-        # Creates a dictionary of metadata for each object returned by component
+        # Creates a parameter object for each parameter returned by component
         outputs = []
         for name, type_ in annotation.__annotations__.items():
-            metadata = {}
-            metadata['name'] = name
-            metadata['type'] = type_
-            metadata['description'] = None
-            outputs.append(metadata)
+            p = Parameter(
+                name=name,
+                type=type_,
+                description=None
+            )
+            outputs.append(p)
         return outputs
 
     def _get_function_parameters(self) -> list:
@@ -195,16 +196,17 @@ class BaseComponent():
         # Extract parameter metadata
         parameter_holder = []
         for param in parameters:
-            metadata = {}
-            metadata['name'] = param.name
-            metadata['description'] = doc_dict.get(param.name)
-            metadata['type'] = self.maybe_strip_optional_from_annotation(
-                param.annotation)
-            parameter_holder.append(metadata)
+            p = Parameter(
+                name=param.name,
+                type=self.maybe_strip_optional_from_annotation(
+                param.annotation),
+                description=doc_dict.get(param.name)
+            )
+            parameter_holder.append(p)
             # pylint: disable=protected-access
-            if metadata['type'] == inspect._empty:
+            if p.type == inspect._empty:
                 raise TypeError(
-                    f'''Missing type hint for parameter "{metadata['name']}". '''
+                    f'''Missing type hint for parameter "{p.name}". '''
                     f'''Please specify the type for this parameter.''')
         return parameter_holder
 

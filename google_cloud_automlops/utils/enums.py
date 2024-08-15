@@ -92,7 +92,7 @@ class GCPLocations(Enum):
     US_SOUTH_1 = "us-south1"
 
 
-class Metadata(BaseModel):
+class Parameter(BaseModel):
     name: str
     type: str
     description: str
