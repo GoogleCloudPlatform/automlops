@@ -81,15 +81,17 @@ class PulumiRuntime(Enum):
 
 
 class GCPLocations(Enum):
-    US_CENTRAL_1 = "us-central1"
-    US_EAST_1 = "us-east1"
-    US_EAST_4 = "us-east4"
-    US_EAST_5 = "us-east5"
-    US_WEST_1 = "us-west1"
-    US_WEST_2 = "us-west2"
-    US_WEST_3 = "us-west3"
-    US_WEST_4 = "us-west4"
-    US_SOUTH_1 = "us-south1"
+    """Enum representing the available GCP locations.
+    """
+    US_CENTRAL_1 = 'us-central1'
+    US_EAST_1 = 'us-east1'
+    US_EAST_4 = 'us-east4'
+    US_EAST_5 = 'us-east5'
+    US_WEST_1 = 'us-west1'
+    US_WEST_2 = 'us-west2'
+    US_WEST_3 = 'us-west3'
+    US_WEST_4 = 'us-west4'
+    US_SOUTH_1 = 'us-south1'
 
 
 class Parameter(BaseModel):
@@ -99,6 +101,8 @@ class Parameter(BaseModel):
 
 
 class GCP(BaseModel):
+    """Class representing all GCP configuration settings.
+    """
     artifact_repo_location: GCPLocations
     artifact_repo_name: str
     artifact_repo_type: str

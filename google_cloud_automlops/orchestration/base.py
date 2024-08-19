@@ -26,22 +26,14 @@ from typing import Callable, List, Optional, TypeVar, Union
 import docstring_parser
 
 from google_cloud_automlops.utils.utils import (
+    get_defaults,
     get_function_source_definition,
-    read_yaml_file
 )
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     DEFAULT_PIPELINE_NAME,
-    GENERATED_DEFAULTS_FILE
 )
-from google_cloud_automlops.utils.enums import (
-    GCP,
-    PipelineSpecs,
-    Tooling,
-    Defaults,
-    GCPLocations,
-    Parameter
-)
+from google_cloud_automlops.utils.enums import Parameter
 
 T = TypeVar('T')
 
@@ -95,52 +87,7 @@ class BaseComponent():
         Raises:
             NotImplementedError: The subclass has not defined the `build` method.
         """
-
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        gcp = GCP(
-            artifact_repo_location = GCPLocations(defaults["gcp"]["artifact_repo_location"]),
-            artifact_repo_name = defaults["gcp"]["artifact_repo_name"],
-            artifact_repo_type = defaults["gcp"]["artifact_repo_type"],
-            base_image = defaults["gcp"]["base_image"],
-            build_trigger_location = defaults["gcp"]["build_trigger_location"],
-            build_trigger_name = defaults["gcp"]["build_trigger_name"],
-            naming_prefix = defaults["gcp"]["naming_prefix"],
-            pipeline_job_runner_service_account = defaults["gcp"]["pipeline_job_runner_service_account"],
-            pipeline_job_submission_service_location = defaults["gcp"]["pipeline_job_submission_service_location"],
-            pipeline_job_submission_service_name = defaults["gcp"]["pipeline_job_submission_service_name"],
-            pipeline_job_submission_service_type = defaults["gcp"]["pipeline_job_submission_service_type"],
-            project_id = defaults["gcp"]["project_id"],
-            setup_model_monitoring = defaults["gcp"]["setup_model_monitoring"],
-            pubsub_topic_name = defaults["gcp"]["pubsub_topic_name"],
-            schedule_location = defaults["gcp"]["schedule_location"],
-            schedule_name = defaults["gcp"]["schedule_name"],
-            schedule_pattern = defaults["gcp"]["schedule_pattern"],
-            source_repository_branch = defaults["gcp"]["source_repository_branch"],
-            source_repository_name = defaults["gcp"]["source_repository_name"],
-            source_repository_type = defaults["gcp"]["source_repository_type"],
-            storage_bucket_location = defaults["gcp"]["storage_bucket_location"],
-            storage_bucket_name = defaults["gcp"]["storage_bucket_name"],
-            vpc_connector = defaults["gcp"]["vpc_connector"],
-        )
-        pipeline_specs = PipelineSpecs(
-            gs_pipeline_job_spec_path = defaults["pipelines"]["gs_pipeline_job_spec_path"],
-            parameter_values_path = defaults["pipelines"]["parameter_values_path"],
-            pipeline_component_directory = defaults["pipelines"]["pipeline_component_directory"],
-            pipeline_job_spec_path = defaults["pipelines"]["pipeline_job_spec_path"],
-            pipeline_region = defaults["pipelines"]["pipeline_region"],
-            pipeline_storage_path = defaults["pipelines"]["pipeline_storage_path"],
-        )
-        tooling = Tooling(
-            deployment_framework = defaults["tooling"]["deployment_framework"],
-            provisioning_framework = defaults["tooling"]["provisioning_framework"],
-            orchestration_framework = defaults["tooling"]["orchestration_framework"],
-            use_ci = defaults["tooling"]["use_ci"],
-        )
-        self.defaults = Defaults(
-            gcp = gcp,
-            pipeline_specs = pipeline_specs,
-            tooling =  tooling
-        )
+        self.defaults = get_defaults()
 
     def _get_function_return_types(self) -> list:
         """Returns a formatted list of function return types.
@@ -289,51 +236,7 @@ class BasePipeline():
         self.pipeline_params = pipeline_params
 
         # Extract additional attributes from defaults file
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        gcp = GCP(
-            artifact_repo_location = GCPLocations(defaults["gcp"]["artifact_repo_location"]),
-            artifact_repo_name = defaults["gcp"]["artifact_repo_name"],
-            artifact_repo_type = defaults["gcp"]["artifact_repo_type"],
-            base_image = defaults["gcp"]["base_image"],
-            build_trigger_location = defaults["gcp"]["build_trigger_location"],
-            build_trigger_name = defaults["gcp"]["build_trigger_name"],
-            naming_prefix = defaults["gcp"]["naming_prefix"],
-            pipeline_job_runner_service_account = defaults["gcp"]["pipeline_job_runner_service_account"],
-            pipeline_job_submission_service_location = defaults["gcp"]["pipeline_job_submission_service_location"],
-            pipeline_job_submission_service_name = defaults["gcp"]["pipeline_job_submission_service_name"],
-            pipeline_job_submission_service_type = defaults["gcp"]["pipeline_job_submission_service_type"],
-            project_id = defaults["gcp"]["project_id"],
-            setup_model_monitoring = defaults["gcp"]["setup_model_monitoring"],
-            pubsub_topic_name = defaults["gcp"]["pubsub_topic_name"],
-            schedule_location = defaults["gcp"]["schedule_location"],
-            schedule_name = defaults["gcp"]["schedule_name"],
-            schedule_pattern = defaults["gcp"]["schedule_pattern"],
-            source_repository_branch = defaults["gcp"]["source_repository_branch"],
-            source_repository_name = defaults["gcp"]["source_repository_name"],
-            source_repository_type = defaults["gcp"]["source_repository_type"],
-            storage_bucket_location = defaults["gcp"]["storage_bucket_location"],
-            storage_bucket_name = defaults["gcp"]["storage_bucket_name"],
-            vpc_connector = defaults["gcp"]["vpc_connector"],
-        )
-        pipeline_specs = PipelineSpecs(
-            gs_pipeline_job_spec_path = defaults["pipelines"]["gs_pipeline_job_spec_path"],
-            parameter_values_path = defaults["pipelines"]["parameter_values_path"],
-            pipeline_component_directory = defaults["pipelines"]["pipeline_component_directory"],
-            pipeline_job_spec_path = defaults["pipelines"]["pipeline_job_spec_path"],
-            pipeline_region = defaults["pipelines"]["pipeline_region"],
-            pipeline_storage_path = defaults["pipelines"]["pipeline_storage_path"],
-        )
-        tooling = Tooling(
-            deployment_framework = defaults["tooling"]["deployment_framework"],
-            provisioning_framework = defaults["tooling"]["provisioning_framework"],
-            orchestration_framework = defaults["tooling"]["orchestration_framework"],
-            use_ci = defaults["tooling"]["use_ci"],
-        )
-        self.defaults = Defaults(
-            gcp = gcp,
-            pipeline_specs = pipeline_specs,
-            tooling =  tooling
-        )
+        self.defaults = get_defaults()
 
     def get_pipeline_components(self,
                                 pipeline_func: Callable,
@@ -396,51 +299,7 @@ class BaseServices():
                     requirements.txt
         """
         # Extract additional attributes from defaults file
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        gcp = GCP(
-            artifact_repo_location = GCPLocations(defaults["gcp"]["artifact_repo_location"]),
-            artifact_repo_name = defaults["gcp"]["artifact_repo_name"],
-            artifact_repo_type = defaults["gcp"]["artifact_repo_type"],
-            base_image = defaults["gcp"]["base_image"],
-            build_trigger_location = defaults["gcp"]["build_trigger_location"],
-            build_trigger_name = defaults["gcp"]["build_trigger_name"],
-            naming_prefix = defaults["gcp"]["naming_prefix"],
-            pipeline_job_runner_service_account = defaults["gcp"]["pipeline_job_runner_service_account"],
-            pipeline_job_submission_service_location = defaults["gcp"]["pipeline_job_submission_service_location"],
-            pipeline_job_submission_service_name = defaults["gcp"]["pipeline_job_submission_service_name"],
-            pipeline_job_submission_service_type = defaults["gcp"]["pipeline_job_submission_service_type"],
-            project_id = defaults["gcp"]["project_id"],
-            setup_model_monitoring = defaults["gcp"]["setup_model_monitoring"],
-            pubsub_topic_name = defaults["gcp"]["pubsub_topic_name"],
-            schedule_location = defaults["gcp"]["schedule_location"],
-            schedule_name = defaults["gcp"]["schedule_name"],
-            schedule_pattern = defaults["gcp"]["schedule_pattern"],
-            source_repository_branch = defaults["gcp"]["source_repository_branch"],
-            source_repository_name = defaults["gcp"]["source_repository_name"],
-            source_repository_type = defaults["gcp"]["source_repository_type"],
-            storage_bucket_location = defaults["gcp"]["storage_bucket_location"],
-            storage_bucket_name = defaults["gcp"]["storage_bucket_name"],
-            vpc_connector = defaults["gcp"]["vpc_connector"],
-        )
-        pipeline_specs = PipelineSpecs(
-            gs_pipeline_job_spec_path = defaults["pipelines"]["gs_pipeline_job_spec_path"],
-            parameter_values_path = defaults["pipelines"]["parameter_values_path"],
-            pipeline_component_directory = defaults["pipelines"]["pipeline_component_directory"],
-            pipeline_job_spec_path = defaults["pipelines"]["pipeline_job_spec_path"],
-            pipeline_region = defaults["pipelines"]["pipeline_region"],
-            pipeline_storage_path = defaults["pipelines"]["pipeline_storage_path"],
-        )
-        tooling = Tooling(
-            deployment_framework = defaults["tooling"]["deployment_framework"],
-            provisioning_framework = defaults["tooling"]["provisioning_framework"],
-            orchestration_framework = defaults["tooling"]["orchestration_framework"],
-            use_ci = defaults["tooling"]["use_ci"],
-        )
-        self.defaults = Defaults(
-            gcp = gcp,
-            pipeline_specs = pipeline_specs,
-            tooling =  tooling
-        )
+        self.defaults = get_defaults()
 
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
