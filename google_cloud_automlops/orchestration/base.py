@@ -115,7 +115,7 @@ class BaseComponent():
             raise TypeError(f'''Return type hint for function "{self.name}" must be a NamedTuple.''')
 
         # Creates a parameter object for each parameter returned by component
-        outputs = []
+        outputs: List[Parameter] = []
         for name, type_ in annotation.__annotations__.items():
             p = Parameter(
                 name=name,
@@ -141,7 +141,7 @@ class BaseComponent():
         doc_dict = {p.arg_name: p.description for p in parsed_docstring.params}
 
         # Extract parameter metadata
-        parameter_holder = []
+        parameter_holder: List[Parameter] = []
         for param in parameters:
             p = Parameter(
                 name=param.name,
