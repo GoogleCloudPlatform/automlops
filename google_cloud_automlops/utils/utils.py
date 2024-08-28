@@ -55,8 +55,13 @@ from google_cloud_automlops.utils.constants import (
 )
 
 from google_cloud_automlops.utils.enums import (
+    Defaults,
+    GCP,
+    GCPLocations,
     Orchestrator,
-    PipelineJobSubmitter
+    PipelineJobSubmitter,
+    PipelineSpecs,
+    Tooling,
 )
 
 from google_cloud_automlops.utils.enums import (
@@ -1054,3 +1059,50 @@ def git_workflow():
     if deployment_framework == Deployer.CLOUDBUILD.value:
         logging.info(
             f'''Cloud Build job running at: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')
+
+def get_defaults():
+    defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
+    gcp = GCP(
+        artifact_repo_location = GCPLocations(defaults['gcp']['artifact_repo_location']),
+        artifact_repo_name = defaults['gcp']['artifact_repo_name'],
+        artifact_repo_type = defaults['gcp']['artifact_repo_type'],
+        base_image = defaults['gcp']['base_image'],
+        build_trigger_location = defaults['gcp']['build_trigger_location'],
+        build_trigger_name = defaults['gcp']['build_trigger_name'],
+        naming_prefix = defaults['gcp']['naming_prefix'],
+        pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account'],
+        pipeline_job_submission_service_location = defaults['gcp']['pipeline_job_submission_service_location'],
+        pipeline_job_submission_service_name = defaults['gcp']['pipeline_job_submission_service_name'],
+        pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type'],
+        project_id = defaults['gcp']['project_id'],
+        setup_model_monitoring = defaults['gcp']['setup_model_monitoring'],
+        pubsub_topic_name = defaults['gcp']['pubsub_topic_name'],
+        schedule_location = defaults['gcp']['schedule_location'],
+        schedule_name = defaults['gcp']['schedule_name'],
+        schedule_pattern = defaults['gcp']['schedule_pattern'],
+        source_repository_branch = defaults['gcp']['source_repository_branch'],
+        source_repository_name = defaults['gcp']['source_repository_name'],
+        source_repository_type = defaults['gcp']['source_repository_type'],
+        storage_bucket_location = defaults['gcp']['storage_bucket_location'],
+        storage_bucket_name = defaults['gcp']['storage_bucket_name'],
+        vpc_connector = defaults['gcp']['vpc_connector'],
+    )
+    pipeline_specs = PipelineSpecs(
+        gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path'],
+        parameter_values_path = defaults['pipelines']['parameter_values_path'],
+        pipeline_component_directory = defaults['pipelines']['pipeline_component_directory'],
+        pipeline_job_spec_path = defaults['pipelines']['pipeline_job_spec_path'],
+        pipeline_region = defaults['pipelines']['pipeline_region'],
+        pipeline_storage_path = defaults['pipelines']['pipeline_storage_path'],
+    )
+    tooling = Tooling(
+        deployment_framework = defaults['tooling']['deployment_framework'],
+        provisioning_framework = defaults['tooling']['provisioning_framework'],
+        orchestration_framework = defaults['tooling']['orchestration_framework'],
+        use_ci = defaults['tooling']['use_ci'],
+    )
+    return Defaults(
+        gcp = gcp,
+        pipeline_specs = pipeline_specs,
+        tooling =  tooling
+    )

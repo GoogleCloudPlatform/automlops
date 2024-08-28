@@ -26,14 +26,14 @@ from typing import Callable, List, Optional, TypeVar, Union
 import docstring_parser
 
 from google_cloud_automlops.utils.utils import (
+    get_defaults,
     get_function_source_definition,
-    read_yaml_file
 )
 from google_cloud_automlops.utils.constants import (
     BASE_DIR,
     DEFAULT_PIPELINE_NAME,
-    GENERATED_DEFAULTS_FILE
 )
+from google_cloud_automlops.utils.enums import Parameter
 
 T = TypeVar('T')
 
@@ -78,10 +78,7 @@ class BaseComponent():
         self.src_code = get_function_source_definition(self.func)
 
         # Instantiate attributes to be set during build
-        self.artifact_repo_location = None
-        self.artifact_repo_name = None
-        self.project_id = None
-        self.naming_prefix = None
+        self.defaults = None
 
     def build(self):
         """Instantiates an abstract built method to create and write task files. Also reads in
@@ -90,14 +87,7 @@ class BaseComponent():
         Raises:
             NotImplementedError: The subclass has not defined the `build` method.
         """
-
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
-        self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
-        self.project_id = defaults['gcp']['project_id']
-        self.naming_prefix = defaults['gcp']['naming_prefix']
-
-        raise NotImplementedError('Subclass needs to define this.')
+        self.defaults = get_defaults()
 
     def _get_function_return_types(self) -> list:
         """Returns a formatted list of function return types.
@@ -124,14 +114,15 @@ class BaseComponent():
         if not (hasattr(annotation,'__annotations__') and isinstance(annotation.__annotations__, dict)):
             raise TypeError(f'''Return type hint for function "{self.name}" must be a NamedTuple.''')
 
-        # Creates a dictionary of metadata for each object returned by component
-        outputs = []
+        # Creates a parameter object for each parameter returned by component
+        outputs: List[Parameter] = []
         for name, type_ in annotation.__annotations__.items():
-            metadata = {}
-            metadata['name'] = name
-            metadata['type'] = type_
-            metadata['description'] = None
-            outputs.append(metadata)
+            p = Parameter(
+                name=name,
+                type=type_,
+                description=None
+            )
+            outputs.append(p)
         return outputs
 
     def _get_function_parameters(self) -> list:
@@ -150,18 +141,19 @@ class BaseComponent():
         doc_dict = {p.arg_name: p.description for p in parsed_docstring.params}
 
         # Extract parameter metadata
-        parameter_holder = []
+        parameter_holder: List[Parameter] = []
         for param in parameters:
-            metadata = {}
-            metadata['name'] = param.name
-            metadata['description'] = doc_dict.get(param.name)
-            metadata['type'] = self.maybe_strip_optional_from_annotation(
-                param.annotation)
-            parameter_holder.append(metadata)
+            p = Parameter(
+                name=param.name,
+                type=self.maybe_strip_optional_from_annotation(
+                param.annotation),
+                description=doc_dict.get(param.name)
+            )
+            parameter_holder.append(p)
             # pylint: disable=protected-access
-            if metadata['type'] == inspect._empty:
+            if p.type == inspect._empty:
                 raise TypeError(
-                    f'''Missing type hint for parameter "{metadata['name']}". '''
+                    f'''Missing type hint for parameter "{p.name}". '''
                     f'''Please specify the type for this parameter.''')
         return parameter_holder
 
@@ -216,14 +208,9 @@ class BasePipeline():
         self.comps = self.get_pipeline_components(func, comps_dict)
 
         # Instantiate attributes to be set at build process
-        self.base_image = None
+        self.defaults = None
         self.custom_training_job_specs = None
         self.pipeline_params = None
-        self.pubsub_topic_name = None
-        self.use_ci = None
-        self.project_id = None
-        self.gs_pipeline_job_spec_path = None
-        self.setup_model_monitoring = None
 
     def build(self,
               pipeline_params: dict,
@@ -249,15 +236,7 @@ class BasePipeline():
         self.pipeline_params = pipeline_params
 
         # Extract additional attributes from defaults file
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.project_id = defaults['gcp']['project_id']
-        self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
-        self.base_image = defaults['gcp']['base_image']
-        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name']
-        self.use_ci = defaults['tooling']['use_ci']
-        self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
-
-        raise NotImplementedError('Subclass needs to define this.')
+        self.defaults = get_defaults()
 
     def get_pipeline_components(self,
                                 pipeline_func: Callable,
@@ -301,12 +280,7 @@ class BaseServices():
     def __init__(self) -> None:
         """Instantiates a generic Services object.
         """
-        self.pipeline_storage_path = None
-        self.pipeline_job_runner_service_account = None
-        self.pipeline_job_submission_service_type = None
-        self.project_id = None
-        self.pipeline_job_submission_service_type = None
-        self.setup_model_monitoring = None
+        self.defaults = None
 
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
@@ -325,12 +299,7 @@ class BaseServices():
                     requirements.txt
         """
         # Extract additional attributes from defaults file
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.pipeline_storage_path = defaults['pipelines']['pipeline_storage_path']
-        self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
-        self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
-        self.project_id = defaults['gcp']['project_id']
-        self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
+        self.defaults = get_defaults()
 
         # Set directory for files to be written to
         self.submission_service_base_dir = BASE_DIR + 'services/submission_service'
@@ -339,7 +308,7 @@ class BaseServices():
         self._build_submission_services()
 
         # Setup model monitoring
-        if self.setup_model_monitoring:
+        if self.defaults.gcp.setup_model_monitoring:
             self._build_monitoring()
 
     def _build_monitoring(self):

@@ -74,11 +74,7 @@ class KFPComponent(BaseComponent):
     def build(self):
         """Constructs files for running and managing Kubeflow pipelines.
         """
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.artifact_repo_location = defaults['gcp']['artifact_repo_location']
-        self.artifact_repo_name = defaults['gcp']['artifact_repo_name']
-        self.project_id = defaults['gcp']['project_id']
-        self.naming_prefix = defaults['gcp']['naming_prefix']
+        super().build()
 
         # Set and create directory for components if it does not already exist
         component_dir = BASE_DIR + 'components/' + self.name
@@ -91,10 +87,10 @@ class KFPComponent(BaseComponent):
             BASE_DIR + 'components/component_base/src/'])
 
         compspec_image = (
-                f'''{self.artifact_repo_location}-docker.pkg.dev/'''
-                f'''{self.project_id}/'''
-                f'''{self.artifact_repo_name}/'''
-                f'''{self.naming_prefix}/'''
+                f'''{self.defaults.gcp.artifact_repo_location.value}-docker.pkg.dev/'''
+                f'''{self.defaults.gcp.project_id}/'''
+                f'''{self.defaults.gcp.artifact_repo_name}/'''
+                f'''{self.defaults.gcp.naming_prefix}/'''
                 f'''components/component_base:latest''')
 
         # Write component spec
@@ -192,18 +188,11 @@ class KFPPipeline(BasePipeline):
                 to None.
 
         """
+        super().build(pipeline_params, custom_training_job_specs)
+
         # Save parameters as attributes
         self.custom_training_job_specs = custom_training_job_specs
         self.pipeline_params = pipeline_params
-
-        # Extract additional attributes from defaults file
-        defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
-        self.project_id = defaults['gcp']['project_id']
-        self.gs_pipeline_job_spec_path = defaults['pipelines']['gs_pipeline_job_spec_path']
-        self.base_image = defaults['gcp']['base_image']
-        self.use_ci = defaults['tooling']['use_ci']
-        self.pubsub_topic_name = defaults['gcp']['pubsub_topic_name'] if self.use_ci else None
-        self.setup_model_monitoring = defaults['gcp']['setup_model_monitoring']
 
         # Build necessary folders
         make_dirs([
@@ -217,8 +206,8 @@ class KFPPipeline(BasePipeline):
             filepath=f'{BASE_DIR}README.md',
             text=render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH) / 'README.md.j2',
-                setup_model_monitoring=self.setup_model_monitoring,
-                use_ci=self.use_ci),
+                setup_model_monitoring=self.defaults.gcp.setup_model_monitoring,
+                use_ci=self.defaults.tooling.use_ci),
             mode='w')
 
         # components/component_base/dockerfile: Write the component base Dockerfile
@@ -226,7 +215,7 @@ class KFPPipeline(BasePipeline):
             filepath=f'{GENERATED_COMPONENT_BASE}/Dockerfile',
             text=render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.components.component_base') / 'Dockerfile.j2',
-                base_image=self.base_image,
+                base_image=self.defaults.gcp.base_image,
                 generated_license=GENERATED_LICENSE),
             mode='w')
 
@@ -278,7 +267,7 @@ class KFPPipeline(BasePipeline):
                 base_dir=BASE_DIR))
 
         # scripts/publish_to_topic.sh: If using CI, write script for publishing to pubsub topic
-        if self.use_ci:
+        if self.defaults.tooling.use_ci:
             write_and_chmod(
                 filepath=GENERATED_PUBLISH_TO_TOPIC_FILE,
                 text=render_jinja(
@@ -286,7 +275,7 @@ class KFPPipeline(BasePipeline):
                     base_dir=BASE_DIR,
                     generated_license=GENERATED_LICENSE,
                     generated_parameter_values_path=GENERATED_PARAMETER_VALUES_PATH,
-                    pubsub_topic_name=self.pubsub_topic_name))
+                    pubsub_topic_name=self.defaults.gcp.pubsub_topic_name))
 
         # pipelines/pipeline.py: Generates a Kubeflow pipeline spec from custom components.
         components_list = self._get_component_list()
@@ -299,7 +288,7 @@ class KFPPipeline(BasePipeline):
                 custom_training_job_specs=self.custom_training_job_specs,
                 generated_license=GENERATED_LICENSE,
                 pipeline_scaffold_contents=pipeline_scaffold_contents,
-                project_id=self.project_id),
+                project_id=self.defaults.gcp.project_id),
             mode='w')
 
         # pipelines/pipeline_runner.py: Sends a PipelineJob to Vertex AI using pipeline spec.
@@ -319,7 +308,7 @@ class KFPPipeline(BasePipeline):
             mode='w')
 
         # pipelines/runtime_parameters/pipeline_parameter_values.json: Provides runtime parameters for the PipelineJob.
-        self.pipeline_params['gs_pipeline_spec_path'] = self.gs_pipeline_job_spec_path
+        self.pipeline_params['gs_pipeline_spec_path'] = self.defaults.pipeline_specs.gs_pipeline_job_spec_path
         serialized_params = json.dumps(self.pipeline_params, indent=4)
         write_file(BASE_DIR + GENERATED_PARAMETER_VALUES_PATH, serialized_params, 'w')
 
@@ -483,7 +472,7 @@ class KFPServices(BaseServices):
             render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'requirements.txt.j2',
                 pinned_kfp_version=PINNED_KFP_VERSION,
-                pipeline_job_submission_service_type=self.pipeline_job_submission_service_type),
+                pipeline_job_submission_service_type=self.defaults.gcp.pipeline_job_submission_service_type),
             'w')
 
         write_file(
@@ -491,11 +480,11 @@ class KFPServices(BaseServices):
             render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
                 generated_license=GENERATED_LICENSE,
-                pipeline_root=self.pipeline_storage_path,
-                pipeline_job_runner_service_account=self.pipeline_job_runner_service_account,
-                pipeline_job_submission_service_type=self.pipeline_job_submission_service_type,
-                project_id=self.project_id,
-                setup_model_monitoring=self.setup_model_monitoring),
+                pipeline_root=self.defaults.pipeline_specs.pipeline_storage_path,
+                pipeline_job_runner_service_account=self.defaults.gcp.pipeline_job_runner_service_account,
+                pipeline_job_submission_service_type=self.defaults.gcp.pipeline_job_submission_service_type,
+                project_id=self.defaults.gcp.project_id,
+                setup_model_monitoring=self.defaults.gcp.setup_model_monitoring),
             'w')
 
         write_file(
