@@ -308,7 +308,7 @@ class KFPPipeline(BasePipeline):
             mode='w')
 
         # pipelines/runtime_parameters/pipeline_parameter_values.json: Provides runtime parameters for the PipelineJob.
-        self.pipeline_params['gs_pipeline_spec_path'] = self.defaults.gcp.gs_pipeline_job_spec_path
+        self.pipeline_params['gs_pipeline_spec_path'] = self.defaults.pipeline_specs.gs_pipeline_job_spec_path
         serialized_params = json.dumps(self.pipeline_params, indent=4)
         write_file(BASE_DIR + GENERATED_PARAMETER_VALUES_PATH, serialized_params, 'w')
 
@@ -480,7 +480,7 @@ class KFPServices(BaseServices):
             render_jinja(
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
                 generated_license=GENERATED_LICENSE,
-                pipeline_root=self.defaults.gcp.pipeline_storage_path,
+                pipeline_root=self.defaults.pipeline_specs.pipeline_storage_path,
                 pipeline_job_runner_service_account=self.defaults.gcp.pipeline_job_runner_service_account,
                 pipeline_job_submission_service_type=self.defaults.gcp.pipeline_job_submission_service_type,
                 project_id=self.defaults.gcp.project_id,

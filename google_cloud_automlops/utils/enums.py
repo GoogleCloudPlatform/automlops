@@ -20,7 +20,7 @@ as well as generic component, pipeline, and services objects."""
 # pylint: disable=line-too-long
 
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 
 class Deployer(Enum):
@@ -96,8 +96,19 @@ class GCPLocations(Enum):
 
 class Parameter(BaseModel):
     name: str
-    type: str
+    type: type
     description: str
+
+    @validator("type", pre=True)
+    def type_to_empty(cls, v: object) -> object:
+        if v is None:
+            return ""
+        return v
+    @validator("description", pre=True)
+    def description_to_empty(cls, v: object) -> object:
+        if v is None:
+            return ""
+        return v
 
 
 class GCP(BaseModel):
