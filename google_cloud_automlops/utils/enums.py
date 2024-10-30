@@ -59,7 +59,7 @@ class CodeRepository(Enum):
     """Enum representing the available options for source code repositories."""
 
     BITBUCKET = 'bitbucket'   # roadmap item
-    CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'
+    # CLOUD_SOURCE_REPOSITORIES = 'cloud-source-repositories'   # deprecated
     GITHUB = 'github'
     GITLAB = 'gitlab'   # roadmap item
 
