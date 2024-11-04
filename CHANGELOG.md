@@ -1,6 +1,27 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2024-10-30
+
+### Added
+
+- Guide explaining how to set up Workload Identity Federation for AutoMLOps
+- Created new docs/ directory
+
+### Changed
+
+- Made `github` and `github-actions` the default options for `source_repo_type` and `deployment_framework` respectively
+- Updated example notebooks so that they are set to `use_ci=False` by default
+- Provided samples in the example notebooks that demonstrate how to use the `github` and `github_actions` setup
+- Added a guide for setting up Workload Identity Federation
+- Updated github actions op versions (checkout and auth)
+
+### Fixed
+
+- Fixed broken default of now deprecated Cloud Source Repositories
+- Updated sklearn version of training example00 to use v1.3
+- Removed `build_trigger_location` from resources manifest output
+
 ## [1.3.0] - 2024-5-22
 
 ### Added

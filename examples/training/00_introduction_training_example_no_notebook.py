@@ -131,7 +131,7 @@ def create_dataset(
 
 @AutoMLOps.component(
     packages_to_install=[
-        'scikit-learn==1.2.0',
+        'scikit-learn==1.3.2',
         'pandas',
         'joblib',
         'tensorflow'
@@ -215,7 +215,7 @@ def deploy_model(
         version_aliases=['champion', 'custom-training', 'decision-tree']
         version_description='first version'
 
-    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-2:latest'
+    serving_container = 'us-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest'
     uploaded_model = aiplatform.Model.upload(
         artifact_uri=model_directory,
         model_id=model_id,
@@ -282,10 +282,11 @@ pipeline_params = {
 
 
 # ## Generate and Run the pipeline
-# `AutoMLOps.generate(...)` generates the MLOps codebase. Users can specify the tooling and technologies they would like to use in their MLOps pipeline.
+# `AutoMLOps.generate(...)` generates the MLOps codebase. Users can specify the tooling and technologies they would like to use in their MLOps pipeline. If you are interested in integrating with Github and Github Actions, please follow the setup steps in [this doc](../../docs/Using%20Github%20With%20AMO.md) and uncomment the relevant code block below.
 AutoMLOps.generate(project_id=PROJECT_ID,
                    pipeline_params=pipeline_params,
-                   use_ci=True,
+                   use_ci=False,
                    naming_prefix=MODEL_ID,
-                   schedule_pattern='59 11 * * 0' # retrain every Sunday at Midnight
+                   deployment_framework='cloud-build',
+                   setup_model_monitoring=True     # use this if you would like to use Vertex Model Monitoring
 )

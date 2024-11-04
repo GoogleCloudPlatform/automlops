@@ -463,6 +463,8 @@ AutoMLOps.generate(project_id=PROJECT_ID,
                    workload_identity_service_account='workload_identity_sa')
 ```
 
+More specific details for setting up AutoMLOps to use Github and Github Actions can be found in [this doc](docs/Using%20Github%20With%20AMO.md).
+
 **Set scheduled run:**
 
 Use the `schedule_pattern` parameter to specify a cron job schedule to run the pipeline job on a recurring basis.

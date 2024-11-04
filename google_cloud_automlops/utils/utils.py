@@ -940,8 +940,7 @@ def resources_generation_manifest(defaults: dict):
         f'''Service Accounts: https://console.cloud.google.com/iam-admin/serviceaccounts?project={defaults['gcp']['project_id']}''')
     logging.info('APIs: https://console.cloud.google.com/apis')
     if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-        logging.info(
-            f'''Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds;region={defaults['gcp']['build_trigger_location']}''')
+        logging.info('Cloud Build Jobs: https://console.cloud.google.com/cloud-build/builds')
     if defaults['tooling']['orchestration_framework'] == Orchestrator.KFP.value:
         logging.info(
             'Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
@@ -950,8 +949,7 @@ def resources_generation_manifest(defaults: dict):
             logging.info(
                 f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['source_repository_name']}/+/{defaults['gcp']['source_repository_branch']}:''')
         if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
-            logging.info(
-                f'''Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers;region={defaults['gcp']['build_trigger_location']}''')
+            logging.info('Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
             logging.info(
                 f'''Pipeline Job Submission Service (Cloud Run): https://console.cloud.google.com/run/detail/{defaults['gcp']['pipeline_job_submission_service_location']}/{defaults['gcp']['pipeline_job_submission_service_name']}''')
