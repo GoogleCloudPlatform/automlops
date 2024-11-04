@@ -350,17 +350,20 @@ def test_execute_process(command: str, to_null: bool, expectation: bool):
 
 
 @pytest.mark.parametrize(
-    'sch_pattern, setup_model_monitoring, use_ci, expectation',
+    'deployment_framework, sch_pattern, setup_model_monitoring, source_repo_type, use_ci, expectation',
     [
-        ('No Schedule Specified', False, True, does_not_raise()),
-        ('No Schedule Specified', False, False, does_not_raise()),
-        ('Schedule', False, False, pytest.raises(ValueError)),
-        ('Schedule', True, True, does_not_raise()),
-        ('Schedule', True, False, pytest.raises(ValueError))
+        ('github-actions', 'No Schedule Specified', False, 'github', True, does_not_raise()),
+        ('github-actions', 'No Schedule Specified', False, 'github', False, does_not_raise()),
+        ('github-actions', 'Schedule', False, 'github', False, pytest.raises(ValueError)),
+        ('github-actions', 'Schedule', True, 'github', True, does_not_raise()),
+        ('github-actions', 'Schedule', True, 'github', False, pytest.raises(ValueError)),
+        ('cloud-build', 'Schedule', True, 'github', False, pytest.raises(ValueError))
     ]
 )
-def test_validate_use_ci(sch_pattern: str,
+def test_validate_use_ci(deployment_framework: str,
+                         sch_pattern: str,
                          setup_model_monitoring: bool,
+                         source_repo_type: str,
                          use_ci: bool,
                          expectation):
     """Tests validate_use_ci, which validates the inputted schedule
@@ -369,15 +372,19 @@ def test_validate_use_ci(sch_pattern: str,
     combination of sch_pattern and setup_model_monitoring for the expected results.
 
     Args:
+        deployment_framework (str): The CI tool to use (e.g. cloud build, github actions, etc.)
         sch_pattern (str): Cron formatted value used to create a Scheduled retrain job.
         setup_model_monitoring (bool): Boolean parameter which specifies whether to set 
             up a Vertex AI Model Monitoring Job.
+        source_repo_type (str): The type of source repository to use (e.g. gitlab, github, etc.)
         use_ci (bool): Flag that determines whether to use Cloud Run CI/CD.
         expectation: Any corresponding expected errors for each set of parameters.
     """
     with expectation:
-        validate_use_ci(schedule_pattern=sch_pattern,
+        validate_use_ci(deployment_framework=deployment_framework,
+                        schedule_pattern=sch_pattern,
                         setup_model_monitoring=setup_model_monitoring,
+                        source_repo_type=source_repo_type,
                         use_ci=use_ci)
 
 

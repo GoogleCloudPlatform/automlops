@@ -21,6 +21,7 @@
 # pylint: disable=logging-fstring-interpolation
 # pylint: disable=global-at-module-level
 # pylint: disable=global-variable-undefined
+# pylint: disable=too-many-positional-arguments
 
 import functools
 import logging
@@ -257,7 +258,11 @@ def generate(
     Args: See launchAll() function.
     """
     # Validate that use_ci=True if schedule_pattern parameter is set or setup_model_monitoring is True
-    validate_use_ci(setup_model_monitoring, schedule_pattern, use_ci)
+    validate_use_ci(deployment_framework,
+                    setup_model_monitoring,
+                    schedule_pattern,
+                    source_repo_type,
+                    use_ci)
 
     # Validate currently supported tools
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:

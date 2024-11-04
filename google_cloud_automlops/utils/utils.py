@@ -18,6 +18,7 @@
 # pylint: disable=C0103
 # pylint: disable=line-too-long
 # pylint: disable=broad-exception-caught
+# pylint: disable=too-many-positional-arguments
 
 try:
     from importlib.resources import files as import_files
@@ -225,16 +226,22 @@ def execute_process(command: str, to_null: bool):
         raise RuntimeError(f'Error executing process. {err}') from err
 
 
-def validate_use_ci(setup_model_monitoring: bool, schedule_pattern: str, use_ci: str):
+def validate_use_ci(deployment_framework: str,
+                    setup_model_monitoring: bool,
+                    schedule_pattern: str,
+                    source_repo_type: str,
+                    use_ci: str):
     """Validates that the inputted schedule parameter and model_monitoring parameter align with the 
-    use_ci configuration.
+    use_ci configuration. Also checks unsupported configurations (e.g. using Cloudbuild with Github)
 
     Note: this function does not validate that schedule_pattern is a properly formatted cron value.
     Cron format validation is done in the backend by GCP.
 
     Args:
+        deployment_framework (str): The CI tool to use (e.g. cloud build, github actions, etc.)
         setup_model_monitoring (bool): Specifies whether to set up a Vertex AI Model Monitoring Job.
         schedule_pattern (str): Cron formatted value used to create a Scheduled retrain job.
+        source_repo_type (str): The type of source repository to use (e.g. gitlab, github, etc.)
         use_ci (bool): Specifies whether to use Cloud CI/CD.
 
     Raises:
@@ -244,6 +251,9 @@ def validate_use_ci(setup_model_monitoring: bool, schedule_pattern: str, use_ci:
         raise ValueError('use_ci must be set to True to use Model Monitoring.')
     if schedule_pattern != DEFAULT_SCHEDULE_PATTERN and not use_ci:
         raise ValueError('use_ci must be set to True to use Cloud Scheduler.')
+    if source_repo_type == CodeRepository.GITHUB.value and deployment_framework == Deployer.CLOUDBUILD.value:
+        raise ValueError('Using Github and Cloud Build for CI is not currently supported. '
+                         'Please use Github Actions instead.')
 
 
 def get_function_source_definition(func: Callable) -> str:

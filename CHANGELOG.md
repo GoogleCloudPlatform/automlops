@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 
 - Guide explaining how to set up Workload Identity Federation for AutoMLOps
 - Created new docs/ directory
+- Check that prohibits using Github and Cloud Build (this is currently not supported)
 
 ### Changed
 
