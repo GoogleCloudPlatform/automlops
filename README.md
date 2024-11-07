@@ -64,8 +64,8 @@ Inferencing
 - Artifact Registry
 
 **Deployment Frameworks**: Builds component docker containers, compiles pipelines, and submits Pipeline Jobs
-- Cloud Build
 - Github Actions
+- Cloud Build
 - [coming soon] Gitlab CI
 - [coming soon] Bitbucket Pipelines
 - [coming soon] Jenkins
@@ -87,10 +87,10 @@ Inferencing
 - [coming soon] pulumi
 
 **Source Code Repositories**: Repository for versioning generated MLOps code
-- [deprecating soon] Cloud Source Repositories
-- Bitbucket
 - Github
+- Bitbucket
 - Gitlab
+- [deprecated] Cloud Source Repositories
 
 # Prerequisites
 ### Generate
@@ -122,11 +122,6 @@ In order to use `AutoMLOps.deploy(...)` with `use_ci=True`, the following are re
   git config --global user.name "Your Name"
 ```
 - Registered and setup your SSH key if you are using Github, Gitlab, or Bitbucket
-- [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/provide-credentials-adc) are set up if you are using Cloud Source Repositories. This can be done through the following commands:
-```
-gcloud auth application-default login
-gcloud config set account <account@example.com>
-```
 
 ### Monitor
 In order to use `AutoMLOps.monitor(...)`, the following are required:
@@ -170,10 +165,7 @@ AutoMLOps will makes use of the following products based on user selected option
 6. if `use_ci=True` and `schedule_pattern` is specified, AutoMLOps will use:
 - [Cloud Scheduler](https://cloud.google.com/scheduler/docs/overview)
 
-7. if `use_ci=True` and `source_repo_type='cloud-source-repositories'`, AutoMLOps will use:
-- [Cloud Source Repositories](https://cloud.google.com/source-repositories/docs)
-
-8. if `use_ci=True` and `setup_model_monitoring=True`, AutoMLOps will use:
+7. if `use_ci=True` and `setup_model_monitoring=True`, AutoMLOps will use:
 - [Vertex AI Model Monitoring](https://cloud.google.com/vertex-ai/docs/model-monitoring/overview)
 - [Cloud Logging](https://cloud.google.com/logging/docs/overview)
 
@@ -193,7 +185,6 @@ Based on the above user selection, AutoMLOps will enable up to the following API
 - [pubsub.googleapis.com](https://cloud.google.com/pubsub/docs/reference/rest)
 - [run.googleapis.com](https://cloud.google.com/run/docs/reference/rest)
 - [storage.googleapis.com](https://cloud.google.com/storage/docs/apis)
-- [sourcerepo.googleapis.com](https://cloud.google.com/source-repositories/docs/reference/rest)
 
 
 AutoMLOps will create the following service account and update [IAM permissions](https://cloud.google.com/iam/docs/understanding-roles) during the provision step:
@@ -232,7 +223,7 @@ Optional parameters (defaults shown):
 5. `build_trigger_location: str = 'us-central1'`
 6. `build_trigger_name: str = f'{naming_prefix}-build-trigger'`
 7. `custom_training_job_specs: list[dict] = None`
-8. `deployment_framework: str = 'cloud-build'`
+8. `deployment_framework: str = 'github-actions'`
 9. `naming_prefix: str = 'automlops-default-prefix'`
 10. `orchestration_framework: str = 'kfp'`
 11. `pipeline_job_runner_service_account: str = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com'`
@@ -249,7 +240,7 @@ Optional parameters (defaults shown):
 22. `setup_model_monitoring: Optional[bool] = False`
 23. `source_repo_branch: str = 'automlops'`
 24. `source_repo_name: str = f'{naming_prefix}-repository'`
-25. `source_repo_type: str = 'cloud-source-repositories'`
+25. `source_repo_type: str = 'github'`
 26. `storage_bucket_location: str = 'us-central1'`
 27. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
 28. `use_ci: bool = False`
@@ -262,8 +253,8 @@ Parameter Options:
 - `artifact_repo_type=`:
     - 'artifact-registry' (default)
 - `deployment_framework=`:
-    - 'cloud-build' (default)
-    - 'github-actions'
+    - 'github-actions' (default)
+    - 'cloud-build'
     - [coming soon] 'gitlab-ci'
     - [coming soon] 'bitbucket-pipelines'
     - [coming soon] 'jenkins'
@@ -281,8 +272,7 @@ Parameter Options:
     - 'terraform'
     - [coming soon] 'pulumi'
 - `source_repo_type=`:
-    - 'cloud-source-repositories' (default)
-    - 'github'
+    - 'github' (default)
     - 'gitlab'
     - 'bitbucket'
 
@@ -324,7 +314,7 @@ A description of the parameters is below:
 - `workload_identity_provider`: Provider for workload identity federation.
 - `workload_identity_service_account`: Service account for workload identity federation (specify the full string).
 
-AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, Cloud Source Repo, etc.). If use_ci is set to True, AutoMLOps will turn the outputted AutoMLOps/ directory into a Git repo and use it for the source repo. If a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. If `setup_model_monitoring` is set to true, a model_monitoring/ directory will be created and a monitoring section will be added to config/defaults.yaml with empty values. These values are then set by running `AutoMLOps.monitor()`.
+AutoMLOps will generate the resources specified by these parameters (e.g. Artifact Registry, GCS bucket, etc.). If use_ci is set to True, AutoMLOps will turn the outputted AutoMLOps/ directory into a Git repo and use it for the source repo. If a cron formatted str is given as an arg for `schedule_pattern` then it will set up a Cloud Schedule to run accordingly. If `setup_model_monitoring` is set to true, a model_monitoring/ directory will be created and a monitoring section will be added to config/defaults.yaml with empty values. These values are then set by running `AutoMLOps.monitor()`.
 
 # Generating Code
 
@@ -384,11 +374,6 @@ AutoMLOps currently provides 2 primary options for provisioning infrastructure: 
 # Deployment
 ### Cloud Continuous Integration and Continuous Deployment Workflow
 If `use_ci=True`, AutoMLOps will generate and use a fully featured CI/CD environment for the pipeline. Otherwise, it will use the local scripts to build and run the pipeline. In the diagrams below dashed boxes show areas users can select and customize their tooling. 
-
-**<center>Cloud Build option:</center>**
-<p align="center">
-    <img src="https://raw.githubusercontent.com/GoogleCloudPlatform/automlops/main/assets/deploy/CICD-default.png" alt="CICD" width="1000"/>
-</p>
 
 **<center>Github Actions option:</center>**
 <p align="center">
@@ -477,6 +462,8 @@ AutoMLOps.generate(project_id=PROJECT_ID,
                    workload_identity_provider='identity_provider_string',
                    workload_identity_service_account='workload_identity_sa')
 ```
+
+More specific details for setting up AutoMLOps to use Github and Github Actions can be found in [this doc](docs/Using%20Github%20With%20AMO.md).
 
 **Set scheduled run:**
 

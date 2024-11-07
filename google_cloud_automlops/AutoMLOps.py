@@ -21,6 +21,7 @@
 # pylint: disable=logging-fstring-interpolation
 # pylint: disable=global-at-module-level
 # pylint: disable=global-variable-undefined
+# pylint: disable=too-many-positional-arguments
 
 import functools
 import logging
@@ -109,7 +110,7 @@ def launchAll(
     build_trigger_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     build_trigger_name: Optional[str] = None,
     custom_training_job_specs: Optional[List[Dict]] = None,
-    deployment_framework: Optional[str] = Deployer.CLOUDBUILD.value,
+    deployment_framework: Optional[str] = Deployer.GITHUB_ACTIONS.value,
     naming_prefix: Optional[str] = DEFAULT_NAMING_PREFIX,
     orchestration_framework: Optional[str] = Orchestrator.KFP.value,
     pipeline_job_runner_service_account: Optional[str] = None,
@@ -127,7 +128,7 @@ def launchAll(
     setup_model_monitoring: Optional[bool] = False,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
-    source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
+    source_repo_type: Optional[str] = CodeRepository.GITHUB.value,
     storage_bucket_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     storage_bucket_name: Optional[str] = None,
     hide_warnings: Optional[bool] = True,
@@ -226,7 +227,7 @@ def generate(
     build_trigger_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     build_trigger_name: Optional[str] = None,
     custom_training_job_specs: Optional[List[Dict]] = None,
-    deployment_framework: Optional[str] = Deployer.CLOUDBUILD.value,
+    deployment_framework: Optional[str] = Deployer.GITHUB_ACTIONS.value,
     naming_prefix: Optional[str] = DEFAULT_NAMING_PREFIX,
     orchestration_framework: Optional[str] = Orchestrator.KFP.value,
     pipeline_job_runner_service_account: Optional[str] = None,
@@ -243,7 +244,7 @@ def generate(
     setup_model_monitoring: Optional[bool] = False,
     source_repo_branch: Optional[str] = DEFAULT_SOURCE_REPO_BRANCH,
     source_repo_name: Optional[str] = None,
-    source_repo_type: Optional[str] = CodeRepository.CLOUD_SOURCE_REPOSITORIES.value,
+    source_repo_type: Optional[str] = CodeRepository.GITHUB.value,
     storage_bucket_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     storage_bucket_name: Optional[str] = None,
     use_ci: Optional[bool] = False,
@@ -257,7 +258,11 @@ def generate(
     Args: See launchAll() function.
     """
     # Validate that use_ci=True if schedule_pattern parameter is set or setup_model_monitoring is True
-    validate_use_ci(setup_model_monitoring, schedule_pattern, use_ci)
+    validate_use_ci(deployment_framework,
+                    setup_model_monitoring,
+                    schedule_pattern,
+                    source_repo_type,
+                    use_ci)
 
     # Validate currently supported tools
     if artifact_repo_type not in [e.value for e in ArtifactRepository]:
