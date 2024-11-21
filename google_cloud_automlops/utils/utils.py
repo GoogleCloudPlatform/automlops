@@ -251,7 +251,7 @@ def validate_use_ci(deployment_framework: str,
         raise ValueError('use_ci must be set to True to use Model Monitoring.')
     if schedule_pattern != DEFAULT_SCHEDULE_PATTERN and not use_ci:
         raise ValueError('use_ci must be set to True to use Cloud Scheduler.')
-    if source_repo_type == CodeRepository.GITHUB.value and deployment_framework == Deployer.CLOUDBUILD.value:
+    if use_ci and source_repo_type == CodeRepository.GITHUB.value and deployment_framework == Deployer.CLOUDBUILD.value:
         raise ValueError('Using Github and Cloud Build for CI is not currently supported. '
                          'Please use Github Actions instead.')
 

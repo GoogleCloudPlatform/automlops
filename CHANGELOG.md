@@ -1,6 +1,16 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.3.2] - 2024-11-21
+
+### Added
+
+### Changed
+
+### Fixed
+
+- Fixed logic that checks that cloud-build is not being used with Github, but only if `use_ci=True`
+
 ## [1.3.1] - 2024-10-30
 
 ### Added
