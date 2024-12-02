@@ -15,6 +15,7 @@ import google.cloud.logging
 NAMING_PREFIX = '{{naming_prefix}}'{% endif %}
 PROJECT_ID = '{{project_id}}'
 PIPELINE_ROOT = '{{pipeline_root}}'
+PIPELINE_JOB_LOCATION = '{{pipeline_job_location}}'
 PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT = '{{pipeline_job_runner_service_account}}'
 
 {% if pipeline_job_submission_service_type == 'cloud-run' %}app = flask.Flask(__name__){% endif %}
@@ -87,6 +88,7 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
         dashboard_uri, resource_name = submit_pipeline(
             project_id=PROJECT_ID,
             pipeline_root=PIPELINE_ROOT,
+            pipeline_job_location=PIPELINE_JOB_LOCATION,
             pipeline_job_runner_service_account=PIPELINE_JOB_RUNNER_SERVICE_ACCOUNT,
             pipeline_params=data_payload,
             pipeline_spec_path=gs_pipeline_spec_path,
@@ -104,6 +106,7 @@ def process_request({% if pipeline_job_submission_service_type == 'cloud-functio
 def submit_pipeline(
     project_id: str,
     pipeline_root: str,
+    pipeline_job_location: str,
     pipeline_job_runner_service_account: str,
     pipeline_params: dict,
     pipeline_spec_path: str,
@@ -116,6 +119,7 @@ def submit_pipeline(
     Args:
         project_id: The project_id.
         pipeline_root: GCS location of the pipeline runs metadata.
+        pipeline_job_location: The location to run the Pipeline Job in.
         pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
         pipeline_params: Pipeline parameters values.
         pipeline_spec_path: Location of the pipeline spec JSON.
@@ -130,6 +134,7 @@ def submit_pipeline(
     aiplatform.init(project=project_id)
     job = aiplatform.PipelineJob(
         display_name = display_name,
+        location = pipeline_job_location,
         template_path = pipeline_spec_path,
         pipeline_root = pipeline_root,
         parameter_values = pipeline_params,

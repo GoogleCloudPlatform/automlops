@@ -492,6 +492,7 @@ class KFPServices(BaseServices):
                 template_path=import_files(KFP_TEMPLATES_PATH + '.services.submission_service') / 'main.py.j2',
                 generated_license=GENERATED_LICENSE,
                 pipeline_root=self.pipeline_storage_path,
+                pipeline_job_location=self.pipeline_job_location,
                 pipeline_job_runner_service_account=self.pipeline_job_runner_service_account,
                 pipeline_job_submission_service_type=self.pipeline_job_submission_service_type,
                 project_id=self.project_id,

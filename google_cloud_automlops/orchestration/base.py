@@ -327,6 +327,7 @@ class BaseServices():
         # Extract additional attributes from defaults file
         defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
         self.pipeline_storage_path = defaults['pipelines']['pipeline_storage_path']
+        self.pipeline_job_location = defaults['gcp']['pipeline_job_location']
         self.pipeline_job_runner_service_account = defaults['gcp']['pipeline_job_runner_service_account']
         self.pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
         self.project_id = defaults['gcp']['project_id']

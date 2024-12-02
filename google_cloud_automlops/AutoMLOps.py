@@ -113,6 +113,7 @@ def launchAll(
     deployment_framework: Optional[str] = Deployer.GITHUB_ACTIONS.value,
     naming_prefix: Optional[str] = DEFAULT_NAMING_PREFIX,
     orchestration_framework: Optional[str] = Orchestrator.KFP.value,
+    pipeline_job_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     pipeline_job_runner_service_account: Optional[str] = None,
     pipeline_job_submission_service_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     pipeline_job_submission_service_name: Optional[str] = None,
@@ -153,6 +154,7 @@ def launchAll(
         deployment_framework: The CI tool to use (e.g. cloud build, github actions, etc.)
         naming_prefix: Unique value used to differentiate pipelines and services across AutoMLOps runs.
         orchestration_framework: The orchestration framework to use (e.g. kfp, tfx, etc.)
+        pipeline_job_location: The location to run the Pipeline Job in.
         pipeline_job_runner_service_account: Service Account to run PipelineJobs (specify the full string).
         pipeline_job_submission_service_location: The location of the cloud submission service.
         pipeline_job_submission_service_name: The name of the cloud submission service.
@@ -191,6 +193,7 @@ def launchAll(
         deployment_framework=deployment_framework,
         naming_prefix=naming_prefix,
         orchestration_framework=orchestration_framework,
+        pipeline_job_location=pipeline_job_location,
         pipeline_job_runner_service_account=pipeline_job_runner_service_account,
         pipeline_job_submission_service_location=pipeline_job_submission_service_location,
         pipeline_job_submission_service_name=pipeline_job_submission_service_name,
@@ -230,6 +233,7 @@ def generate(
     deployment_framework: Optional[str] = Deployer.GITHUB_ACTIONS.value,
     naming_prefix: Optional[str] = DEFAULT_NAMING_PREFIX,
     orchestration_framework: Optional[str] = Orchestrator.KFP.value,
+    pipeline_job_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     pipeline_job_runner_service_account: Optional[str] = None,
     pipeline_job_submission_service_location: Optional[str] = DEFAULT_RESOURCE_LOCATION,
     pipeline_job_submission_service_name: Optional[str] = None,
@@ -333,6 +337,7 @@ def generate(
         deployment_framework=deployment_framework,
         naming_prefix=naming_prefix,
         orchestration_framework=orchestration_framework,
+        pipeline_job_location=pipeline_job_location,
         pipeline_job_runner_service_account=derived_pipeline_job_runner_service_account,
         pipeline_job_submission_service_location=pipeline_job_submission_service_location,
         pipeline_job_submission_service_name=derived_pipeline_job_submission_service_name,
