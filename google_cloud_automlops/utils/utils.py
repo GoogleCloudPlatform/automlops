@@ -324,6 +324,7 @@ def create_default_config(artifact_repo_location: str,
                           deployment_framework: str,
                           naming_prefix: str,
                           orchestration_framework: str,
+                          pipeline_job_location: str,
                           pipeline_job_runner_service_account: str,
                           pipeline_job_submission_service_location: str,
                           pipeline_job_submission_service_name: str,
@@ -357,6 +358,7 @@ def create_default_config(artifact_repo_location: str,
         naming_prefix (str): Unique value used to differentiate pipelines and services across
             AutoMLOps runs.
         orchestration_framework (str): Orchestration framework to use (e.g. kfp, tfx, etc.)
+        pipeline_job_location: The location to run the Pipeline Job in.
         pipeline_job_runner_service_account (str): Service Account to run PipelineJobs.
         pipeline_job_submission_service_location (str): Location of the cloud submission service.
         pipeline_job_submission_service_name (str): Name of the cloud submission service.
@@ -390,6 +392,7 @@ def create_default_config(artifact_repo_location: str,
         defaults['gcp']['build_trigger_location'] = build_trigger_location
         defaults['gcp']['build_trigger_name'] = build_trigger_name
     defaults['gcp']['naming_prefix'] = naming_prefix
+    defaults['gcp']['pipeline_job_location'] = pipeline_job_location
     defaults['gcp']['pipeline_job_runner_service_account'] = pipeline_job_runner_service_account
     if use_ci:
         defaults['gcp']['pipeline_job_submission_service_location'] = pipeline_job_submission_service_location
@@ -475,8 +478,6 @@ def get_required_apis(defaults: dict) -> list:
             required_apis.append('run.googleapis.com')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             required_apis.append('cloudfunctions.googleapis.com')
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            required_apis.append('sourcerepo.googleapis.com')
         if defaults['gcp']['setup_model_monitoring']:
             required_apis.append('logging.googleapis.com')
     return required_apis
@@ -514,8 +515,6 @@ def get_provision_min_permissions(defaults: dict) -> list:
             required_permissions.extend(['run.services.get', 'run.services.create'])
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             required_permissions.extend(['cloudfunctions.functions.get', 'cloudfunctions.functions.create'])
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            required_permissions.extend(['source.repos.list', 'source.repos.create'])
     return required_permissions
 
 
@@ -548,8 +547,6 @@ def get_provision_recommended_roles(defaults: dict) -> list:
             recommended_roles.append('roles/run.admin')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             recommended_roles.append('roles/cloudfunctions.admin')
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_roles.append('roles/source.admin')
     return recommended_roles
 
 
@@ -580,8 +577,6 @@ def get_deploy_with_precheck_min_permissions(defaults: dict) -> list:
             recommended_permissions.append('run.services.get')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             recommended_permissions.append('cloudfunctions.functions.get')
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_permissions.append('source.repos.update')
     elif not defaults['tooling']['use_ci']:
         recommended_permissions.extend(['cloudbuild.builds.get', 'aiplatform.pipelineJobs.create'])
     return recommended_permissions
@@ -614,8 +609,6 @@ def get_deploy_with_precheck_recommended_roles(defaults: dict) -> list:
             recommended_roles.append('roles/run.viewer')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
             recommended_roles.append('roles/cloudfunctions.viewer')
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_roles.append('roles/source.writer')
     elif not defaults['tooling']['use_ci']:
         recommended_roles.extend(['roles/cloudbuild.builds.editor', 'roles/aiplatform.user'])
     return recommended_roles
@@ -633,10 +626,7 @@ def get_deploy_without_precheck_min_permissions(defaults: dict) -> list:
         list: Minimum permissions to deploy with precheck=False.
     """
     recommended_permissions = []
-    if defaults['tooling']['use_ci']:
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_permissions.append('source.repos.update')
-    elif not defaults['tooling']['use_ci']:
+    if not defaults['tooling']['use_ci']:
         recommended_permissions.extend(['cloudbuild.builds.create', 'storage.buckets.update', 'aiplatform.pipelineJobs.create'])
     return recommended_permissions
 
@@ -653,10 +643,7 @@ def get_deploy_without_precheck_recommended_roles(defaults: dict) -> list:
         list: Recommended roles to deploy with precheck=False.
     """
     recommended_roles = []
-    if defaults['tooling']['use_ci']:
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            recommended_roles.append('roles/source.writer')
-    elif not defaults['tooling']['use_ci']:
+    if not defaults['tooling']['use_ci']:
         recommended_roles.extend(['roles/cloudbuild.builds.editor', 'roles/storage.admin', 'roles/aiplatform.user'])
     return recommended_roles
 
@@ -790,8 +777,6 @@ def precheck_deployment_requirements(defaults: dict):
         pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
         submission_svc_prefix = 'gcr' if pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_RUN.value else 'gcf'
         pubsub_subscription_name = f'''{submission_svc_prefix}-{pipeline_job_submission_service_name}-{pipeline_job_submission_service_location}-{pubsub_topic_name}'''
-        source_repository_name = defaults['gcp']['source_repository_name']
-        source_repository_type = defaults['gcp']['source_repository_type']
         build_trigger_name = defaults['gcp']['build_trigger_name']
         build_trigger_location = defaults['gcp']['build_trigger_location']
         deployment_framework = defaults['tooling']['deployment_framework']
@@ -857,17 +842,6 @@ def precheck_deployment_requirements(defaults: dict):
         raise RuntimeError(f'An error was encountered: {err}') from err
 
     if use_ci:
-        if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            logging.info(f'Checking for Cloud Source Repo in project {project}...')
-            service = discovery.build('sourcerepo', 'v1', credentials=credentials, cache_discovery=False)
-            request = service.projects().repos().get(
-                name=f'projects/{project}/repos/{source_repository_name}')
-            try:
-                request.execute()
-            except Exception as err:
-                raise RuntimeError(f'Cloud Source Repo {source_repository_name} not found in project {project}. '
-                                    'Please create source repo and continue.') from err
-
         logging.info(f'Checking for Pub/Sub Topic in project {project}...')
         service = discovery.build('pubsub', 'v1', credentials=credentials, cache_discovery=False)
         request = service.projects().topics().get(
@@ -955,9 +929,6 @@ def resources_generation_manifest(defaults: dict):
         logging.info(
             'Vertex AI Pipeline Runs: https://console.cloud.google.com/vertex-ai/pipelines/runs')
     if defaults['tooling']['use_ci']:
-        if defaults['gcp']['source_repository_type'] == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            logging.info(
-                f'''Cloud Source Repository: https://source.cloud.google.com/{defaults['gcp']['project_id']}/{defaults['gcp']['source_repository_name']}/+/{defaults['gcp']['source_repository_branch']}:''')
         if defaults['tooling']['deployment_framework'] == Deployer.CLOUDBUILD.value:
             logging.info('Cloud Build Trigger: https://console.cloud.google.com/cloud-build/triggers')
         if defaults['gcp']['pipeline_job_submission_service_type'] == PipelineJobSubmitter.CLOUD_RUN.value:
@@ -1005,9 +976,7 @@ def git_workflow():
     defaults = read_yaml_file(GENERATED_DEFAULTS_FILE)
     deployment_framework = defaults['tooling']['deployment_framework']
     source_repository_type = defaults['gcp']['source_repository_type']
-    if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-        git_remote_origin_url = f'''https://source.developers.google.com/p/{defaults['gcp']['project_id']}/r/{defaults['gcp']['source_repository_name']}'''
-    elif source_repository_type == CodeRepository.GITHUB.value:
+    if source_repository_type == CodeRepository.GITHUB.value:
         git_remote_origin_url = f'''git@github.com:{defaults['gcp']['source_repository_name']}.git'''
     elif source_repository_type == CodeRepository.GITLAB.value:
         git_remote_origin_url = f'''git@gitlab.com:{defaults['gcp']['source_repository_name']}.git'''
@@ -1020,9 +989,6 @@ def git_workflow():
 
         # Initialize git and configure credentials
         execute_process(f'git -C {BASE_DIR} init', to_null=False)
-        if source_repository_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-            execute_process(
-                f'''git -C {BASE_DIR} config --global credential.'https://source.developers.google.com'.helper gcloud.sh''', to_null=False)
 
         # Add repo and branch
         execute_process(

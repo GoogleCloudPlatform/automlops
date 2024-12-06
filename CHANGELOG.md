@@ -1,6 +1,18 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## [1.3.3] - 2024-12-02
+
+### Added
+
+- Added new pipeline parameter `pipeline_job_location` which defaults to `'us-central1'`.
+
+### Changed
+
+### Fixed
+
+- Bug related to "CLOUD_SOURCE_REPOSITORIES" enum value still being used in utils.py
+
 ## [1.3.2] - 2024-11-21
 
 ### Added

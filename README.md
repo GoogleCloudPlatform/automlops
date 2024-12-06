@@ -226,28 +226,29 @@ Optional parameters (defaults shown):
 8. `deployment_framework: str = 'github-actions'`
 9. `naming_prefix: str = 'automlops-default-prefix'`
 10. `orchestration_framework: str = 'kfp'`
-11. `pipeline_job_runner_service_account: str = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com'`
-12. `pipeline_job_submission_service_location: str = 'us-central1'`
-13. `pipeline_job_submission_service_name: str = f'{naming_prefix}-job-submission-svc'`
-14. `pipeline_job_submission_service_type: str = 'cloud-functions'`
-15. `project_number: str = None`
-16. `provision_credentials_key: str = None`
-17. `provisioning_framework: str = 'gcloud'`
-18. `pubsub_topic_name: str = f'{naming_prefix}-queueing-svc'`
-19. `schedule_location: str = 'us-central1'`
-20. `schedule_name: str = f'{naming_prefix}-schedule'`
-21. `schedule_pattern: str = 'No Schedule Specified'`
-22. `setup_model_monitoring: Optional[bool] = False`
-23. `source_repo_branch: str = 'automlops'`
-24. `source_repo_name: str = f'{naming_prefix}-repository'`
-25. `source_repo_type: str = 'github'`
-26. `storage_bucket_location: str = 'us-central1'`
-27. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
-28. `use_ci: bool = False`
-29. `vpc_connector: str = 'No VPC Specified'`
-30. `workload_identity_pool: str = None`
-31. `workload_identity_provider: str = None`
-32. `workload_identity_service_account: str = None`
+11. `pipeline_job_location: str = 'us-central1'`
+12. `pipeline_job_runner_service_account: str = f'vertex-pipelines@{project_id}.iam.gserviceaccount.com'`
+13. `pipeline_job_submission_service_location: str = 'us-central1'`
+14. `pipeline_job_submission_service_name: str = f'{naming_prefix}-job-submission-svc'`
+15. `pipeline_job_submission_service_type: str = 'cloud-functions'`
+16. `project_number: str = None`
+17. `provision_credentials_key: str = None`
+18. `provisioning_framework: str = 'gcloud'`
+19. `pubsub_topic_name: str = f'{naming_prefix}-queueing-svc'`
+20. `schedule_location: str = 'us-central1'`
+21. `schedule_name: str = f'{naming_prefix}-schedule'`
+22. `schedule_pattern: str = 'No Schedule Specified'`
+23. `setup_model_monitoring: Optional[bool] = False`
+24. `source_repo_branch: str = 'automlops'`
+25. `source_repo_name: str = f'{naming_prefix}-repository'`
+26. `source_repo_type: str = 'github'`
+27. `storage_bucket_location: str = 'us-central1'`
+28. `storage_bucket_name: str = f'{project_id}-{naming_prefix}-bucket'`
+29. `use_ci: bool = False`
+30. `vpc_connector: str = 'No VPC Specified'`
+31. `workload_identity_pool: str = None`
+32. `workload_identity_provider: str = None`
+33. `workload_identity_service_account: str = None`
 
 Parameter Options:
 - `artifact_repo_type=`:
@@ -289,6 +290,7 @@ A description of the parameters is below:
 - `deployment_framework`: The CI tool to use (e.g. cloud build, github actions, etc.)
 - `naming_prefix`: Unique value used to differentiate pipelines and services across AutoMLOps runs.
 - `orchestration_framework`: The orchestration framework to use (e.g. kfp, tfx, etc.)
+- `pipeline_job_location`: The location to run the Pipeline Job in.
 - `pipeline_job_runner_service_account`: Service Account to run PipelineJobs (specify the full string).
 - `pipeline_job_submission_service_location`: The location of the cloud submission service.
 - `pipeline_job_submission_service_name`: The name of the cloud submission service.

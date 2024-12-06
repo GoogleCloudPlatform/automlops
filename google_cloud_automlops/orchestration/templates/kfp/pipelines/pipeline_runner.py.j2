@@ -16,6 +16,7 @@ logger.setLevel(log_level)
 def run_pipeline(
     project_id: str,
     pipeline_root: str,
+    pipeline_job_location: str,
     pipeline_job_runner_service_account: str,
     parameter_values_path: str,
     pipeline_spec_path: str,
@@ -26,6 +27,7 @@ def run_pipeline(
     Args:
         project_id: The project_id.
         pipeline_root: GCS location of the pipeline runs metadata.
+        pipeline_job_location: The location to run the Pipeline Job in.
         pipeline_job_runner_service_account: Service Account to runner PipelineJobs.
         parameter_values_path: Location of parameter values JSON.
         pipeline_spec_path: Location of the pipeline spec JSON.
@@ -54,6 +56,7 @@ def run_pipeline(
     aiplatform.init(project=project_id)
     job = aiplatform.PipelineJob(
         display_name = display_name,
+        location = pipeline_job_location,
         template_path = pipeline_spec_path,
         pipeline_root = pipeline_root,
         parameter_values = pipeline_params,
@@ -76,6 +79,7 @@ if __name__ == '__main__':
     run_pipeline(
         project_id=config['gcp']['project_id'],
         pipeline_root=config['pipelines']['pipeline_storage_path'],
+        pipeline_job_location=config['gcp']['pipeline_job_location'],
         pipeline_job_runner_service_account=config['gcp']['pipeline_job_runner_service_account'],
         parameter_values_path=config['pipelines']['parameter_values_path'],
         pipeline_spec_path=config['pipelines']['pipeline_job_spec_path'])
