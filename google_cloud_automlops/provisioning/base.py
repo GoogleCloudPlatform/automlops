@@ -25,7 +25,6 @@ from google_cloud_automlops.utils.constants import (
 
 from google_cloud_automlops.utils.enums import (
     ArtifactRepository,
-    CodeRepository,
     Orchestrator,
     PipelineJobSubmitter
 )
@@ -113,8 +112,6 @@ class Infrastructure():
                 required_apis.append('run.googleapis.com')
             if self.pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_FUNCTIONS.value:
                 required_apis.append('cloudfunctions.googleapis.com')
-            if self.source_repo_type == CodeRepository.CLOUD_SOURCE_REPOSITORIES.value:
-                required_apis.append('sourcerepo.googleapis.com')
             if self.setup_model_monitoring:
                 required_apis.append('logging.googleapis.com')
         return required_apis

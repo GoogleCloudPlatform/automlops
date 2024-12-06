@@ -11,6 +11,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Bug related to "CLOUD_SOURCE_REPOSITORIES" enum value still being used in utils.py
+
 ## [1.3.2] - 2024-11-21
 
 ### Added
