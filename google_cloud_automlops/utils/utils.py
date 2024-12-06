@@ -777,8 +777,6 @@ def precheck_deployment_requirements(defaults: dict):
         pipeline_job_submission_service_type = defaults['gcp']['pipeline_job_submission_service_type']
         submission_svc_prefix = 'gcr' if pipeline_job_submission_service_type == PipelineJobSubmitter.CLOUD_RUN.value else 'gcf'
         pubsub_subscription_name = f'''{submission_svc_prefix}-{pipeline_job_submission_service_name}-{pipeline_job_submission_service_location}-{pubsub_topic_name}'''
-        source_repository_name = defaults['gcp']['source_repository_name']
-        source_repository_type = defaults['gcp']['source_repository_type']
         build_trigger_name = defaults['gcp']['build_trigger_name']
         build_trigger_location = defaults['gcp']['build_trigger_location']
         deployment_framework = defaults['tooling']['deployment_framework']
