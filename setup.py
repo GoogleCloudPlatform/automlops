@@ -37,7 +37,7 @@ setup(
                       'google-api-python-client==2.97.0',
                       'google-auth==2.22.0',
                       'importlib-resources==6.0.1',
-                      'Jinja2==3.1.4',
+                      'Jinja2==3.1.5',
                       'kfp>=2.0.0',
                       'packaging==23.1',
                       'pipreqs==0.4.13',
