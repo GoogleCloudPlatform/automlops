@@ -58,7 +58,7 @@ from google_cloud_automlops.utils.constants import (
             'my-branch', 'my-repo', 'cloud-source-repositories', 'us-central1', 'my-bucket',
             True, 'my-vpc-connector', True,
             ['gcloud artifacts repositories create', 'gcloud iam service-accounts create',
-             'gsutil mb -l ${STORAGE_BUCKET_LOCATION} gs://$STORAGE_BUCKET_NAME', 'gcloud iam service-accounts create',
+             'gcloud storage buckets create gs://$STORAGE_BUCKET_NAME --location=${STORAGE_BUCKET_LOCATION}', 'gcloud iam service-accounts create',
              'gcloud projects add-iam-policy-binding', 'gcloud source repos create', 'gcloud pubsub topics create',
              'gcloud functions deploy', 'gcloud beta builds triggers create', 'gcloud scheduler jobs create pubsub',
              '--vpc-connector=my-vpc-connector']
@@ -73,7 +73,7 @@ from google_cloud_automlops.utils.constants import (
             'my-branch', 'my-repo', 'cloud-source-repositories', 'us-central1', 'my-bucket',
             True, 'No VPC Specified', True,
             ['gcloud artifacts repositories create', 'gcloud iam service-accounts create',
-             'gsutil mb -l ${STORAGE_BUCKET_LOCATION} gs://$STORAGE_BUCKET_NAME', 'gcloud iam service-accounts create',
+             'gcloud storage buckets create gs://$STORAGE_BUCKET_NAME --location=${STORAGE_BUCKET_LOCATION}', 'gcloud iam service-accounts create',
              'gcloud projects add-iam-policy-binding', 'gcloud source repos create', 'gcloud pubsub topics create',
              'gcloud builds submit ${BASE_DIR}services/submission_service', 'gcloud run deploy', 'gcloud pubsub subscriptions create',
              'gcloud beta builds triggers create', 'gcloud scheduler jobs create pubsub']

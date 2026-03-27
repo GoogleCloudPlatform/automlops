@@ -45,10 +45,10 @@ else
 fi
 {% endif %}
 echo -e "$GREEN Setting up Storage Bucket in project $PROJECT_ID $NC"
-if !(gsutil ls -b gs://$STORAGE_BUCKET_NAME | grep --fixed-strings "$STORAGE_BUCKET_NAME"); then
+if !(gcloud storage ls --buckets gs://$STORAGE_BUCKET_NAME | grep --fixed-strings "$STORAGE_BUCKET_NAME"); then
 
   echo "Creating GS Bucket: ${STORAGE_BUCKET_NAME} in project $PROJECT_ID"
-  gsutil mb -l ${STORAGE_BUCKET_LOCATION} gs://$STORAGE_BUCKET_NAME
+  gcloud storage buckets create --location=${STORAGE_BUCKET_LOCATION} gs://$STORAGE_BUCKET_NAME
 
 else
 
